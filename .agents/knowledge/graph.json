@@ -1,0 +1,91 @@
+{
+  "project": {
+    "name": "JG Store",
+    "description": "Plataforma de comercio electrónico para ventas online al mayor y al detal (B2B y B2C)",
+    "repository": "https://github.com/CientificoJose/jg-store",
+    "lastUpdated": "2026-09-10"
+  },
+  "nodes": [
+    {
+      "id": "business-model",
+      "type": "Domain",
+      "title": "Modelo de Negocio B2B + B2C",
+      "status": "pending",
+      "description": "Venta dual al mayor y detal con catálogos, precios diferenciados y condiciones de compra por volumen."
+    },
+    {
+      "id": "branding",
+      "type": "Identity",
+      "title": "Branding & Activos Visuales",
+      "status": "pending",
+      "description": "Diseño de logotipo, isotipo, paleta de colores de marca y banners de tienda."
+    },
+    {
+      "id": "frontend-foundation",
+      "type": "Architecture",
+      "title": "Base Frontend (Next.js + shadcn/ui)",
+      "status": "completed",
+      "description": "Plantilla next-shadcn-dashboard-starter integrada sobre Next.js 16 (App Router), Tailwind CSS v4 y componentes shadcn/ui."
+    },
+    {
+      "id": "package-manager",
+      "type": "Runtime",
+      "title": "Runtime & Gestor de Paquetes: Bun",
+      "status": "completed",
+      "description": "Uso obligatorio de Bun en todo el ciclo de desarrollo por velocidad y compatibilidad nativa con TypeScript."
+    },
+    {
+      "id": "auth-clerk",
+      "type": "Integration",
+      "title": "Autenticación con Clerk",
+      "status": "pending",
+      "description": "Conexión y configuración de Clerk para login, sesiones y roles de usuario (administrador, cliente mayorista, cliente minorista). Tarea marcada como pendiente."
+    },
+    {
+      "id": "backend-database",
+      "type": "Backend",
+      "title": "Base de Datos y API",
+      "status": "pending",
+      "description": "Definición del motor de base de datos (PostgreSQL/Supabase/Firebase/Prisma/Drizzle) y APIs de productos y pedidos."
+    },
+    {
+      "id": "continuity-system",
+      "type": "Governance",
+      "title": "Sistema de Continuidad y Memoria en Repo",
+      "status": "completed",
+      "description": "Grafo de conocimiento, bitácora de decisiones y skill de sincronización para que cualquier IA o colaborador retome el contexto sin pérdidas."
+    }
+  ],
+  "edges": [
+    {
+      "from": "business-model",
+      "to": "frontend-foundation",
+      "relation": "drives-ui-views"
+    },
+    {
+      "from": "branding",
+      "to": "frontend-foundation",
+      "relation": "styles-theme"
+    },
+    {
+      "from": "auth-clerk",
+      "to": "business-model",
+      "relation": "enforces-user-roles-b2b-b2c"
+    },
+    {
+      "from": "backend-database",
+      "to": "business-model",
+      "relation": "persists-catalogs-and-orders"
+    },
+    {
+      "from": "package-manager",
+      "to": "frontend-foundation",
+      "relation": "executes-and-builds"
+    },
+    {
+      "from": "continuity-system",
+      "to": "business-model",
+      "relation": "tracks-roadmap"
+    }
+  ]
+}

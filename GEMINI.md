@@ -1,0 +1,12 @@
+# JG Store - Instrucciones para Gemini / Antigravity
+
+Consulte el protocolo de continuidad y conocimiento del proyecto:
+* **Grafo de Conocimiento:** [`.agents/knowledge/graph.md`](file://./.agents/knowledge/graph.md)
+* **Roadmap Activo:** [`.agents/knowledge/roadmap.md`](file://./.agents/knowledge/roadmap.md)
+* **Decisiones (ADR):** [`.agents/knowledge/decisions.md`](file://./.agents/knowledge/decisions.md)
+* **Skill de Continuidad:** [`.agents/skills/project-continuity/SKILL.md`](file://./.agents/skills/project-continuity/SKILL.md)
+
+### Reglas Críticas:
+1. Usar siempre **`bun`** como runtime y gestor de paquetes.
+2. La autenticación con **Clerk** está **en pausa/pendiente**. No bloquear flujos por falta de credenciales de Clerk.
+3. El modelo comercial es dual: **Venta al Detal (B2C)** y **Venta al Mayor (B2B)** con precios y condiciones diferenciadas.
