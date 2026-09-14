@@ -1,16 +1,24 @@
-# Reglas y Conceptos de Negocio (B2B + B2C) - JS Store
+# Reglas y Conceptos de Negocio (B2B + B2C) - JG-STORE Polirubro
 
-Este documento contiene los principios comerciales, operativos y de precios para **JS Store**.
+Este documento contiene los principios comerciales, operativos y de precios para **JG-STORE**.
 
 ---
 
-## 🏬 Identidad y Modelo de Negocio
+## 🏬 Identidad, Rubro y Modelo de Negocio
 
-* **Nombre de la Tienda:** JS Store
+* **Nombre Oficial de la Tienda:** **JG-STORE**
+* **Subtítulo / Rubro:** **POLIRUBRO** (Bazar, electrónica, accesorios, novedades, hogar, juguetes y artículos varios de alta rotación).
+* **Identidad Visual & Colores:**
+  * **Rosado Bubblegum / Rose:** `#ff6f91` / `oklch(0.68 0.22 355)` (Cuerpo de la bolsa / identidad principal).
+  * **Rojo Coral / Rose Intenso:** `#e11d48` / `oklch(0.62 0.23 18)` (Asa de la bolsa y cursor / call-to-actions).
+  * **Blanco Puro:** `#ffffff` (Fondos claros, contraste y limpieza).
+  * **Carbón / Dark:** `#18181b` (Tipografías de alta legibilidad y modo oscuro).
+  * **Logo:** Bolsa de compras estilizada con cursor de compra digital y tipografía condensada bold (*archivos:* `public/logo.svg`, `public/logo-icon.svg`, componente `BrandLogo`).
 * **Mercado / País Objetivo:** Argentina 🇦🇷
 * **Moneda Oficial:** Pesos Argentinos (**ARS** / `$`)
 * **Proveedor Principal:** Mayorista **Coronel** (obtención de catálogo, fotos, stock y precios base mediante scraping / importación).
 * **Modelo Operativo:** Reventa y distribución con margen de ganancia sobre el costo mayorista de Coronel.
+
 
 ---
 

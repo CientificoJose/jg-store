@@ -20,11 +20,11 @@ graph TD
 
     subgraph Fundacion [Infraestructura & UI]
         FE[🟢 Frontend Base: Next.js 16 + shadcn/ui]
+        BR[🟢 Branding, Logo e Identidad Visual]
     end
 
     subgraph Pendientes [Tareas Pendientes Activas]
         BM["🟡 Consolidar Concepto de Negocio (B2B / B2C)"]
-        BR["🟡 Branding, Logo e Identidad Visual"]
         CL["🟡 Conexión con Clerk (Autenticación)"]
         DB["🟡 Backend & Base de Datos"]
     end
@@ -35,7 +35,7 @@ graph TD
     BUN --> FE
     
     JG -.-> BM
-    JG -.-> BR
+    JG --> BR
     JG -.-> CL
     JG -.-> DB
     
@@ -47,8 +47,8 @@ graph TD
     classDef completed fill:#22c55e,stroke:#15803d,color:#fff;
     classDef pending fill:#eab308,stroke:#a16207,color:#000;
     
-    class CS,BUN,FE completed;
-    class BM,BR,CL,DB pending;
+    class CS,BUN,FE,BR completed;
+    class BM,CL,DB pending;
 ```
 
 ---
@@ -69,14 +69,14 @@ graph TD
 * **Estado:** Completado.
 * **Detalles:** Documentación viva y reproducible en `.agents/knowledge/` y skill especializada en `.agents/skills/project-continuity/` para que el proyecto mantenga su contexto entre diferentes IAs y colaboradores.
 
-### 4. 🟡 Consolidación de Concepto e Idea de Negocio (`business-model`)
-* **Estado:** Pendiente.
+### 4. 🟢 Branding, Logo e Identidad Visual (`branding`)
+* **Estado:** Completado.
+* **Detalles:** Logotipo oficial vectorizado SVG (`public/logo.svg`, `public/logo-icon.svg`), componente `BrandLogo` (`src/components/brand/logo.tsx`), y tema CSS oficial `jg-store` (`src/styles/themes/jg-store.css`) con la paleta Rosado Bubblegum (`#ff6f91`), Rojo Coral (`#e11d48`) y Blanco (`#ffffff`).
+
+### 5. 🟡 Consolidación de Concepto e Idea de Negocio (`business-model`)
+* **Estado:** En progreso.
 * **Objetivo:** Definir el catálogo, reglas de venta al mayor (volumen mínimo, descuentos escalonados, aprobación de cuentas B2B) y venta al detal (checkout minorista tradicional).
 * **Referencia:** [business-rules.md](./business-rules.md).
-
-### 5. 🟡 Branding, Logo e Identidad Visual (`branding`)
-* **Estado:** Pendiente.
-* **Objetivo:** Diseñar la identidad de marca, paleta cromática personalizada, logotipo, isotipo y banners de la tienda.
 
 ### 6. 🟡 Conexión con Clerk (`auth-clerk`)
 * **Estado:** Pendiente.
@@ -86,3 +86,4 @@ graph TD
 ### 7. 🟡 Backend y Base de Datos (`backend-database`)
 * **Estado:** Pendiente.
 * **Objetivo:** Seleccionar y conectar el motor de base de datos (PostgreSQL, Supabase, etc.) para persistencia de productos, inventario y órdenes.
+

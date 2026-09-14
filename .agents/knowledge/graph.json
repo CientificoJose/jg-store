@@ -16,9 +16,9 @@
     {
       "id": "branding",
       "type": "Identity",
-      "title": "Branding & Activos Visuales",
-      "status": "pending",
-      "description": "Diseño de logotipo, isotipo, paleta de colores de marca y banners de tienda."
+      "title": "Branding & Activos Visuales (JG-STORE Polirubro)",
+      "status": "completed",
+      "description": "Logotipo vectorial SVG oficial, isotipo, paleta Rosado & Blanco y tema CSS jg-store."
     },
     {
       "id": "frontend-foundation",

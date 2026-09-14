@@ -31,13 +31,16 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Acceso B2B: ¿Precios mayoristas visibles para todos con compra mínima automática, o requiere cuenta mayorista?
 
 
-#### Tarea 2: Branding, Logo e Imágenes
-- **Estado:** 🟡 Pendiente
+#### Tarea 2: Branding, Logo e Imágenes (Completado)
+- **Estado:** 🟢 Completado
 - **Responsable:** Usuario + IA
-- **Alcance:**
-  - Generar propuestas de logotipo y favicon para JG Store.
-  - Definir paleta de colores oficial y tokens en Tailwind CSS (`src/styles/theme.css`).
-  - Diseñar banners hero y categorías principales.
+- **Resultados:**
+  - Logo oficial digitalizado en SVG vectorial: `public/logo.svg` y `public/logo-icon.svg`.
+  - Componente de marca reutilizable `BrandLogo` (`src/components/brand/logo.tsx`).
+  - Paleta de colores oficial (Rosado Bubblegum `#ff6f91`, Rojo Coral `#e11d48`, Blanco `#ffffff`, Dark `#18181b`) en `src/styles/themes/jg-store.css`.
+  - Tema predeterminado configurado en `theme.config.ts`.
+  - Vistas de autenticación (`sign-in-view.tsx`, `sign-up-view.tsx`) actualizadas con el logo y eslogan de JG-STORE Polirubro.
+
 
 #### Tarea 3: Conexión con Clerk (Autenticación)
 - **Estado:** 🟡 Pendiente (Pospuesto intencionalmente)
