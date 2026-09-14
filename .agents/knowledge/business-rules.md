@@ -1,38 +1,50 @@
-# Reglas y Conceptos de Negocio (B2B + B2C) - JG Store
+# Reglas y Conceptos de Negocio (B2B + B2C) - JS Store
 
-Este documento contiene los principios comerciales y operativos para las ventas al mayor y al detal.
+Este documento contiene los principios comerciales, operativos y de precios para **JS Store**.
 
 ---
 
-## 👥 Tipos de Clientes
+## 🏬 Identidad y Modelo de Negocio
+
+* **Nombre de la Tienda:** JS Store
+* **Mercado / País Objetivo:** Argentina 🇦🇷
+* **Moneda Oficial:** Pesos Argentinos (**ARS** / `$`)
+* **Proveedor Principal:** Mayorista **Coronel** (obtención de catálogo, fotos, stock y precios base mediante scraping / importación).
+* **Modelo Operativo:** Reventa y distribución con margen de ganancia sobre el costo mayorista de Coronel.
+
+---
+
+## 👥 Tipos de Clientes y Estructura de Precios
 
 ### 1. Cliente al Detal (B2C / Minorista)
-* **Perfil:** Comprador individual o consumidor final.
-* **Precios:** Precio de venta al público (PVP / retail price).
-* **Condiciones de compra:** Sin monto mínimo de compra. Puede comprar desde 1 unidad.
-* **Flujo de pago:** Carrito de compra y pasarela de pago directa.
+* **Perfil:** Consumidor final / comprador individual.
+* **Precios:** Precio de Venta al Público (PVP / Detal en ARS).
+  * *Fórmula sugerida:* `Costo Coronel + Margen Minorista (%)` (o precio fijado por producto/categoría).
+* **Condiciones:** Sin monto mínimo de compra. Puede comprar desde 1 unidad.
+* **Flujo:** Carrito estándar y pasarela de pago / checkout directo.
 
 ---
 
 ### 2. Cliente al Mayor (B2B / Mayorista)
-* **Perfil:** Revendedores, comercios, distribuidores independientes.
-* **Precios:** Precio mayorista (descuento por volumen o precio fijo por bulto/docena/caja).
-* **Condiciones de compra:**
-  * Cantidad mínima por producto (ej. mínimo 3 o 6 unidades por referencia).
-  * O monto mínimo de pedido total (ej. pedido mínimo de $100 o moneda local).
-* **Flujo de compra:**
-  * Solicitud de cotización o carrito mayorista.
-  * Opciones de pago flexibles (transferencia bancaria, crédito comercial si aplica).
+* **Perfil:** Revendedores, comercios y distribuidores.
+* **Precios:** Precio Mayorista (con descuento por volumen sobre el PVP o margen menor sobre el costo de Coronel).
+  * *Fórmula sugerida:* `Costo Coronel + Margen Mayorista (%)`.
+* **Condiciones de Compra:**
+  * Mínimo de unidades por producto (ej. a partir de 3 o 6 unidades) y/o
+  * Monto mínimo global por pedido (ej. mínimo $50.000 ARS).
+* **Flujo:** Carrito mayorista con cálculo automático de escalas de precios o solicitud de pedido/cotización (WhatsApp / transferencia bancaria / pasarela).
 
 ---
 
-## 📦 Estructura de Catálogo Prevista
-* **SKU / Código único**
-* **Nombre y descripción**
-* **Categorías / Etiquetas**
-* **Precios:**
-  * `retailPrice`: Precio por unidad para clientes detal.
-  * `wholesalePrice`: Precio especial por unidad para compras mayoristas.
-  * `minWholesaleQty`: Cantidad mínima para aplicar precio mayorista.
-  * `tiers` (opcional): Descuentos adicionales a partir de 50 o 100 unidades.
-* **Inventario:** Stock disponible en almacén.
+## 📦 Estructura del Catálogo & Integración con Coronel
+
+* **SKU / Código Proveedor (Coronel):** Identificador para cruzar stock y precio original.
+* **Nombre, Descripción y Fotos:** Extraídos del catálogo de Coronel o enriquecidos por JS Store.
+* **Categorías:** Mapeo de categorías de Coronel a categorías de JS Store.
+* **Campos de Precios:**
+  * `costPriceARS`: Costo base del producto en Coronel (en ARS).
+  * `retailPriceARS`: Precio final de venta al detal en ARS.
+  * `wholesalePriceARS`: Precio final de venta al mayor en ARS.
+  * `minWholesaleQty`: Cantidad mínima para acceder al precio mayorista.
+* **Stock:** Estado de disponibilidad sincronizado con el stock de Coronel.
+

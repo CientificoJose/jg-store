@@ -1,17 +1,17 @@
 {
   "project": {
-    "name": "JG Store",
-    "description": "Plataforma de comercio electrónico para ventas online al mayor y al detal (B2B y B2C)",
+    "name": "JS Store",
+    "description": "Plataforma de comercio electrónico en Argentina (ARS) con abastecimiento vía scraping de Coronel y venta dual B2B / B2C",
     "repository": "https://github.com/CientificoJose/jg-store",
-    "lastUpdated": "2026-09-10"
+    "lastUpdated": "2026-09-14"
   },
   "nodes": [
     {
       "id": "business-model",
       "type": "Domain",
-      "title": "Modelo de Negocio B2B + B2C",
-      "status": "pending",
-      "description": "Venta dual al mayor y detal con catálogos, precios diferenciados y condiciones de compra por volumen."
+      "title": "Modelo de Negocio B2B + B2C (Coronel ARS)",
+      "status": "in-progress",
+      "description": "Reventa y distribución en Argentina (ARS) basada en catálogo extraído por scraping de Coronel con márgenes diferenciales para detal y mayor."
     },
     {
       "id": "branding",

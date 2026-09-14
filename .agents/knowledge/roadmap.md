@@ -1,4 +1,4 @@
-# Roadmap & Backlog de Tareas - JG Store
+# Roadmap & Backlog de Tareas - JS Store
 
 Este documento centraliza el estado actual de las tareas para que cualquier IA o miembro del equipo sepa exactamente qué está hecho, qué está pendiente y en qué orden ejecutarlo.
 
@@ -17,14 +17,19 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 
 ### 🟡 Fase 2: Tareas Pendientes Inmediatas (Backlog Activo)
 
-#### Tarea 1: Consolidar Concepto e Idea de Negocio
-- **Estado:** 🟡 Pendiente
+#### Tarea 1: Consolidar Concepto e Idea de Negocio (En progreso)
+- **Estado:** 🟡 En progreso / Consolidación
 - **Responsable:** Usuario + IA
-- **Alcance:**
-  - Definir nicho/rubro principal de productos (electrónica, moda, repuestos, consumo masivo, etc.).
-  - Definir estructura de precios: precio detal vs precio por volumen / mayorista.
-  - Definir mínimos de compra para mayoristas (ej. mínimo 6 unidades o $X monto mínimo).
-  - Definir si el cliente mayorista requiere registro y aprobación previa para ver precios B2B.
+- **Definiciones confirmadas:**
+  - Tienda: **JS Store**
+  - País & Moneda: **Argentina 🇦🇷 - Pesos Argentinos (ARS / $)**.
+  - Abastecimiento: Scraping / sincronización desde mayorista **Coronel**.
+  - Modelo de precios: Margen de ganancia sobre costo Coronel para clientes detal (B2C) y mayoristas (B2B).
+- **Pendiente por afinar:**
+  - Reglas de margen: ¿Márgenes porcentuales fijos (ej. +50% detal, +20% mayorista) o configurables por producto/categoría?
+  - Mínimos de compra mayorista: ¿Por cantidad de unidades (ej. 3-6) o por monto total en ARS (ej. $50.000 ARS)?
+  - Acceso B2B: ¿Precios mayoristas visibles para todos con compra mínima automática, o requiere cuenta mayorista?
+
 
 #### Tarea 2: Branding, Logo e Imágenes
 - **Estado:** 🟡 Pendiente

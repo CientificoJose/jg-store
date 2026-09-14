@@ -37,3 +37,17 @@ Este documento registra las decisiones clave tomadas en el proyecto para que cua
 * **Contexto:** Múltiples personas o diferentes IAs trabajarán en el proyecto en distintas máquinas. Se requiere que el contexto, el grafo de conocimiento y el backlog viajen dentro de Git.
 * **Decisión:** Centralizar el grafo de conocimiento en `.agents/knowledge/`, con una skill `.agents/skills/project-continuity/` y un archivo raíz `AGENTS.md` para auto-descubrimiento.
 * **Consecuencias:** Ninguna IA ni nuevo desarrollador necesitará explicaciones repetitivas; bastará con consultar los archivos de `.agents/knowledge/`.
+
+---
+
+## ADR 005: Modelo de Negocio JS Store, Moneda ARS y Abastecimiento vía Coronel
+* **Fecha:** 2026-09-14
+* **Estado:** Aceptado
+* **Contexto:** Definir la identidad comercial, la moneda local de operación y el origen del catálogo.
+* **Decisión:** 
+  * Nombre oficial de la tienda: **JS Store**.
+  * Mercado: **Argentina**, operando 100% en Pesos Argentinos (**ARS**).
+  * Catálogo abastecido mediante scraping del mayorista **Coronel**.
+  * Esquema de precios dual (B2C detal y B2B mayorista) calculado sobre el costo base de adquisición de Coronel.
+* **Consecuencias:** Todos los componentes de precios, formateadores de moneda, esquemas de base de datos e interfaces de usuario deben estar configurados en ARS (ej: `$ 15.000`), y el pipeline de productos debe incluir lógica de scraping/importación desde Coronel.
+
