@@ -1,6 +1,35 @@
 # Reglas y Conceptos de Negocio (B2B + B2C) - JG Store
 
-Este documento contiene los principios comerciales y operativos para las ventas al mayor y al detal.
+Este documento contiene los principios comerciales y operativos para las ventas al mayor y al detal de **JG Store**.
+
+---
+
+## 🏬 Nicho de Mercado y 24 Categorías Oficiales
+**JG Store** es una tienda departamental multirrubro y distribuidora que opera en 24 rubros:
+1. **Aromatización y Velas** (`aromatizacion-velas`)
+2. **Arte y Manualidades** (`arte-manualidades`)
+3. **Artículos para Viaje** (`articulos-viaje`)
+4. **Bazar y Cocina** (`bazar-cocina`)
+5. **Belleza y Accesorios** (`belleza-accesorios`)
+6. **Cartucheras y Carpetas** (`cartucheras-carpetas`)
+7. **Cotillón** (`cotillon`)
+8. **Deco y Organización del Hogar** (`deco-organizacion-hogar`)
+9. **Electro** (`electro`)
+10. **Embalajes** (`embalajes`)
+11. **Ferretería y Pesca** (`ferreteria-pesca`)
+12. **Higiene Personal y Limpieza** (`higiene-limpieza`)
+13. **Indumentaria** (`indumentaria`)
+14. **Juguetería** (`jugueteria`)
+15. **Librería** (`libreria`)
+16. **Libros** (`libros`)
+17. **Marroquinería** (`marroquineria`)
+18. **Mascotas** (`mascotas`)
+19. **Mochilas y Maletines** (`mochilas-maletines`)
+20. **Navidad** (Estacional) (`navidad`)
+21. **Peluchería** (`pelucheria`)
+22. **Símbolos Patrios** (`simbolos-patrios`)
+23. **Textil** (`textil`)
+24. **Verano** (Estacional) (`verano`)
 
 ---
 
