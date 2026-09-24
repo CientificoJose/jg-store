@@ -9,43 +9,40 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 ### 🟢 Fase 1: Inicialización & Cimientos (Completado)
 - [x] Crear repositorio de GitHub: [https://github.com/CientificoJose/jg-store](https://github.com/CientificoJose/jg-store)
 - [x] Configuración de runtime ultrarrápido con **Bun**.
-- [x] Integración de la plantilla base Next.js + shadcn/ui + Tailwind v4.
+- [x] Integración de la plantilla base Next.js 16 + shadcn/ui + Tailwind v4.
 - [x] Creación de la Skill y Reglas de Bun (`use-bun`).
 - [x] Creación del Sistema de Continuidad y Grafo de Conocimiento (`.agents/knowledge/`).
 
 ---
 
-### 🟡 Fase 2: Tareas Pendientes Inmediatas (Backlog Activo)
-
-#### Tarea 1: Consolidar Concepto e Idea de Negocio
-- **Estado:** 🟡 Pendiente
-- **Responsable:** Usuario + IA
-- **Alcance:**
-  - Definir nicho/rubro principal de productos (electrónica, moda, repuestos, consumo masivo, etc.).
-  - Definir estructura de precios: precio detal vs precio por volumen / mayorista.
-  - Definir mínimos de compra para mayoristas (ej. mínimo 6 unidades o $X monto mínimo).
-  - Definir si el cliente mayorista requiere registro y aprobación previa para ver precios B2B.
-
-#### Tarea 2: Branding, Logo e Imágenes
-- **Estado:** 🟡 Pendiente
-- **Responsable:** Usuario + IA
-- **Alcance:**
-  - Generar propuestas de logotipo y favicon para JG Store.
-  - Definir paleta de colores oficial y tokens en Tailwind CSS (`src/styles/theme.css`).
-  - Diseñar banners hero y categorías principales.
-
-#### Tarea 3: Conexión con Clerk (Autenticación)
-- **Estado:** 🟡 Pendiente (Pospuesto intencionalmente)
-- **Responsable:** Usuario + IA
-- **Alcance:**
-  - Crear proyecto en [dashboard.clerk.com](https://dashboard.clerk.com).
-  - Configurar las variables en `.env.local`: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` y `CLERK_SECRET_KEY`.
-  - Habilitar flujos de login y registro para clientes y administradores.
+### 🟢 Fase 2: Concepto Comercial, 24 Categorías y Storefront Frontend (Completado)
+- [x] **24 Categorías Oficiales:** Mapeo tipado en `src/constants/categories.ts` (Aromatización, Bazar, Juguetería, Librería, Marroquinería, etc.).
+- [x] **Reglas de Negocio Dual:** Venta al Detal (B2C) y Venta al Mayor (B2B) a partir de umbral $X$ unidades (`business-rules.md`).
+- [x] **Branding & Identidad:** Componente de marca `Logo` (`src/components/brand/logo.tsx`) y paleta azul eléctrico / cian.
+- [x] **Catálogo Inicial Representativo:** 27 productos con SKUs reales, imágenes HD, precios detal/mayor y stock en `src/constants/initial-catalog.ts`.
+- [x] **Storefront Moderno:**
+  - `StoreHeader`: Buscador en tiempo real, menú de 24 categorías, conmutador de modo mayorista y carrito con badge dinámico.
+  - `CategoryBar`: Barra deslizante con las 24 categorías oficiales e iconos semánticos.
+  - `HeroBanner`: Propuesta de valor B2B/B2C, 4 pilares de confianza y accesos directos.
+  - `ProductCard`: Semáforo de stock (En stock / Últimas unidades / Agotado), doble precio dinámico, selector de cantidad con tope de stock e indicador de ahorro mayorista.
+  - `ProductGrid`: Cuadrícula responsiva con filtros por stock, categoría, búsqueda y ordenamiento.
+  - `ProductQuickView`: Modal de detalle con escala de precios y especificaciones.
+  - `CartDrawer`: Panel lateral deslizable con cálculo de ahorro mayorista, formulario de cliente y checkout automatizado vía WhatsApp.
+  - `StoreFooter`: Pie de página departamental y condiciones comerciales.
+- [x] **Integración WhatsApp:** Generación de mensajes estructurados con desglose de SKUs, ahorros y datos en `src/lib/whatsapp.ts`.
+- [x] **Control de Stock y Conexión Supabase:** Servicio `src/lib/store-service.ts` con soporte PostgREST (Dokploy) y fallback resiliente.
+- [x] **Script DDL Supabase:** Migración SQL `supabase/migrations/20260917_create_products_table.sql`.
 
 ---
 
-### ⚪ Fase 3: Backend, Base de Datos y Lógica de Compra (Futuro)
-- [ ] Selección de base de datos (PostgreSQL, Supabase, etc.).
-- [ ] Modelado de tablas: Usuarios, Roles (Admin, Mayorista, Minorista), Productos, Precios por Rango, Pedidos, Cotizaciones.
-- [ ] Integración de pasarelas de pago (locales o internacionales) o generación de cotizaciones en PDF/WhatsApp para mayoristas.
-- [ ] Despliegue en VPS (Dokploy / Docker) o Vercel.
+### 🟡 Fase 3: Tareas Pendientes Inmediatas (Backlog Activo)
+- [ ] Ejecutar migración SQL en la base de datos PostgreSQL de Dokploy (`http://jg-store-bd.press-cloud.com`) para persistir productos en BD remota.
+- [ ] Panel de Gestión de Stock en `/dashboard/product` adaptado al modelo B2B/B2C para editar stock y precios mayoristas desde el admin.
+- [ ] Subida de imágenes a Supabase Storage Bucket (`products`).
+
+---
+
+### ⚪ Fase 4: Autenticación & Expansión (Pospuesto intencionalmente)
+- [ ] Conexión de producción con Clerk cuando el usuario proporcione credenciales activas.
+- [ ] Pasarela de pago complementaria a WhatsApp (opcional).
+- [ ] Despliegue en producción con SSL/Traefik en Dokploy.

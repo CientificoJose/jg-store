@@ -8,6 +8,11 @@ const baseConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: ''
+      },
+      {
+        protocol: 'https',
         hostname: 'api.slingacademy.com',
         port: ''
       },
@@ -19,6 +24,16 @@ const baseConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'clerk.com',
+        port: ''
+      },
+      {
+        protocol: 'http',
+        hostname: 'jg-store-bd.press-cloud.com',
+        port: ''
+      },
+      {
+        protocol: 'https',
+        hostname: 'jg-store-bd.press-cloud.com',
         port: ''
       }
     ]

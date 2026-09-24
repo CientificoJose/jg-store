@@ -54,8 +54,8 @@ export function useFilteredNavItems(items: NavItem[]) {
           return true;
         }
 
-        // Check requireOrg
-        if (item.access.requireOrg && !accessContext.hasOrg) {
+        // Check requireOrg (solo restringir si hay usuario autenticado pero sin organización)
+        if (item.access.requireOrg && !accessContext.hasOrg && accessContext.user) {
           return false;
         }
 
@@ -107,8 +107,8 @@ export function useFilteredNavItems(items: NavItem[]) {
               return true;
             }
 
-            // Check requireOrg
-            if (childItem.access.requireOrg && !accessContext.hasOrg) {
+            // Check requireOrg (solo restringir si hay usuario autenticado pero sin organización)
+            if (childItem.access.requireOrg && !accessContext.hasOrg && accessContext.user) {
               return false;
             }
 

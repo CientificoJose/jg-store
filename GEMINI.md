@@ -7,6 +7,6 @@ Consulte el protocolo de continuidad y conocimiento del proyecto:
 * **Skill de Continuidad:** [`.agents/skills/project-continuity/SKILL.md`](file://./.agents/skills/project-continuity/SKILL.md)
 
 ### Reglas Críticas:
-1. Usar siempre **`bun`** como runtime y gestor de paquetes.
+1. Usar siempre **`bun`** como runtime y gestor de paquetes (en Windows: `& "$env:USERPROFILE\.bun\bin\bun.exe"`). Prohibido generar `package-lock.json` o recurrir a Node/npm.
 2. La autenticación con **Clerk** está **en pausa/pendiente**. No bloquear flujos por falta de credenciales de Clerk.
 3. El modelo comercial es dual: **Venta al Detal (B2C)** y **Venta al Mayor (B2B)** con precios y condiciones diferenciadas.

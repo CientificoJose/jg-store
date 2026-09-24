@@ -1,0 +1,156 @@
+import { INITIAL_PRODUCTS } from '@/constants/initial-catalog';
+import { StoreProduct, ProductSortOption } from '@/types/store';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://jg-store-bd.press-cloud.com';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+// Memoria local para cambios de stock en sesión cuando no esté la tabla en Supabase
+let localCatalog: StoreProduct[] = [...INITIAL_PRODUCTS];
+
+export interface FetchProductsOptions {
+  category?: string;
+  search?: string;
+  sort?: ProductSortOption;
+  onlyInStock?: boolean;
+}
+
+export async function fetchStoreProducts(
+  options: FetchProductsOptions = {}
+): Promise<StoreProduct[]> {
+  const { category, search, sort = 'popular', onlyInStock = false } = options;
+
+  let products: StoreProduct[] = [];
+
+  // Intento de conexión con Supabase Dokploy PostgREST
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      const endpoint = `${SUPABASE_URL}/rest/v1/products?select=*`;
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          products = data.map((item: any) => ({
+            id: String(item.id),
+            sku: item.sku || `JG-${item.id}`,
+            name: item.name,
+            description: item.description || '',
+            category_slug: item.category_slug,
+            category_name: item.category_name,
+            retail_price: Number(item.retail_price),
+            wholesale_price: Number(item.wholesale_price),
+            min_wholesale_qty: Number(item.min_wholesale_qty || 6),
+            stock: Number(item.stock || 0),
+            image_url: item.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+            unit: item.unit || 'unidad',
+            featured: Boolean(item.featured),
+            is_seasonal: Boolean(item.is_seasonal),
+            tags: item.tags || []
+          }));
+        }
+      }
+    } catch {
+      // Si falla o no existe la tabla, usamos el catálogo local
+    }
+  }
+
+  // Fallback si la BD aún no tiene registros o no está inicializada
+  if (products.length === 0) {
+    products = [...localCatalog];
+  }
+
+  // 1. Filtrar por categoría
+  if (category && category !== 'all') {
+    products = products.filter((p) => p.category_slug === category);
+  }
+
+  // 2. Filtrar por búsqueda (nombre, SKU, descripción, tags)
+  if (search && search.trim() !== '') {
+    const q = search.toLowerCase().trim();
+    products = products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.tags?.some((t) => t.toLowerCase().includes(q))
+    );
+  }
+
+  // 3. Filtrar solo productos en stock
+  if (onlyInStock) {
+    products = products.filter((p) => p.stock > 0);
+  }
+
+  // 4. Ordenamiento
+  switch (sort) {
+    case 'price_asc':
+      products.sort((a, b) => a.retail_price - b.retail_price);
+      break;
+    case 'price_desc':
+      products.sort((a, b) => b.retail_price - a.retail_price);
+      break;
+    case 'wholesale_discount':
+      products.sort((a, b) => {
+        const discA = (a.retail_price - a.wholesale_price) / a.retail_price;
+        const discB = (b.retail_price - b.wholesale_price) / b.retail_price;
+        return discB - discA;
+      });
+      break;
+    case 'name_asc':
+      products.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'popular':
+    default:
+      products.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+      break;
+  }
+
+  return products;
+}
+
+export async function fetchProductById(id: string): Promise<StoreProduct | null> {
+  const all = await fetchStoreProducts();
+  return all.find((p) => p.id === id || p.sku === id) || null;
+}
+
+export async function updateProductStock(
+  productId: string,
+  newStock: number
+): Promise<{ success: boolean; stock: number }> {
+  // 1. Actualizar catálogo local
+  const itemIndex = localCatalog.findIndex((p) => p.id === productId);
+  if (itemIndex >= 0) {
+    localCatalog[itemIndex] = {
+      ...localCatalog[itemIndex],
+      stock: Math.max(0, newStock)
+    };
+  }
+
+  // 2. Intentar actualizar en Supabase si está disponible
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${productId}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ stock: Math.max(0, newStock) })
+      });
+    } catch {
+      // Silencioso si no está la tabla creada
+    }
+  }
+
+  return { success: true, stock: Math.max(0, newStock) };
+}

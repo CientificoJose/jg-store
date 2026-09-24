@@ -10,7 +10,7 @@
 > 5. **Skill de Continuidad:** [`.agents/skills/project-continuity/SKILL.md`](./.agents/skills/project-continuity/SKILL.md)
 >
 > **REGLAS CRÍTICAS DEL USUARIO:**
-> - **Runtime & Paquetes:** Usar SIEMPRE `bun` (`bun install`, `bun add`, `bun dev`, `bun run build`). Prohibido generar `package-lock.json`.
+> - **Runtime & Paquetes:** Usar SIEMPRE `bun` (`bun install`, `bun add`, `bun dev`, `bun run build`). En Windows invocar mediante `& "$env:USERPROFILE\.bun\bin\bun.exe"`. Prohibido generar `package-lock.json` o usar Node/npm como sustituto.
 > - **Clerk Auth:** La integración con Clerk se encuentra **en pausa/pendiente**. NO bloquear el desarrollo ni exigir claves de producción hasta que el usuario lo ordene.
 > - **Lógica B2B / B2C:** Todo módulo de catálogo, precios y órdenes debe contemplar la diferenciación entre venta al detal y al mayor.
 > - **Al finalizar cada tarea:** Actualizar `.agents/knowledge/roadmap.md` y `.agents/knowledge/graph.md` con los avances.

@@ -87,7 +87,32 @@ import {
   IconUsers,
   IconVideo,
   IconCrown,
-  IconX
+  IconX,
+  IconShoppingCart,
+  IconBrandWhatsapp,
+  IconFilter,
+  IconTags,
+  IconFlame,
+  IconCoffee,
+  IconPlane,
+  IconGift,
+  IconHome,
+  IconPackage,
+  IconTool,
+  IconDroplet,
+  IconShirt,
+  IconPuzzle,
+  IconPencil,
+  IconBook,
+  IconBriefcase,
+  IconPaw,
+  IconBackpack,
+  IconHeart,
+  IconFlag,
+  IconLayout,
+  IconTruck,
+  IconBuildingStore,
+  IconShieldCheck
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -219,5 +244,35 @@ export const Icons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
-  moreHorizontal: IconDots
+  moreHorizontal: IconDots,
+
+  // E-commerce & Storefront
+  cart: IconShoppingCart,
+  whatsapp: IconBrandWhatsapp,
+  filter: IconFilter,
+  tags: IconTags,
+  truck: IconTruck,
+  store: IconBuildingStore,
+  shieldCheck: IconShieldCheck,
+
+  // Category Icons
+  flame: IconFlame,
+  coffee: IconCoffee,
+  plane: IconPlane,
+  gift: IconGift,
+  party: IconGift,
+  home: IconHome,
+  package: IconPackage,
+  tool: IconTool,
+  wash: IconDroplet,
+  shirt: IconShirt,
+  puzzle: IconPuzzle,
+  pencil: IconPencil,
+  book: IconBook,
+  briefcase: IconBriefcase,
+  paw: IconPaw,
+  backpack: IconBackpack,
+  heart: IconHeart,
+  flag: IconFlag,
+  layout: IconLayout
 };
