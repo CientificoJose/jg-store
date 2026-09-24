@@ -13,6 +13,7 @@
 > - **Runtime & Paquetes:** Usar SIEMPRE `bun` (`bun install`, `bun add`, `bun dev`, `bun run build`). En Windows invocar mediante `& "$env:USERPROFILE\.bun\bin\bun.exe"`. Prohibido generar `package-lock.json` o usar Node/npm como sustituto.
 > - **Clerk Auth:** La integración con Clerk se encuentra **en pausa/pendiente**. NO bloquear el desarrollo ni exigir claves de producción hasta que el usuario lo ordene.
 > - **Lógica B2B / B2C:** Todo módulo de catálogo, precios y órdenes debe contemplar la diferenciación entre venta al detal y al mayor.
+> - **Flujo Git Local-First:** Todos los cambios deben realizarse y probarse estrictamente en local. PROHIBIDO hacer push automático a GitHub. Cuando el usuario solicite subir los cambios a GitHub, hacerlo en un solo comando directamente sobre la rama principal (`main`). Ver [`.agents/skills/git-local-first/SKILL.md`](./.agents/skills/git-local-first/SKILL.md).
 > - **Al finalizar cada tarea:** Actualizar `.agents/knowledge/roadmap.md` y `.agents/knowledge/graph.md` con los avances.
 
 ---
