@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { StoreProduct, ProductSortOption } from '@/types/store';
 import { fetchStoreProducts } from '@/lib/store-service';
+import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { CATEGORY_MAP } from '@/constants/categories';
 import { StoreHeader } from './store-header';
 import { CategoryBar } from './category-bar';
@@ -18,6 +19,8 @@ export function StoreFront() {
   const [sortOption, setSortOption] = useState<ProductSortOption>('popular');
   const [onlyInStock, setOnlyInStock] = useState<boolean>(false);
   const [quickViewProduct, setQuickViewProduct] = useState<StoreProduct | null>(null);
+
+  const { favoriteIds, showOnlyFavorites, setShowOnlyFavorites } = useFavoritesStore();
 
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -48,8 +51,29 @@ export function StoreFront() {
     };
   }, [selectedCategory, searchQuery, sortOption, onlyInStock]);
 
+  // Si se activa el filtro de favoritos, hacer scroll hacia el catálogo
+  useEffect(() => {
+    if (showOnlyFavorites) {
+      const gridEl = document.getElementById('catalogo-productos');
+      if (gridEl) {
+        gridEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [showOnlyFavorites]);
+
+  // Productos filtrados para visualización (con soporte de favoritos)
+  const displayedProducts = useMemo(() => {
+    if (showOnlyFavorites) {
+      return products.filter((p) => favoriteIds.includes(p.id));
+    }
+    return products;
+  }, [products, showOnlyFavorites, favoriteIds]);
+
   // Título dinámico de la sección
   const categoryTitle = useMemo(() => {
+    if (showOnlyFavorites) {
+      return `Mis Productos Favoritos (${displayedProducts.length})`;
+    }
     if (searchQuery.trim()) {
       return `Resultados para "${searchQuery.trim()}"`;
     }
@@ -58,13 +82,14 @@ export function StoreFront() {
     }
     const cat = CATEGORY_MAP.get(selectedCategory);
     return cat ? cat.name : 'Productos';
-  }, [selectedCategory, searchQuery]);
+  }, [showOnlyFavorites, displayedProducts.length, searchQuery, selectedCategory]);
 
   const handleResetFilters = () => {
     setSelectedCategory('all');
     setSearchQuery('');
     setSortOption('popular');
     setOnlyInStock(false);
+    setShowOnlyFavorites(false);
   };
 
   const handleExploreCatalog = () => {
@@ -103,7 +128,7 @@ export function StoreFront() {
           </div>
         ) : (
           <ProductGrid
-            products={products}
+            products={displayedProducts}
             categoryTitle={categoryTitle}
             categorySlug={selectedCategory}
             sortOption={sortOption}

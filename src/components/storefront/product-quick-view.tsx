@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { StoreProduct } from '@/types/store';
 import { formatPrice } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
+import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 
@@ -15,9 +16,12 @@ interface ProductQuickViewProps {
 
 export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
   const { addItem } = useCartStore();
+  const { isFavorite, toggleFavorite } = useFavoritesStore();
   const [quantity, setQuantity] = useState<number>(product?.min_wholesale_qty || 1);
 
   if (!product) return null;
+
+  const isFav = isFavorite(product.id);
 
   const isOutOfStock = product.stock <= 0;
   const qualifiesForWholesale = quantity >= product.min_wholesale_qty;
@@ -171,14 +175,36 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
               )}
             </div>
 
-            <button
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-              className="w-full py-3 rounded-xl bg-[#E63946] hover:bg-[#d62839] disabled:bg-muted disabled:text-[#6C757D] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md shadow-[#E63946]/20 transition-all cursor-pointer font-gotham"
-            >
-              <Icons.cart className="w-4 h-4" />
-              <span>{isOutOfStock ? 'Producto Agotado' : 'Agregar al Carrito'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAddToCart}
+                disabled={isOutOfStock}
+                className="flex-1 py-3 rounded-xl bg-[#E63946] hover:bg-[#d62839] disabled:bg-muted disabled:text-[#6C757D] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md shadow-[#E63946]/20 transition-all cursor-pointer font-gotham"
+              >
+                <Icons.cart className="w-4 h-4" />
+                <span>{isOutOfStock ? 'Producto Agotado' : 'Agregar al Carrito'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const added = toggleFavorite(product.id);
+                  if (added) {
+                    toast.success('Guardado en favoritos', { description: product.name });
+                  } else {
+                    toast.info('Eliminado de favoritos', { description: product.name });
+                  }
+                }}
+                title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+                aria-label={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+                className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                  isFav
+                    ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm shadow-[#E63946]/20'
+                    : 'bg-card border-border hover:bg-muted text-[#6C757D] hover:text-[#E63946]'
+                }`}
+              >
+                <Icons.heart className={`w-5 h-5 transition-transform duration-200 ${isFav ? 'fill-current scale-110' : ''}`} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

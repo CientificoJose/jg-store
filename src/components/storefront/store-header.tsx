@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import { Logo } from '@/components/brand/logo';
 import { Icons } from '@/components/icons';
 import { useCartStore } from '@/hooks/use-cart-store';
+import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { formatPrice } from '@/lib/whatsapp';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
 
@@ -21,6 +22,8 @@ export function StoreHeader({
   onSelectCategory
 }: StoreHeaderProps) {
   const { setOpen, getSummary, wholesaleMode, toggleWholesaleMode } = useCartStore();
+  const { favoriteIds, showOnlyFavorites, toggleShowOnlyFavorites } = useFavoritesStore();
+  const favoriteCount = favoriteIds.length;
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -158,6 +161,30 @@ export function StoreHeader({
             >
               <Icons.tags className="w-3.5 h-3.5" />
               <span>{wholesaleMode ? 'Mayorista' : 'Detal'}</span>
+            </button>
+
+            {/* Botón Mis Favoritos */}
+            <button
+              onClick={toggleShowOnlyFavorites}
+              title={showOnlyFavorites ? 'Ver todos los productos' : 'Filtrar por mis productos favoritos'}
+              aria-label="Ver productos favoritos"
+              className={`h-10 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                showOnlyFavorites
+                  ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm shadow-[#E63946]/30 ring-2 ring-[#E63946]/20'
+                  : favoriteCount > 0
+                    ? 'bg-card hover:bg-muted border-[#FF85A2]/60 text-[#E63946]'
+                    : 'bg-card hover:bg-muted border-border text-[#6C757D] hover:text-foreground'
+              }`}
+            >
+              <Icons.heart className={`w-3.5 h-3.5 ${favoriteCount > 0 ? 'fill-current text-[#E63946]' : ''}`} />
+              <span className="hidden sm:inline">Favoritos</span>
+              {favoriteCount > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                  showOnlyFavorites ? 'bg-white text-[#E63946]' : 'bg-[#E63946] text-white'
+                }`}>
+                  {favoriteCount}
+                </span>
+              )}
             </button>
 
             {/* Enlace al Panel Administrativo */}

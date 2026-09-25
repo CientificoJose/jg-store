@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { StoreProduct } from '@/types/store';
 import { formatPrice } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
+import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 
@@ -15,6 +16,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const { addItem, wholesaleMode } = useCartStore();
+  const { isFavorite, toggleFavorite } = useFavoritesStore();
+  const isFav = isFavorite(product.id);
   const [quantity, setQuantity] = useState<number>(
     wholesaleMode ? product.min_wholesale_qty : 1
   );
@@ -93,14 +96,44 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           )}
         </div>
 
-        {/* Botón de Vista Rápida */}
-        <button
-          onClick={() => onQuickView(product)}
-          aria-label="Ver detalles"
-          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-background/90 backdrop-blur-md text-[#6C757D] hover:text-[#E63946] hover:bg-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md cursor-pointer"
-        >
-          <Icons.search className="w-4 h-4" />
-        </button>
+        {/* Acciones flotantes superiores (Favoritos y Vista Rápida) */}
+        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 z-10">
+          {/* Botón de Favorito */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const added = toggleFavorite(product.id);
+              if (added) {
+                toast.success('Guardado en favoritos', {
+                  description: product.name
+                });
+              } else {
+                toast.info('Eliminado de favoritos', {
+                  description: product.name
+                });
+              }
+            }}
+            aria-label={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+            title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
+            className={`w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all duration-200 shadow-md cursor-pointer ${
+              isFav
+                ? 'bg-[#E63946] text-white shadow-[#E63946]/30 scale-105'
+                : 'bg-background/90 text-[#6C757D] hover:text-[#E63946] hover:bg-background'
+            }`}
+          >
+            <Icons.heart className={`w-4 h-4 transition-transform duration-200 ${isFav ? 'fill-current scale-110' : ''}`} />
+          </button>
+
+          {/* Botón de Vista Rápida */}
+          <button
+            onClick={() => onQuickView(product)}
+            aria-label="Ver detalles"
+            title="Vista rápida del producto"
+            className="w-8 h-8 rounded-full bg-background/90 backdrop-blur-md text-[#6C757D] hover:text-[#E63946] hover:bg-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md cursor-pointer"
+          >
+            <Icons.search className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Contenido Central: Info y Precios */}
