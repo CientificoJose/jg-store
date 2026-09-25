@@ -1,27 +1,27 @@
 import * as z from 'zod';
 
-const MAX_FILE_SIZE = 5_000_000;
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-
 export const productSchema = z.object({
-  image: z
-    .any()
-    .refine((files) => files?.length == 1, 'Image is required.')
-    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, 'Max file size is 5MB.')
-    .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
-      '.jpg, .jpeg, .png and .webp files are accepted.'
-    ),
-  name: z.string().min(2, 'Product name must be at least 2 characters.'),
-  category: z.string().min(1, 'Please select a category'),
-  price: z.number({ message: 'Price is required' }),
-  description: z.string().min(10, 'Description must be at least 10 characters.')
+  sku: z.string().min(2, 'El código SKU es obligatorio (ej: JG-ARO-001)'),
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  category: z.string().min(1, 'Selecciona un rubro/departamento'),
+  retail_price: z.number().min(0.01, 'El precio al detal debe ser mayor a 0'),
+  wholesale_price: z.number().min(0.01, 'El precio mayorista debe ser mayor a 0'),
+  min_wholesale_qty: z.number().min(1, 'El mínimo mayorista debe ser al menos 1'),
+  stock: z.number().min(0, 'El stock no puede ser negativo'),
+  unit: z.string().min(1, 'Especifica la unidad (unidad, docena, pack, bulto, kilo)'),
+  photo_url: z.string().min(1, 'Ingresa la URL de la imagen del producto'),
+  description: z.string().min(5, 'La descripción debe tener al menos 5 caracteres')
 });
 
 export type ProductFormValues = {
-  image: File[] | undefined;
+  sku: string;
   name: string;
   category: string;
-  price: number | undefined;
+  retail_price: number | undefined;
+  wholesale_price: number | undefined;
+  min_wholesale_qty: number | undefined;
+  stock: number | undefined;
+  unit: string;
+  photo_url: string;
   description: string;
 };

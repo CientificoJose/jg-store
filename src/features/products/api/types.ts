@@ -1,4 +1,24 @@
-export type { Product } from '@/constants/mock-api';
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  category: string; // slug
+  category_name: string;
+  retail_price: number;
+  wholesale_price: number;
+  min_wholesale_qty: number;
+  stock: number;
+  unit: string;
+  photo_url: string;
+  featured?: boolean;
+  is_seasonal?: boolean;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+  // Alias de compatibilidad
+  price: number;
+}
 
 export type ProductFilters = {
   page?: number;
@@ -6,6 +26,7 @@ export type ProductFilters = {
   categories?: string;
   search?: string;
   sort?: string;
+  onlyInStock?: boolean;
 };
 
 export type ProductsResponse = {
@@ -15,19 +36,27 @@ export type ProductsResponse = {
   total_products: number;
   offset: number;
   limit: number;
-  products: import('@/constants/mock-api').Product[];
+  products: Product[];
 };
 
 export type ProductByIdResponse = {
   success: boolean;
   time: string;
   message: string;
-  product: import('@/constants/mock-api').Product;
+  product: Product;
 };
 
 export type ProductMutationPayload = {
+  sku: string;
   name: string;
   category: string;
-  price: number;
+  category_name?: string;
+  retail_price: number;
+  wholesale_price: number;
+  min_wholesale_qty: number;
+  stock: number;
+  unit?: string;
+  photo_url: string;
   description: string;
+  price?: number;
 };

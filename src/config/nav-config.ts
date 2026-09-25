@@ -61,7 +61,14 @@ export const navGroups: NavGroup[] = [
         access: { requireOrg: true }
       },
       {
-        title: 'Product',
+        title: 'Ver Tienda Online',
+        url: '/',
+        icon: 'store',
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Productos JG Store',
         url: '/dashboard/product',
         icon: 'product',
         shortcut: ['p', 'p'],

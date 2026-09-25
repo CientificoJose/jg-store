@@ -6,10 +6,9 @@ import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import { SearchParams } from 'nuqs/server';
-import { productInfoContent } from '@/config/infoconfig';
 
 export const metadata = {
-  title: 'Dashboard: Products'
+  title: 'Catálogo de Productos | JG Store Admin'
 };
 
 type pageProps = {
@@ -22,13 +21,27 @@ export default async function Page(props: pageProps) {
 
   return (
     <PageContainer
-      pageTitle='Products'
-      pageDescription='Manage products (React Query + nuqs table pattern.)'
-      infoContent={productInfoContent}
+      pageTitle='Catálogo Oficial JG Store'
+      pageDescription='Administración de inventario, stock físico en depósito, PVP al detal y escala de tarifas al mayor para los 24 departamentos.'
       pageHeaderAction={
-        <Link href='/dashboard/product/new' className={cn(buttonVariants(), 'text-xs md:text-sm')}>
-          <Icons.add className='mr-2 h-4 w-4' /> Add New
-        </Link>
+        <div className='flex items-center gap-2'>
+          <Link
+            href='/'
+            target='_blank'
+            className={cn(buttonVariants({ variant: 'outline' }), 'text-xs md:text-sm font-gotham')}
+          >
+            <Icons.store className='mr-1.5 h-4 w-4 text-[#E63946]' /> Ver Tienda
+          </Link>
+          <Link
+            href='/dashboard/product/new'
+            className={cn(
+              buttonVariants(),
+              'text-xs md:text-sm bg-[#E63946] hover:bg-[#d62839] text-white font-gotham'
+            )}
+          >
+            <Icons.add className='mr-1.5 h-4 w-4' /> Registrar Producto
+          </Link>
+        </div>
       }
     >
       <ProductListingPage />

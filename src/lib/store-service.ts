@@ -154,3 +154,110 @@ export async function updateProductStock(
 
   return { success: true, stock: Math.max(0, newStock) };
 }
+
+export async function createStoreProduct(
+  data: Omit<StoreProduct, 'id'> & { id?: string }
+): Promise<StoreProduct> {
+  const newProduct: StoreProduct = {
+    ...data,
+    id: data.id || `prod-${Date.now()}`,
+    stock: Number(data.stock ?? 0),
+    retail_price: Number(data.retail_price ?? 0),
+    wholesale_price: Number(data.wholesale_price ?? 0),
+    min_wholesale_qty: Number(data.min_wholesale_qty ?? 6),
+    image_url:
+      data.image_url ||
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+    unit: data.unit || 'unidad',
+    tags: data.tags || []
+  };
+
+  localCatalog.unshift(newProduct);
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify(newProduct)
+      });
+    } catch {
+      // Silencioso si no está disponible la tabla remota
+    }
+  }
+
+  return newProduct;
+}
+
+export async function updateStoreProduct(
+  id: string,
+  data: Partial<StoreProduct>
+): Promise<StoreProduct | null> {
+  const index = localCatalog.findIndex((p) => p.id === id || p.sku === id);
+  if (index === -1) return null;
+
+  localCatalog[index] = {
+    ...localCatalog[index],
+    ...data,
+    stock: data.stock !== undefined ? Number(data.stock) : localCatalog[index].stock,
+    retail_price:
+      data.retail_price !== undefined ? Number(data.retail_price) : localCatalog[index].retail_price,
+    wholesale_price:
+      data.wholesale_price !== undefined
+        ? Number(data.wholesale_price)
+        : localCatalog[index].wholesale_price,
+    min_wholesale_qty:
+      data.min_wholesale_qty !== undefined
+        ? Number(data.min_wholesale_qty)
+        : localCatalog[index].min_wholesale_qty
+  };
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify(data)
+      });
+    } catch {
+      // Silencioso
+    }
+  }
+
+  return localCatalog[index];
+}
+
+export async function deleteStoreProduct(id: string): Promise<boolean> {
+  const index = localCatalog.findIndex((p) => p.id === id || p.sku === id);
+  if (index !== -1) {
+    localCatalog.splice(index, 1);
+  }
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch {
+      // Silencioso
+    }
+  }
+
+  return true;
+}
+

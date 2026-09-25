@@ -5,7 +5,7 @@ import PageContainer from '@/components/layout/page-container';
 import ProductViewPage from '@/features/products/components/product-view-page';
 
 export const metadata = {
-  title: 'Dashboard : Product View'
+  title: 'Producto | JG Store Admin'
 };
 
 type PageProps = { params: Promise<{ productId: string }> };
@@ -15,7 +15,7 @@ export default async function Page(props: PageProps) {
   const queryClient = getQueryClient();
 
   if (params.productId !== 'new') {
-    void queryClient.prefetchQuery(productByIdOptions(Number(params.productId)));
+    void queryClient.prefetchQuery(productByIdOptions(params.productId));
   }
 
   return (

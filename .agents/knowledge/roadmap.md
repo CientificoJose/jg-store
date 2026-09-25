@@ -58,9 +58,22 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 
 ---
 
-### 🟡 Fase 3: Tareas Pendientes Inmediatas (Backlog Activo)
+### 🟢 Fase 3: Administración y Gestión de Catálogo JG Store (En curso)
+- [x] **Panel de Gestión de Productos y Stock JG Store (`/dashboard/product`):**
+  - Tabla de administración conectada a la capa de servicio real de JG Store:
+    - Foto del producto con fallback.
+    - Código SKU con estilo mono badge.
+    - Nombre del producto con descripción.
+    - Filtro y badge con los 24 departamentos oficiales (`PRODUCT_CATEGORIES`).
+    - Semáforo de stock (Disponible verde, últimas unidades rojo, agotado gris).
+    - Doble precio: PVP Detal y Tarifa Mayorista con porcentaje de ahorro y umbral de unidades.
+    - Menú de acciones: *"Ver en Tienda (Mercado Libre)"*, *"Editar Producto"* y *"Eliminar"*.
+  - Formulario de creación y edición (`/dashboard/product/new` y `/dashboard/product/[id]`):
+    - Gestión de SKU, nombre, 24 departamentos, unidad de venta, PVP detal, tarifa mayor, mínimo mayorista, stock y URL de foto con vista previa en vivo.
+    - Sincronización instantánea con el catálogo de la tienda y la base de datos Supabase PostgREST.
+- [ ] Panel de Gestión de Usuarios y Clientes Mayoristas en `/dashboard/users`.
+- [ ] Panel de Gestión de Pedidos y Cotizaciones en `/dashboard/orders`.
 - [ ] Ejecutar migración SQL en la base de datos PostgreSQL de Dokploy (`http://jg-store-bd.press-cloud.com`) para persistir productos en BD remota.
-- [ ] Panel de Gestión de Stock en `/dashboard/product` adaptado al modelo B2B/B2C para editar stock y precios mayoristas desde el admin.
 - [ ] Subida de imágenes a Supabase Storage Bucket (`products`).
 
 ---

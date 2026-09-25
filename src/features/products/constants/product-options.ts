@@ -1,6 +1,6 @@
-export const categoryOptions = [
-  { value: 'beauty', label: 'Beauty Products' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'home', label: 'Home & Garden' },
-  { value: 'sports', label: 'Sports & Outdoors' }
-];
+import { PRODUCT_CATEGORIES } from '@/constants/categories';
+
+export const categoryOptions = PRODUCT_CATEGORIES.map((cat) => ({
+  value: cat.slug,
+  label: `${cat.name} (${cat.id})`
+}));

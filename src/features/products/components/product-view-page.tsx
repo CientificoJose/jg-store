@@ -12,18 +12,23 @@ type TProductViewPageProps = {
 
 export default function ProductViewPage({ productId }: TProductViewPageProps) {
   if (productId === 'new') {
-    return <ProductForm initialData={null} pageTitle='Create New Product' />;
+    return <ProductForm initialData={null} pageTitle='Registrar Nuevo Producto' />;
   }
 
-  return <EditProductView productId={Number(productId)} />;
+  return <EditProductView productId={productId} />;
 }
 
-function EditProductView({ productId }: { productId: number }) {
+function EditProductView({ productId }: { productId: string }) {
   const { data } = useSuspenseQuery(productByIdOptions(productId));
 
   if (!data?.success || !data?.product) {
     notFound();
   }
 
-  return <ProductForm initialData={data.product as Product} pageTitle='Edit Product' />;
+  return (
+    <ProductForm
+      initialData={data.product as Product}
+      pageTitle={`Editar Producto: ${data.product.name}`}
+    />
+  );
 }

@@ -1,56 +1,138 @@
-// ============================================================
-// Product Service — Data Access Layer
-// ============================================================
-// This is the ONLY file you modify when connecting to your backend.
-// Queries (queries.ts) and components import from here — they never change.
-//
-// Pick your pattern and replace the function bodies below:
-//
-// 1. Server Actions + ORM (Prisma / Drizzle / Supabase)
-//    → Add 'use server' at the top of this file
-//    → Call your ORM directly in each function
-//
-// 2. Route Handlers + ORM
-//    → import { apiClient } from '@/lib/api-client'
-//    → return apiClient<ProductsResponse>('/products?...')
-//    → Replace mock calls in route handlers (src/app/api/products/) with ORM
-//
-// 3. BFF — Route Handlers proxy to external backend (Laravel, Go, etc.)
-//    → import { apiClient } from '@/lib/api-client'
-//    → return apiClient<ProductsResponse>('/products?...')
-//    → Route handlers proxy requests to your external backend service
-//
-// 4. Direct external API (frontend-only, no Next.js backend)
-//    → const res = await fetch('https://your-api.com/products?...')
-//    → return res.json()
-//
-// Current: Mock (in-memory fake data for demo/prototyping)
-// ============================================================
-
-import { fakeProducts } from '@/constants/mock-api';
+import {
+  fetchStoreProducts,
+  fetchProductById,
+  createStoreProduct,
+  updateStoreProduct,
+  deleteStoreProduct
+} from '@/lib/store-service';
+import { CATEGORY_MAP } from '@/constants/categories';
 import type {
+  Product,
   ProductFilters,
   ProductsResponse,
   ProductByIdResponse,
   ProductMutationPayload
 } from './types';
 
-export async function getProducts(filters: ProductFilters): Promise<ProductsResponse> {
-  return fakeProducts.getProducts(filters);
+function mapStoreProductToProduct(item: any): Product {
+  return {
+    id: String(item.id),
+    sku: item.sku || `JG-${item.id}`,
+    name: item.name,
+    description: item.description || '',
+    category: item.category_slug || item.category || 'bazar',
+    category_name:
+      item.category_name ||
+      CATEGORY_MAP.get(item.category_slug)?.name ||
+      item.category ||
+      'General',
+    retail_price: Number(item.retail_price ?? item.price ?? 0),
+    wholesale_price: Number(item.wholesale_price ?? item.retail_price ?? item.price ?? 0),
+    min_wholesale_qty: Number(item.min_wholesale_qty || 6),
+    stock: Number(item.stock || 0),
+    unit: item.unit || 'unidad',
+    photo_url:
+      item.image_url ||
+      item.photo_url ||
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+    featured: Boolean(item.featured),
+    is_seasonal: Boolean(item.is_seasonal),
+    tags: item.tags || [],
+    created_at: item.created_at || new Date().toISOString(),
+    updated_at: item.updated_at || new Date().toISOString(),
+    price: Number(item.retail_price ?? item.price ?? 0)
+  };
 }
 
-export async function getProductById(id: number): Promise<ProductByIdResponse> {
-  return fakeProducts.getProductById(id) as Promise<ProductByIdResponse>;
+export async function getProducts(filters: ProductFilters): Promise<ProductsResponse> {
+  const allStoreProducts = await fetchStoreProducts({
+    category: filters.categories,
+    search: filters.search,
+    onlyInStock: filters.onlyInStock
+  });
+
+  const allMapped = allStoreProducts.map(mapStoreProductToProduct);
+
+  const page = Number(filters.page || 1);
+  const limit = Number(filters.limit || 10);
+  const offset = (page - 1) * limit;
+
+  const paginated = allMapped.slice(offset, offset + limit);
+
+  return {
+    success: true,
+    time: new Date().toISOString(),
+    message: 'Catálogo de productos JG Store cargado exitosamente',
+    total_products: allMapped.length,
+    offset,
+    limit,
+    products: paginated
+  };
+}
+
+export async function getProductById(id: string | number): Promise<ProductByIdResponse> {
+  const item = await fetchProductById(String(id));
+  if (!item) {
+    throw new Error('Producto no encontrado');
+  }
+  return {
+    success: true,
+    time: new Date().toISOString(),
+    message: 'Producto encontrado',
+    product: mapStoreProductToProduct(item)
+  };
 }
 
 export async function createProduct(data: ProductMutationPayload) {
-  return fakeProducts.createProduct(data);
+  const cat = CATEGORY_MAP.get(data.category);
+  const created = await createStoreProduct({
+    sku: data.sku || `JG-${Date.now().toString().slice(-4)}`,
+    name: data.name,
+    description: data.description,
+    category_slug: data.category,
+    category_name: data.category_name || (cat ? cat.name : data.category),
+    retail_price: Number(data.retail_price ?? data.price ?? 0),
+    wholesale_price: Number(data.wholesale_price ?? data.retail_price ?? data.price ?? 0),
+    min_wholesale_qty: Number(data.min_wholesale_qty || 6),
+    stock: Number(data.stock || 0),
+    unit: data.unit || 'unidad',
+    image_url:
+      data.photo_url ||
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+    featured: false,
+    is_seasonal: false,
+    tags: []
+  });
+
+  return {
+    success: true,
+    product: mapStoreProductToProduct(created)
+  };
 }
 
-export async function updateProduct(id: number, data: ProductMutationPayload) {
-  return fakeProducts.updateProduct(id, data);
+export async function updateProduct(id: string | number, data: ProductMutationPayload) {
+  const cat = CATEGORY_MAP.get(data.category);
+  const updated = await updateStoreProduct(String(id), {
+    sku: data.sku,
+    name: data.name,
+    description: data.description,
+    category_slug: data.category,
+    category_name: data.category_name || (cat ? cat.name : data.category),
+    retail_price: Number(data.retail_price ?? data.price ?? 0),
+    wholesale_price: Number(data.wholesale_price ?? data.retail_price ?? data.price ?? 0),
+    min_wholesale_qty: Number(data.min_wholesale_qty || 6),
+    stock: Number(data.stock || 0),
+    unit: data.unit || 'unidad',
+    image_url: data.photo_url
+  });
+
+  return {
+    success: true,
+    product: updated ? mapStoreProductToProduct(updated) : null
+  };
 }
 
-export async function deleteProduct(id: number) {
-  return fakeProducts.deleteProduct(id);
+export async function deleteProduct(id: string | number) {
+  const success = await deleteStoreProduct(String(id));
+  return { success };
 }
