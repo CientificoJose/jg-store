@@ -54,12 +54,12 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 font-gotham">
+      <div className="relative w-full max-w-2xl bg-card border border-border/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
         {/* Botón cerrar */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-background/80 hover:bg-background text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-background/80 hover:bg-background text-[#6C757D] hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
         >
           <Icons.close className="w-4 h-4" />
         </button>
@@ -83,15 +83,15 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
         <div className="p-6 w-full md:w-1/2 flex flex-col justify-between overflow-y-auto">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E63946]/10 text-[#E63946]">
                 {product.category_name}
               </span>
               <span
                 className={`text-xs font-medium ${
                   isOutOfStock
-                    ? 'text-rose-600'
+                    ? 'text-[#6C757D]'
                     : product.stock <= 10
-                    ? 'text-amber-500'
+                    ? 'text-[#E63946]'
                     : 'text-emerald-600'
                 }`}
               >
@@ -101,29 +101,29 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
               </span>
             </div>
 
-            <h2 className="text-xl font-bold text-foreground">{product.name}</h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-2 leading-relaxed">
+            <h2 className="text-2xl font-bebas tracking-wide text-foreground">{product.name}</h2>
+            <p className="text-xs sm:text-sm text-[#6C757D] mt-2 leading-relaxed">
               {product.description}
             </p>
 
             {/* Escala de precios */}
-            <div className="mt-5 rounded-xl border border-border/70 p-3 bg-muted/20 space-y-2">
+            <div className="mt-5 rounded-xl border border-border/80 p-3 bg-muted/20 space-y-2">
               <div className="text-xs font-bold text-foreground">
                 Escala de Precios:
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">
+                <span className="text-[#6C757D]">
                   Al Detal (1 a {product.min_wholesale_qty - 1} unid.):
                 </span>
                 <span className="font-bold text-foreground">
                   {formatPrice(product.retail_price)} c/u
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50">
-                <span className="text-amber-500 font-semibold">
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/60">
+                <span className="text-[#D4A017] font-semibold">
                   Al Mayor ({product.min_wholesale_qty}+ unid.):
                 </span>
-                <span className="font-bold text-blue-600 dark:text-cyan-400">
+                <span className="font-bold text-[#D4A017] font-bebas text-base">
                   {formatPrice(product.wholesale_price)} c/u
                 </span>
               </div>
@@ -133,12 +133,12 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
           {/* Controles de Compra */}
           <div className="mt-6 pt-4 border-t border-border">
             <div className="flex items-center justify-between mb-3 text-xs">
-              <span className="text-muted-foreground">Cantidad seleccionada:</span>
+              <span className="text-[#6C757D]">Cantidad seleccionada:</span>
               <div className="flex items-center border border-border rounded-lg overflow-hidden">
                 <button
                   onClick={handleDecrease}
                   disabled={quantity <= 1}
-                  className="w-7 h-7 flex items-center justify-center hover:bg-muted text-muted-foreground disabled:opacity-40"
+                  className="w-7 h-7 flex items-center justify-center hover:bg-muted text-[#6C757D] disabled:opacity-40"
                 >
                   <Icons.minus className="w-3 h-3" />
                 </button>
@@ -148,7 +148,7 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
                 <button
                   onClick={handleIncrease}
                   disabled={quantity >= product.stock}
-                  className="w-7 h-7 flex items-center justify-center hover:bg-muted text-muted-foreground disabled:opacity-40"
+                  className="w-7 h-7 flex items-center justify-center hover:bg-muted text-[#6C757D] disabled:opacity-40"
                 >
                   <Icons.add className="w-3 h-3" />
                 </button>
@@ -157,15 +157,15 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
 
             <div className="flex items-baseline justify-between mb-4">
               <div>
-                <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                <span className="text-[10px] text-[#6C757D] uppercase font-bold block">
                   Total Estimado
                 </span>
-                <span className="text-xl font-extrabold text-foreground">
+                <span className="text-2xl font-bebas tracking-wide text-[#E63946]">
                   {formatPrice(subtotal)}
                 </span>
               </div>
               {qualifiesForWholesale && (
-                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-1 rounded">
+                <span className="text-xs text-[#D4A017] font-semibold bg-[#D4A017]/15 px-2 py-1 rounded">
                   Ahorras {formatPrice(savings)}
                 </span>
               )}
@@ -174,7 +174,7 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              className="w-full py-3 rounded-xl bg-[#E63946] hover:bg-[#d62839] disabled:bg-muted disabled:text-[#6C757D] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md shadow-[#E63946]/20 transition-all cursor-pointer font-gotham"
             >
               <Icons.cart className="w-4 h-4" />
               <span>{isOutOfStock ? 'Producto Agotado' : 'Agregar al Carrito'}</span>

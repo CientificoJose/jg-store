@@ -29,17 +29,17 @@ export function ProductGrid({
   onQuickView
 }: ProductGridProps) {
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 font-gotham">
       {/* Barra de Filtros y Ordenamiento */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/80">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
+          <h2 className="text-2xl sm:text-3xl font-bebas tracking-wide text-foreground flex items-center gap-2.5">
             <span>{categoryTitle}</span>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-cyan-400 border border-blue-500/20">
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20 font-gotham">
               {products.length} producto{products.length === 1 ? '' : 's'}
             </span>
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-[#6C757D] mt-0.5 font-gotham">
             Precios con descuento mayorista automático por volumen y PVP para compras al detal.
           </p>
         </div>
@@ -51,12 +51,12 @@ export function ProductGrid({
             className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
               onlyInStock
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                : 'bg-background hover:bg-muted border-border text-muted-foreground'
+                : 'bg-card hover:bg-muted border-border text-[#6C757D]'
             }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                onlyInStock ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+                onlyInStock ? 'bg-emerald-500' : 'bg-[#6C757D]/40'
               }`}
             />
             <span>Solo en stock</span>
@@ -67,7 +67,7 @@ export function ProductGrid({
             <select
               value={sortOption}
               onChange={(e) => onSortChange(e.target.value as ProductSortOption)}
-              className="h-9 px-3 pr-8 rounded-xl border border-border bg-card text-xs font-medium text-foreground focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer appearance-none"
+              className="h-9 px-3 pr-8 rounded-xl border border-border/80 bg-card text-xs font-medium text-foreground focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none cursor-pointer appearance-none"
             >
               <option value="popular">Más destacados</option>
               <option value="price_asc">Menor precio detal</option>
@@ -75,24 +75,24 @@ export function ProductGrid({
               <option value="wholesale_discount">Mayor ahorro mayorista</option>
               <option value="name_asc">Nombre (A - Z)</option>
             </select>
-            <Icons.chevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 pointer-events-none" />
+            <Icons.chevronDown className="w-3.5 h-3.5 text-[#6C757D] absolute right-2.5 pointer-events-none" />
           </div>
         </div>
       </div>
 
       {/* Cuadrícula de Productos */}
       {products.length === 0 ? (
-        <div className="py-16 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-muted/60 text-muted-foreground/60 flex items-center justify-center mx-auto mb-4">
+        <div className="py-16 text-center font-gotham">
+          <div className="w-16 h-16 rounded-2xl bg-muted/60 text-[#6C757D] flex items-center justify-center mx-auto mb-4">
             <Icons.search className="w-8 h-8" />
           </div>
           <h3 className="text-base font-bold text-foreground">No encontramos productos</h3>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-[#6C757D] mt-1 max-w-sm mx-auto">
             Prueba ajustando el término de búsqueda o seleccionando otro rubro de nuestras 24 categorías.
           </p>
           <button
             onClick={onResetFilters}
-            className="mt-5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer"
+            className="mt-5 px-4 py-2 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs transition-colors cursor-pointer shadow-sm shadow-[#E63946]/20"
           >
             Restablecer todos los filtros
           </button>

@@ -44,19 +44,19 @@ export function CartDrawer() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 font-gotham">
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-card border-l border-border shadow-2xl flex flex-col justify-between">
+        <div className="w-screen max-w-md bg-card border-l border-border/80 shadow-2xl flex flex-col justify-between">
           
           {/* Header del Carrito */}
-          <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-muted/30">
+          <div className="p-4 sm:p-5 border-b border-border/80 flex items-center justify-between bg-muted/20">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-[#E63946] text-white flex items-center justify-center shadow-xs">
                 <Icons.cart className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-foreground">Tu Pedido</h2>
-                <p className="text-xs text-muted-foreground">
+                <h2 className="text-lg font-bebas tracking-wide text-foreground">Tu Pedido</h2>
+                <p className="text-xs text-[#6C757D]">
                   {summary.total_items} artículo{summary.total_items === 1 ? '' : 's'} en el carrito
                 </p>
               </div>
@@ -67,14 +67,14 @@ export function CartDrawer() {
                 <button
                   onClick={clearCart}
                   title="Vaciar carrito"
-                  className="text-xs text-muted-foreground hover:text-rose-600 p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                  className="text-xs text-[#6C757D] hover:text-[#E63946] p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
                 >
                   <Icons.trash className="w-4 h-4" />
                 </button>
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="w-8 h-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg hover:bg-muted text-[#6C757D] hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
               >
                 <Icons.close className="w-4 h-4" />
               </button>
@@ -84,29 +84,29 @@ export function CartDrawer() {
           {/* Lista de Productos o Estado Vacío */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
             {items.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
-                <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4 text-muted-foreground/60">
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#6C757D]">
+                <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4 text-[#6C757D]/60">
                   <Icons.cart className="w-8 h-8" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">Tu carrito está vacío</h3>
-                <p className="text-xs text-muted-foreground mt-1.5 max-w-xs">
+                <h3 className="font-bebas tracking-wide text-foreground text-xl">Tu carrito está vacío</h3>
+                <p className="text-xs text-[#6C757D] mt-1.5 max-w-xs font-gotham">
                   Explora nuestros 24 rubros comerciales y agrega productos al detal o al mayor.
                 </p>
                 <button
                   onClick={() => setOpen(false)}
-                  className="mt-6 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
+                  className="mt-6 px-4 py-2.5 rounded-xl bg-[#E63946] text-white text-xs font-semibold hover:bg-[#d62839] transition-colors cursor-pointer shadow-sm shadow-[#E63946]/20"
                 >
                   Ver Catálogo
                 </button>
               </div>
             ) : (
               <>
-                {/* Banner de Ahorro Mayorista si aplica */}
+                {/* Banner de Ahorro Mayorista en Dorado */}
                 {summary.total_savings > 0 && (
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center gap-2.5 text-xs font-semibold">
+                  <div className="p-3 rounded-xl bg-[#D4A017]/10 border border-[#D4A017]/25 text-[#D4A017] flex items-center gap-2.5 text-xs font-semibold">
                     <Icons.sparkles className="w-4 h-4 shrink-0" />
                     <span>
-                      ¡Excelente! Estás ahorrando {formatPrice(summary.total_savings)} en este pedido gracias a compras al mayor.
+                      ¡Excelente! Estás ahorrando {formatPrice(summary.total_savings)} en este pedido gracias a precios mayoristas.
                     </span>
                   </div>
                 )}
@@ -120,7 +120,7 @@ export function CartDrawer() {
                     return (
                       <div
                         key={item.product.id}
-                        className="p-3 rounded-xl bg-card border border-border/70 hover:border-border transition-all flex gap-3"
+                        className="p-3 rounded-xl bg-card border border-border/80 hover:border-border transition-all flex gap-3"
                       >
                         {/* Miniatura */}
                         <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
@@ -141,110 +141,115 @@ export function CartDrawer() {
                               </h4>
                               <button
                                 onClick={() => removeItem(item.product.id)}
-                                className="text-muted-foreground hover:text-rose-600 transition-colors shrink-0"
+                                className="text-[#6C757D] hover:text-[#E63946] transition-colors p-0.5"
+                                title="Eliminar"
                               >
-                                <Icons.close className="w-3.5 h-3.5" />
+                                <Icons.trash className="w-3.5 h-3.5" />
                               </button>
                             </div>
 
-                            <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="font-mono text-[10px] text-[#6C757D]">
+                                {item.product.sku}
+                              </span>
                               {isWholesale ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-600 dark:text-cyan-400 text-[10px] font-bold">
-                                  <Icons.tags className="w-2.5 h-2.5" />
-                                  Precio Mayorista
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#D4A017]/20 text-[#D4A017]">
+                                  Tarifa Mayorista
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-muted-foreground">
-                                  Precio Detal
+                                <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-muted text-[#6C757D]">
+                                  Tarifa Detal
                                 </span>
                               )}
-                              <span className="text-xs font-semibold text-foreground">
-                                {formatPrice(item.unit_price)} c/u
-                              </span>
                             </div>
-
-                            {!isWholesale && diffToWholesale > 0 && (
-                              <p className="text-[10px] text-amber-500 mt-1">
-                                +{diffToWholesale} más para pagar {formatPrice(item.product.wholesale_price)} c/u
-                              </p>
-                            )}
                           </div>
 
-                          {/* Selector de cantidad y subtotal */}
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40">
-                            <div className="flex items-center border border-border rounded-lg bg-background overflow-hidden">
+                          <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border/60">
+                            {/* Selector de Cantidad */}
+                            <div className="flex items-center border border-border rounded-lg bg-background">
                               <button
                                 onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                className="w-6 h-6 flex items-center justify-center hover:bg-muted text-muted-foreground"
+                                className="w-6 h-6 flex items-center justify-center text-[#6C757D] hover:text-foreground hover:bg-muted rounded-l-md"
                               >
                                 <Icons.minus className="w-3 h-3" />
                               </button>
-                              <span className="w-7 text-center text-xs font-bold">
+                              <span className="w-7 text-center text-xs font-bold text-foreground">
                                 {item.quantity}
                               </span>
                               <button
                                 onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                                 disabled={item.quantity >= item.product.stock}
-                                className="w-6 h-6 flex items-center justify-center hover:bg-muted text-muted-foreground disabled:opacity-30"
+                                className="w-6 h-6 flex items-center justify-center text-[#6C757D] hover:text-foreground hover:bg-muted rounded-r-md disabled:opacity-40"
                               >
                                 <Icons.add className="w-3 h-3" />
                               </button>
                             </div>
 
+                            {/* Subtotal del Item */}
                             <div className="text-right">
-                              <span className="text-xs font-bold text-foreground">
+                              <span className="text-sm font-bebas tracking-wide text-foreground font-bold">
                                 {formatPrice(item.subtotal)}
+                              </span>
+                              <span className="text-[10px] text-[#6C757D] block">
+                                {formatPrice(item.unit_price)} c/u
                               </span>
                             </div>
                           </div>
+
+                          {/* Mensaje de incentivo para llegar a precio mayorista */}
+                          {!isWholesale && diffToWholesale > 0 && (
+                            <p className="text-[10px] text-[#D4A017] font-medium mt-1">
+                              Agrega {diffToWholesale} más para pagar{' '}
+                              <strong>{formatPrice(item.product.wholesale_price)} c/u</strong>
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Formulario Desplegable de Datos del Cliente */}
-                <div className="mt-4 rounded-xl border border-border bg-muted/20 p-3">
+                {/* Formulario de Datos del Cliente */}
+                <div className="mt-4 pt-4 border-t border-border">
                   <button
-                    onClick={() => setShowCustomerForm((prev) => !prev)}
-                    className="w-full flex items-center justify-between text-xs font-bold text-foreground cursor-pointer"
+                    type="button"
+                    onClick={() => setShowCustomerForm((v) => !v)}
+                    className="w-full flex items-center justify-between text-xs font-semibold text-foreground py-1"
                   >
                     <span className="flex items-center gap-1.5">
-                      <Icons.user className="w-3.5 h-3.5 text-blue-500" />
-                      Datos para el Pedido {customer.name ? `(${customer.name})` : ''}
+                      <Icons.user className="w-3.5 h-3.5 text-[#E63946]" />
+                      <span>Datos de Contacto y Envío</span>
                     </span>
-                    <Icons.chevronDown
-                      className={`w-3.5 h-3.5 transition-transform ${
-                        showCustomerForm ? 'rotate-180' : ''
-                      }`}
-                    />
+                    <span className="text-[11px] text-[#E63946] font-medium">
+                      {showCustomerForm ? 'Ocultar' : 'Completar'}
+                    </span>
                   </button>
 
                   {showCustomerForm && (
-                    <div className="mt-3 space-y-2.5 pt-2 border-t border-border/50 text-xs">
+                    <div className="mt-3 space-y-2.5 p-3 rounded-xl bg-muted/30 border border-border/80">
                       <div>
-                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                          Nombre o Razón Social *
+                        <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
+                          Nombre Completo *
                         </label>
                         <input
                           type="text"
                           value={customer.name}
                           onChange={(e) => setCustomerInfo({ name: e.target.value })}
-                          placeholder="Ej. María Pérez / Distribuidora Express"
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                          placeholder="Tu nombre o el de tu negocio"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                          Teléfono de Contacto
+                        <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
+                          Teléfono / WhatsApp *
                         </label>
                         <input
-                          type="text"
+                          type="tel"
                           value={customer.phone}
                           onChange={(e) => setCustomerInfo({ phone: e.target.value })}
                           placeholder="Ej. +58 412 1234567"
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
                         />
                       </div>
 
@@ -254,7 +259,7 @@ export function CartDrawer() {
                           onClick={() => setCustomerInfo({ delivery_type: 'shipping' })}
                           className={`p-2 rounded-lg border text-center font-semibold text-[11px] cursor-pointer transition-colors ${
                             customer.delivery_type === 'shipping'
-                              ? 'bg-blue-600 text-white border-blue-600'
+                              ? 'bg-[#E63946] text-white border-[#E63946]'
                               : 'bg-background hover:bg-muted border-border text-foreground'
                           }`}
                         >
@@ -265,7 +270,7 @@ export function CartDrawer() {
                           onClick={() => setCustomerInfo({ delivery_type: 'pickup' })}
                           className={`p-2 rounded-lg border text-center font-semibold text-[11px] cursor-pointer transition-colors ${
                             customer.delivery_type === 'pickup'
-                              ? 'bg-blue-600 text-white border-blue-600'
+                              ? 'bg-[#E63946] text-white border-[#E63946]'
                               : 'bg-background hover:bg-muted border-border text-foreground'
                           }`}
                         >
@@ -274,7 +279,7 @@ export function CartDrawer() {
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                        <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
                           Ciudad / Dirección (Opcional)
                         </label>
                         <input
@@ -282,12 +287,12 @@ export function CartDrawer() {
                           value={customer.city || ''}
                           onChange={(e) => setCustomerInfo({ city: e.target.value })}
                           placeholder="Ej. Caracas, Chacao"
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                        <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
                           Notas / Observaciones
                         </label>
                         <input
@@ -295,7 +300,7 @@ export function CartDrawer() {
                           value={customer.notes || ''}
                           onChange={(e) => setCustomerInfo({ notes: e.target.value })}
                           placeholder="Ej. Factura a nombre de empresa, horario de entrega..."
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
                         />
                       </div>
                     </div>
@@ -307,23 +312,23 @@ export function CartDrawer() {
 
           {/* Footer del Carrito con Totales y Botón WhatsApp */}
           {items.length > 0 && (
-            <div className="p-4 sm:p-5 border-t border-border bg-card space-y-3">
+            <div className="p-4 sm:p-5 border-t border-border bg-card space-y-3 font-gotham">
               <div className="space-y-1.5 text-xs">
-                <div className="flex items-center justify-between text-muted-foreground">
+                <div className="flex items-center justify-between text-[#6C757D]">
                   <span>Subtotal PVP</span>
                   <span>{formatPrice(summary.total_retail)}</span>
                 </div>
 
                 {summary.total_savings > 0 && (
-                  <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                  <div className="flex items-center justify-between text-[#D4A017] font-bold">
                     <span>Ahorro Mayorista Total</span>
                     <span>-{formatPrice(summary.total_savings)}</span>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-sm sm:text-base font-extrabold text-foreground pt-2 border-t border-border">
+                <div className="flex items-center justify-between text-base font-extrabold text-foreground pt-2 border-t border-border">
                   <span>Total Estimado</span>
-                  <span className="text-blue-600 dark:text-cyan-400">
+                  <span className="text-[#E63946] font-bebas text-2xl tracking-wider">
                     {formatPrice(summary.subtotal)}
                   </span>
                 </div>
@@ -332,13 +337,13 @@ export function CartDrawer() {
               {/* Botón Principal WhatsApp */}
               <button
                 onClick={handleCheckoutWhatsApp}
-                className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 active:scale-[0.99] transition-all cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 active:scale-[0.99] transition-all cursor-pointer font-gotham"
               >
                 <Icons.whatsapp className="w-5 h-5" />
                 <span>Pedir / Cotizar por WhatsApp</span>
               </button>
 
-              <p className="text-[11px] text-center text-muted-foreground">
+              <p className="text-[11px] text-center text-[#6C757D]">
                 Se enviará un mensaje estructurado con tus productos y datos para coordinar pago y entrega.
               </p>
             </div>

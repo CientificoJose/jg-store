@@ -75,7 +75,7 @@ export function StoreFront() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#F8F8F7] dark:bg-[#111215] text-foreground selection:bg-[#E63946] selection:text-white font-gotham">
       {/* Header Fijo */}
       <StoreHeader
         searchQuery={searchQuery}
@@ -96,8 +96,8 @@ export function StoreFront() {
       <main id="catalogo-productos" className="flex-1">
         {isLoading ? (
           <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-            <div className="inline-block w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-xs text-muted-foreground font-medium">
+            <div className="inline-block w-8 h-8 border-3 border-[#E63946] border-t-transparent rounded-full animate-spin mb-3" />
+            <p className="text-xs text-[#6C757D] font-medium font-gotham">
               Cargando catálogo oficial de JG Store...
             </p>
           </div>
