@@ -42,13 +42,16 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Vistas de autenticación (`sign-in-view.tsx`, `sign-up-view.tsx`) actualizadas con el logo y eslogan de JG-STORE Polirubro.
 
 
-#### Tarea 3: Conexión con Clerk (Autenticación)
-- **Estado:** 🟡 Pendiente (Pospuesto intencionalmente)
+#### Tarea 3: Conexión con Clerk (Autenticación) (Completado)
+- **Estado:** 🟢 Completado
 - **Responsable:** Usuario + IA
-- **Alcance:**
-  - Crear proyecto en [dashboard.clerk.com](https://dashboard.clerk.com).
-  - Configurar las variables en `.env.local`: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` y `CLERK_SECRET_KEY`.
-  - Habilitar flujos de login y registro para clientes y administradores.
+- **Resultados:**
+  - Integrado `@clerk/nextjs` y `@clerk/ui` con tema shadcn en `src/app/layout.tsx`.
+  - Configurado `src/proxy.ts` con `clerkMiddleware()` para Next.js 16.
+  - Vistas de `/sign-in` y `/sign-up` personalizadas con branding, `BrandLogo` y fondo interactivo.
+  - Variables de entorno de Clerk configuradas en `.env.local`.
+  - Rutas protegidas (`/dashboard`) y redirección inicial funcionando al 100%.
+  - Verificación exitosa en local (`http://localhost:3000`) y 0 errores de linter.
 
 ---
 

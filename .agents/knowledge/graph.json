@@ -38,8 +38,8 @@
       "id": "auth-clerk",
       "type": "Integration",
       "title": "Autenticación con Clerk",
-      "status": "pending",
-      "description": "Conexión y configuración de Clerk para login, sesiones y roles de usuario (administrador, cliente mayorista, cliente minorista). Tarea marcada como pendiente."
+      "status": "completed",
+      "description": "Conexión y configuración de Clerk para login, sesiones y roles de usuario. ClerkProvider, proxy Next.js 16 y vistas /sign-in y /sign-up totalmente operativas."
     },
     {
       "id": "backend-database",
