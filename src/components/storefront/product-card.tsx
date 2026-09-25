@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { StoreProduct } from '@/types/store';
 import { formatPrice } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
@@ -64,17 +65,22 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
     <div className="group flex flex-col justify-between rounded-2xl bg-card border border-border/80 hover:border-[#E63946]/50 hover:shadow-xl hover:shadow-[#E63946]/10 transition-all duration-300 overflow-hidden font-gotham">
       {/* Contenedor Superior: Imagen y Badges */}
       <div className="relative aspect-square w-full overflow-hidden bg-muted/30">
-        <Image
-          src={product.image_url}
-          alt={product.name}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
+        <Link
+          href={`/producto/${product.id}`}
+          className="block w-full h-full relative cursor-pointer"
+        >
+          <Image
+            src={product.image_url}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        </Link>
 
         {/* Badges superiores con identidad JG Store */}
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10 pointer-events-none">
           {isOutOfStock ? (
             <span className="px-2.5 py-1 rounded-md bg-[#6C757D]/95 text-white text-[11px] font-bold tracking-wide shadow-sm font-gotham">
               Agotado
@@ -149,7 +155,9 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           </div>
 
           <h3 className="font-semibold text-sm sm:text-base text-foreground line-clamp-2 leading-snug group-hover:text-[#E63946] transition-colors">
-            {product.name}
+            <Link href={`/producto/${product.id}`} className="hover:text-[#E63946]">
+              {product.name}
+            </Link>
           </h3>
 
           <p className="text-xs text-[#6C757D] line-clamp-2 mt-1.5 leading-relaxed">

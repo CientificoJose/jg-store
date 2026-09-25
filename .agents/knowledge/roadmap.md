@@ -35,8 +35,26 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - `CartDrawer`: Panel lateral deslizable con cálculo de ahorro mayorista, formulario de cliente y checkout automatizado vía WhatsApp.
   - `StoreFooter`: Pie de página departamental y condiciones comerciales.
 - [x] **Integración WhatsApp:** Generación de mensajes estructurados con desglose de SKUs, ahorros y datos en `src/lib/whatsapp.ts`.
-- [x] **Control de Stock y Conexión Supabase:** Servicio `src/lib/store-service.ts` con soporte PostgREST (Dokploy) y fallback resiliente.
-- [x] **Script DDL Supabase:** Migración SQL `supabase/migrations/20260917_create_products_table.sql`.
+- [x] **Branding & Logos Oficiales:**
+  - Favicon e Isotipo oficial para pestañas (`src/app/icon.png`, `public/brand/logo-icon.png`, etc.) con escalado multiformato.
+  - Logo oficial institucional JG-STORE POLIRUBRO (`public/brand/logo-full.png`, `public/brand/logo-full-dark.png`) con cambio automático por modo nocturno/diurno en `src/components/brand/logo.tsx`.
+- [x] **Sistema de Favoritos y Usuarios:**
+  - Esquema de base de datos SQL para `users`, `favorites` y vista `vw_favoritos_detalle` en `supabase/migrations/20260925_create_users_and_favorites_tables.sql`.
+  - Store Zustand con persistencia en LocalStorage (`src/hooks/use-favorites-store.ts`).
+  - Botón de guardado rápido de favoritos (corazón) en tarjetas de productos y modal.
+  - Filtro interactivo de favoritos con contador en el header de la tienda.
+- [x] **Página de Producto en Grande Estilo Mercado Libre (`/producto/[id]`):**
+  - Componente `ProductDetailView` con diseño idéntico a Mercado Libre adaptado a la identidad JG Store:
+    - Migas de pan de navegación (`Volver al catálogo > Inicio > Categoría > Producto`).
+    - Galería con miniaturas verticales a la izquierda y visor de foto principal con zoom.
+    - Badges de condición ("Nuevo", "+500 vendidos", 4.9 estrellas).
+    - Bloque de precios dual (Detal vs Mayor con % de descuento).
+    - Selector interactivo de colores/variantes.
+    - **Caja de compra (Buy Box):** Disponibilidad en depósito con indicador pulsante, selector de cantidad con tope de stock y feedback de tarifa mayorista, botón primario "Comprar Ahora por WhatsApp" (mensaje estructurado directo), botón secundario "Agregar al Carrito", y sellos de Envío Nacional + Compra Protegida JG Store.
+    - Descripción detallada y tabla de especificaciones técnicas (SKU, rubro, venta, garantía).
+    - Carrusel / Cuadrícula de recomendaciones: *"Quienes vieron este producto también compraron"*.
+  - Enrutamiento dinámico en App Router (`src/app/producto/[id]/page.tsx`) con metadatos OpenGraph SEO automáticos.
+  - Enlaces directos desde las tarjetas de producto (`ProductCard`) y modal de vista rápida.
 
 ---
 

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { StoreProduct } from '@/types/store';
 import { formatPrice } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
@@ -204,6 +205,18 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
               >
                 <Icons.heart className={`w-5 h-5 transition-transform duration-200 ${isFav ? 'fill-current scale-110' : ''}`} />
               </button>
+            </div>
+
+            {/* Enlace para abrir en grande estilo Mercado Libre */}
+            <div className="mt-3 pt-3 border-t border-border/60 text-center">
+              <Link
+                href={`/producto/${product.id}`}
+                onClick={onClose}
+                className="text-xs font-semibold text-[#E63946] hover:text-[#d62839] hover:underline inline-flex items-center gap-1.5 transition-colors"
+              >
+                <span>Ver publicación completa (Estilo Mercado Libre)</span>
+                <Icons.arrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </div>
