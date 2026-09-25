@@ -4,9 +4,9 @@
   "description": "Plataforma de comercio electrónico para ventas online al mayor y al detal",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bun ./node_modules/next/dist/bin/next dev",
+    "build": "bun ./node_modules/next/dist/bin/next build",
+    "start": "bun ./node_modules/next/dist/bin/next start",
     "cleanup": "node scripts/cleanup.js",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",

@@ -46,6 +46,16 @@
   }
 }
 
+/* Tipografías Oficiales JG Store */
+.font-bebas {
+  font-family: 'Bebas Neue', var(--font-display, sans-serif);
+  letter-spacing: 0.05em;
+}
+
+.font-gotham {
+  font-family: 'Gotham', 'Montserrat', var(--font-sans, sans-serif);
+}
+
 /* View Transition Wave Effect */
 ::view-transition-old(root),
 ::view-transition-new(root) {

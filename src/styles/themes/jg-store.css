@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+/* ==========================================================================
+   JG STORE OFFICIAL THEME
+   Colores de Marca:
+   - #E63946: Pasión, energía y calidad (Primary)
+   - #FF85A2: Cercanía y calidez (Accent / Secondary)
+   - #D4A017: Calidad, exclusividad y confianza (Gold / Mayorista VIP)
+   - #F8F8F7: Profesionalismo y transparencia (Background / Light)
+   - #6C757D: Seriedad y enfoque empresarial (Muted / Neutrals)
+   Tipografía:
+   - Display / Títulos: Bebas Neue Cyrillic
+   - UI / Proporción: Gotham (con fallback Montserrat)
+   ========================================================================== */
+
+[data-theme='jg-store'] {
+  --background: #f8f8f7;
+  --foreground: #1c1d21;
+  --card: #ffffff;
+  --card-foreground: #1c1d21;
+  --popover: #ffffff;
+  --popover-foreground: #1c1d21;
+  --primary: #e63946;
+  --primary-foreground: #ffffff;
+  --secondary: #ffeef2;
+  --secondary-foreground: #e63946;
+  --muted: #eeeeec;
+  --muted-foreground: #6c757d;
+  --accent: #ff85a2;
+  --accent-foreground: #ffffff;
+  --gold: #d4a017;
+  --gold-foreground: #ffffff;
+  --destructive: #e63946;
+  --destructive-foreground: #ffffff;
+  --border: #e3e3e0;
+  --input: #e3e3e0;
+  --ring: #e63946;
+  --chart-1: #e63946;
+  --chart-2: #d4a017;
+  --chart-3: #ff85a2;
+  --chart-4: #6c757d;
+  --chart-5: #1c1d21;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1c1d21;
+  --sidebar-primary: #e63946;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffeef2;
+  --sidebar-accent-foreground: #e63946;
+  --sidebar-border: #e3e3e0;
+  --sidebar-ring: #e63946;
+
+  /* Tipografías Oficiales JG Store */
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-sans: 'Gotham', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --radius: 0.75rem;
+  --shadow-x: 0px;
+  --shadow-y: 2px;
+  --shadow-blur: 8px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.08;
+  --shadow-color: rgba(230, 57, 70, 0.08);
+  --shadow-2xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.05);
+  --shadow-xs: 0px 2px 4px 0px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0px 2px 8px 0px rgba(0, 0, 0, 0.06);
+  --shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.07);
+  --shadow-md: 0px 6px 16px 0px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0px 10px 24px 0px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0px 16px 32px 0px rgba(0, 0, 0, 0.12);
+  --shadow-2xl: 0px 24px 48px 0px rgba(0, 0, 0, 0.15);
+  --spacing: 0.25rem;
+}
+
+[data-theme='jg-store'].dark {
+  --background: #111215;
+  --foreground: #f8f8f7;
+  --card: #191b20;
+  --card-foreground: #f8f8f7;
+  --popover: #191b20;
+  --popover-foreground: #f8f8f7;
+  --primary: #e63946;
+  --primary-foreground: #ffffff;
+  --secondary: #2b171c;
+  --secondary-foreground: #ff85a2;
+  --muted: #1e2127;
+  --muted-foreground: #8e959d;
+  --accent: #ff85a2;
+  --accent-foreground: #111215;
+  --gold: #d4a017;
+  --gold-foreground: #111215;
+  --destructive: #e63946;
+  --destructive-foreground: #ffffff;
+  --border: #2b2f38;
+  --input: #2b2f38;
+  --ring: #e63946;
+  --chart-1: #e63946;
+  --chart-2: #d4a017;
+  --chart-3: #ff85a2;
+  --chart-4: #6c757d;
+  --chart-5: #f8f8f7;
+  --sidebar: #15171c;
+  --sidebar-foreground: #f8f8f7;
+  --sidebar-primary: #e63946;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2b171c;
+  --sidebar-accent-foreground: #ff85a2;
+  --sidebar-border: #2b2f38;
+  --sidebar-ring: #e63946;
+
+  /* Tipografías Oficiales JG Store */
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-sans: 'Gotham', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-theme='jg-store'] {
+  @theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-gold: var(--gold);
+    --color-gold-foreground: var(--gold-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --font-display: var(--font-display);
+    --font-sans: var(--font-sans);
+    --font-mono: var(--font-mono);
+    --font-serif: var(--font-serif);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+  }
+}
