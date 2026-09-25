@@ -11,8 +11,11 @@
    - UI / Proporción: Gotham (con fallback Montserrat)
    ========================================================================== */
 
-[data-theme='jg-store'] {
-  --background: #f8f8f7;
+[data-theme='jg-store'],
+[data-theme='jg-store'].light,
+.light[data-theme='jg-store'],
+.light [data-theme='jg-store'] {
+  --background: #ffffff;
   --foreground: #1c1d21;
   --card: #ffffff;
   --card-foreground: #1c1d21;
@@ -71,7 +74,10 @@
   --spacing: 0.25rem;
 }
 
-[data-theme='jg-store'].dark {
+[data-theme='jg-store'].dark,
+.dark[data-theme='jg-store'],
+.dark [data-theme='jg-store'],
+[data-theme='jg-store'] .dark {
   --background: #111215;
   --foreground: #f8f8f7;
   --card: #191b20;

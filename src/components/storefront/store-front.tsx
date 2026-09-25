@@ -75,7 +75,7 @@ export function StoreFront() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F8F7] dark:bg-[#111215] text-foreground selection:bg-[#E63946] selection:text-white font-gotham">
+    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-[#E63946] selection:text-white font-gotham transition-colors duration-200">
       {/* Header Fijo */}
       <StoreHeader
         searchQuery={searchQuery}

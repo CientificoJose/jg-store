@@ -11,7 +11,7 @@ interface CategoryBarProps {
 
 export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarProps) {
   return (
-    <div className="w-full bg-[#F8F8F7]/85 dark:bg-[#111215]/85 backdrop-blur-md border-b border-border/70 sticky top-16 z-30 transition-all font-gotham">
+    <div className="w-full bg-background/85 backdrop-blur-md border-b border-border/70 sticky top-16 z-30 transition-all font-gotham">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 overflow-x-auto py-3 no-scrollbar scroll-smooth">
           {/* Opción "Todos" */}

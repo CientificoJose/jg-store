@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 import { Logo } from '@/components/brand/logo';
 import { Icons } from '@/components/icons';
 import { useCartStore } from '@/hooks/use-cart-store';
@@ -21,10 +22,18 @@ export function StoreHeader({
 }: StoreHeaderProps) {
   const { setOpen, getSummary, wholesaleMode, toggleWholesaleMode } = useCartStore();
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const summary = getSummary();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && (resolvedTheme === 'dark' || theme === 'dark');
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#F8F8F7]/90 dark:bg-[#111215]/90 backdrop-blur-md border-b border-border/80 transition-all font-gotham">
+    <header className="sticky top-0 z-40 w-full bg-background/90 backdrop-blur-md border-b border-border/80 transition-all font-gotham">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3 sm:gap-4">
           
@@ -39,7 +48,7 @@ export function StoreHeader({
             <div className="relative">
               <button
                 onClick={() => setIsCategoryMenuOpen((v) => !v)}
-                className="h-10 px-3 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="h-10 px-3 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer text-foreground"
               >
                 <Icons.filter className="w-3.5 h-3.5 text-[#E63946]" />
                 <span>Rubros (24)</span>
@@ -117,6 +126,26 @@ export function StoreHeader({
 
           {/* Acciones del Lado Derecho */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Botón Modo Nocturno / Diurno */}
+            <button
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
+              title={isDark ? 'Cambiar a Modo Diurno (Fondo blanco)' : 'Cambiar a Modo Nocturno'}
+              aria-label="Alternar tema diurno y nocturno"
+              className="h-10 px-3 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs text-foreground group"
+            >
+              {isDark ? (
+                <>
+                  <Icons.sun className="w-4 h-4 text-[#D4A017] group-hover:rotate-45 transition-transform duration-300" />
+                  <span className="hidden sm:inline text-xs font-medium text-foreground">Diurno</span>
+                </>
+              ) : (
+                <>
+                  <Icons.moon className="w-4 h-4 text-[#6C757D] group-hover:-rotate-12 transition-transform duration-300" />
+                  <span className="hidden sm:inline text-xs font-medium text-foreground">Nocturno</span>
+                </>
+              )}
+            </button>
+
             {/* Toggle Modo Mayorista */}
             <button
               onClick={toggleWholesaleMode}

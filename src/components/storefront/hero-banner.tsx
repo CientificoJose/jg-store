@@ -12,7 +12,7 @@ export function HeroBanner({ onExploreCatalog }: HeroBannerProps) {
   const { wholesaleMode, toggleWholesaleMode } = useCartStore();
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-b from-[#E63946]/10 via-[#F8F8F7] to-[#F8F8F7] dark:from-[#E63946]/15 dark:via-[#111215] dark:to-[#111215] border-b border-border/60 py-12 sm:py-16">
+    <div className="relative overflow-hidden bg-gradient-to-b from-[#E63946]/10 via-background to-background border-b border-border/60 py-12 sm:py-16 transition-colors duration-200">
       {/* Elementos visuales de fondo con colores de marca */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-24 left-1/4 w-96 h-96 bg-[#E63946]/10 rounded-full blur-3xl" />
