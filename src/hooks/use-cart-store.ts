@@ -24,21 +24,28 @@ interface CartStore {
   getSummary: () => CartSummary;
 }
 
-function computeItemProperties(product: StoreProduct, quantity: number): CartItem {
-  const isWholesale = quantity >= product.min_wholesale_qty;
-  const unitPrice = isWholesale ? product.wholesale_price : product.retail_price;
-  const subtotal = Number((unitPrice * quantity).toFixed(2));
-  const retailSubtotal = Number((product.retail_price * quantity).toFixed(2));
-  const savings = Number((retailSubtotal - subtotal).toFixed(2));
+import { WHOLESALE_MIN_AMOUNT_ARS } from '@/lib/whatsapp';
 
-  return {
-    product,
-    quantity,
-    unit_price: unitPrice,
-    is_wholesale: isWholesale,
-    subtotal,
-    savings
-  };
+function refreshCartItems(items: { product: StoreProduct; quantity: number }[]): CartItem[] {
+  const totalRetail = items.reduce((sum, item) => sum + item.product.retail_price * item.quantity, 0);
+  const qualifiesGlobalWholesale = totalRetail >= WHOLESALE_MIN_AMOUNT_ARS;
+
+  return items.map(({ product, quantity }) => {
+    const isWholesale = qualifiesGlobalWholesale || quantity >= product.min_wholesale_qty;
+    const unitPrice = isWholesale ? product.wholesale_price : product.retail_price;
+    const subtotal = Math.round(unitPrice * quantity);
+    const retailSubtotal = Math.round(product.retail_price * quantity);
+    const savings = Math.max(0, retailSubtotal - subtotal);
+
+    return {
+      product,
+      quantity,
+      unit_price: unitPrice,
+      is_wholesale: isWholesale,
+      subtotal,
+      savings
+    };
+  });
 }
 
 export const useCartStore = create<CartStore>()(
@@ -52,6 +59,9 @@ export const useCartStore = create<CartStore>()(
         phone: '',
         delivery_type: 'shipping',
         city: '',
+        postal_code: '',
+        province: '',
+        invoice_type: 'B',
         address: '',
         notes: ''
       },
@@ -87,14 +97,16 @@ export const useCartStore = create<CartStore>()(
           };
         }
 
-        let updatedItems: CartItem[];
+        let rawItems: { product: StoreProduct; quantity: number }[];
         if (existingIndex >= 0) {
-          updatedItems = [...items];
-          updatedItems[existingIndex] = computeItemProperties(product, newQty);
+          rawItems = items.map((i, idx) =>
+            idx === existingIndex ? { product, quantity: newQty } : { product: i.product, quantity: i.quantity }
+          );
         } else {
-          updatedItems = [...items, computeItemProperties(product, newQty)];
+          rawItems = [...items.map(i => ({ product: i.product, quantity: i.quantity })), { product, quantity: newQty }];
         }
 
+        const updatedItems = refreshCartItems(rawItems);
         set({ items: updatedItems });
         return { success: true };
       },
@@ -113,22 +125,25 @@ export const useCartStore = create<CartStore>()(
         if (qty > item.product.stock) {
           return {
             success: false,
-            message: `No puedes agregar más de ${item.product.stock} unidades de este producto.`
+            message: `No podés agregar más de ${item.product.stock} unidades de este producto.`
           };
         }
 
-        const updatedItems = items.map((i) =>
-          i.product.id === productId ? computeItemProperties(i.product, qty) : i
+        const rawItems = items.map((i) =>
+          i.product.id === productId ? { product: i.product, quantity: qty } : { product: i.product, quantity: i.quantity }
         );
 
+        const updatedItems = refreshCartItems(rawItems);
         set({ items: updatedItems });
         return { success: true };
       },
 
       removeItem: (productId) => {
-        set((state) => ({
-          items: state.items.filter((i) => i.product.id !== productId)
-        }));
+        const { items } = get();
+        const remaining = items
+          .filter((i) => i.product.id !== productId)
+          .map((i) => ({ product: i.product, quantity: i.quantity }));
+        set({ items: refreshCartItems(remaining) });
       },
 
       clearCart: () => {

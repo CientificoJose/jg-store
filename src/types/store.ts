@@ -40,6 +40,9 @@ export interface CustomerOrderInfo {
   delivery_type: 'shipping' | 'pickup';
   address?: string;
   city?: string;
+  postal_code?: string;
+  province?: string;
+  invoice_type?: 'B' | 'A'; // Factura B (Consumidor Final / Monotributo) o Factura A (Responsable Inscripto)
   notes?: string;
 }
 

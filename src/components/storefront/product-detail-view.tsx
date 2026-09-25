@@ -227,9 +227,9 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                   </div>
 
                   {/* Aviso de Cuotas y Medios de Pago */}
-                  <div className="mt-3 flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                  <div className="mt-3 flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
                     <Icons.creditCard className="w-4 h-4 shrink-0" />
-                    <span>Paga con transferencia, efectivo en retiro o contra entrega.</span>
+                    <span>Mercado Pago, cuotas con tarjeta o 10% OFF por Transferencia (CBU / Alias).</span>
                   </div>
                 </div>
 
@@ -350,8 +350,8 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                     <div className="flex items-start gap-2.5">
                       <Icons.truck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <div>
-                        <strong className="text-foreground">Envío a todo el país:</strong>
-                        <p className="text-[11px] leading-snug">Despachos por encomienda o retiro gratis en sucursal JG Store.</p>
+                        <strong className="text-foreground">Envíos a todo el país:</strong>
+                        <p className="text-[11px] leading-snug">Despachos por expreso al interior, Andreani o retiro en depósito.</p>
                       </div>
                     </div>
 

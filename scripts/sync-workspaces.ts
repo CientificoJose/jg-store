@@ -21,6 +21,8 @@ function copyRecursive(src: string, dest: string) {
 }
 
 console.log('Sincronizando archivos entre workspaces...');
+copyRecursive(path.join(srcDir, 'src'), path.join(targetDir, 'src'));
 copyRecursive(path.join(srcDir, 'supabase'), path.join(targetDir, 'supabase'));
 copyRecursive(path.join(srcDir, 'scripts'), path.join(targetDir, 'scripts'));
+copyRecursive(path.join(srcDir, '.agents'), path.join(targetDir, '.agents'));
 console.log('✅ Sincronización dual completada con éxito.');

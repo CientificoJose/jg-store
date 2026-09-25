@@ -99,7 +99,7 @@ export function StoreFooter({ onSelectCategory }: StoreFooterProps) {
               </div>
               <div className="p-3 rounded-xl bg-[#D4A017]/10 border border-[#D4A017]/30 text-[#D4A017]">
                 <strong className="text-[#D4A017] block text-[11px] font-bold mb-0.5">🏷️ Venta al Mayor:</strong>
-                Descuento directo por volumen al alcanzar la cantidad mínima de cada artículo.
+                Activá tarifa mayorista a partir de $ 50.000 de compra total o por cantidad de cada artículo.
               </div>
             </div>
 
@@ -117,13 +117,13 @@ export function StoreFooter({ onSelectCategory }: StoreFooterProps) {
 
         {/* Barra Inferior */}
         <div className="mt-12 pt-6 border-t border-border/80 flex flex-col sm:flex-row items-center justify-between text-xs text-[#6C757D] gap-4">
-          <p>© {new Date().getFullYear()} JG Store. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} JG Store Polirubro • República Argentina. Todos los derechos reservados.</p>
           <div className="flex items-center gap-4">
-            <span>24 Departamentos Oficiales</span>
+            <span>24 Departamentos</span>
             <span>•</span>
-            <span>Pedidos vía WhatsApp</span>
+            <span>Envíos a todo el país</span>
             <span>•</span>
-            <span>Stock en Línea</span>
+            <span>Mercado Pago & CBU</span>
           </div>
         </div>
       </div>

@@ -1,26 +1,37 @@
 import { CartItem, CartSummary, CustomerOrderInfo } from '@/types/store';
 
-// Número de WhatsApp oficial de JG Store para recepción de pedidos/cotizaciones
+// Número de WhatsApp oficial de JG Store para recepción de pedidos/cotizaciones (Argentina +54 9)
 export const JG_STORE_WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '584120000000';
+  process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '5491155550000';
+
+// Monto mínimo de compra en pesos argentinos para activar tarifa mayorista en todo el pedido
+export const WHOLESALE_MIN_AMOUNT_ARS = 50000;
 
 export function calculateCartSummary(items: CartItem[]): CartSummary {
   let total_items = 0;
-  let subtotal = 0;
   let total_retail = 0;
+
+  // Primer paso: calcular total a precio minorista para ver si califica para compra mayorista global
+  for (const item of items) {
+    total_items += item.quantity;
+    total_retail += item.product.retail_price * item.quantity;
+  }
+
+  const qualifiesGlobalWholesale = total_retail >= WHOLESALE_MIN_AMOUNT_ARS;
+
+  let subtotal = 0;
   let total_savings = 0;
   let wholesale_items_count = 0;
 
   for (const item of items) {
-    total_items += item.quantity;
-    const isWholesale = item.quantity >= item.product.min_wholesale_qty;
+    // Es mayorista si califica por monto global O si supera la cantidad mínima por producto
+    const isWholesale = qualifiesGlobalWholesale || item.quantity >= item.product.min_wholesale_qty;
     const unitPrice = isWholesale ? item.product.wholesale_price : item.product.retail_price;
     const itemSubtotal = unitPrice * item.quantity;
     const retailSubtotal = item.product.retail_price * item.quantity;
     const itemSavings = retailSubtotal - itemSubtotal;
 
     subtotal += itemSubtotal;
-    total_retail += retailSubtotal;
     total_savings += itemSavings;
 
     if (isWholesale) {
@@ -30,18 +41,19 @@ export function calculateCartSummary(items: CartItem[]): CartSummary {
 
   return {
     total_items,
-    subtotal: Number(subtotal.toFixed(2)),
-    total_retail: Number(total_retail.toFixed(2)),
-    total_savings: Number(total_savings.toFixed(2)),
+    subtotal: Number(subtotal.toFixed(0)),
+    total_retail: Number(total_retail.toFixed(0)),
+    total_savings: Number(total_savings.toFixed(0)),
     wholesale_items_count
   };
 }
 
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('es-VE', {
+  return new Intl.NumberFormat('es-AR', {
     style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
+    currency: 'ARS',
+    minimumFractionDigits: price % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
   }).format(price);
 }
 
@@ -56,15 +68,17 @@ export function generateWhatsAppOrderMessage(
     year: 'numeric'
   });
 
+  const qualifiesGlobalWholesale = summary.total_retail >= WHOLESALE_MIN_AMOUNT_ARS;
+
   const lines: string[] = [
-    `🛍️ *PEDIDO / COTIZACIÓN - JG STORE*`,
+    `🛍️ *PEDIDO / COTIZACIÓN - JG STORE POLIRUBRO (ARGENTINA)*`,
     `📅 Fecha: ${now}`,
     `----------------------------------------`,
     `📋 *DETALLE DE PRODUCTOS:*`
   ];
 
   items.forEach((item, index) => {
-    const isWholesale = item.quantity >= item.product.min_wholesale_qty;
+    const isWholesale = qualifiesGlobalWholesale || item.quantity >= item.product.min_wholesale_qty;
     const unitPrice = isWholesale ? item.product.wholesale_price : item.product.retail_price;
     const itemSubtotal = unitPrice * item.quantity;
 
@@ -83,7 +97,7 @@ export function generateWhatsAppOrderMessage(
     } else {
       const neededForWholesale = item.product.min_wholesale_qty - item.quantity;
       lines.push(
-        `   • 💡 _(Al llevar ${neededForWholesale} más pagas ${formatPrice(item.product.wholesale_price)} c/u)_`
+        `   • 💡 _(Llevando ${neededForWholesale} más pagás ${formatPrice(item.product.wholesale_price)} c/u)_`
       );
     }
   });
@@ -92,7 +106,7 @@ export function generateWhatsAppOrderMessage(
     `\n----------------------------------------`,
     `💰 *RESUMEN COMERCIAL:*`,
     `• Total de Artículos: *${summary.total_items} unid.*`,
-    `• Subtotal PVP: ${formatPrice(summary.total_retail)}`
+    `• Subtotal Minorista: ${formatPrice(summary.total_retail)}`
   );
 
   if (summary.total_savings > 0) {
@@ -100,29 +114,34 @@ export function generateWhatsAppOrderMessage(
   }
 
   lines.push(
-    `• 💳 *TOTAL A PAGAR: ${formatPrice(summary.subtotal)}*`,
+    `• 💳 *TOTAL ESTIMADO: ${formatPrice(summary.subtotal)}*`,
     `----------------------------------------`,
     `👤 *DATOS DEL CLIENTE:*`,
-    `• Nombre: *${customer.name.trim() || 'No especificado'}*`,
-    `• Teléfono: *${customer.phone.trim() || 'No especificado'}*`,
-    `• Modalidad de Entrega: *${customer.delivery_type === 'shipping' ? '🚚 Envío a Domicilio' : '🏬 Retiro en Tienda / Sucursal'}*`
+    `• Nombre / Razón Social: *${customer.name.trim() || 'No especificado'}*`,
+    `• Teléfono / WhatsApp: *${customer.phone.trim() || 'No especificado'}*`,
+    `• Facturación: *${customer.invoice_type === 'A' ? 'Factura A (Responsable Inscripto)' : 'Factura B (Consumidor Final / Monotributo)'}*`,
+    `• Modalidad de Entrega: *${customer.delivery_type === 'shipping' ? '🚚 Envío a Domicilio / Expreso' : '🏬 Retiro en Depósito / Sucursal'}*`
   );
 
+  if (customer.postal_code) {
+    lines.push(`• Código Postal: ${customer.postal_code.trim()}`);
+  }
+
   if (customer.city) {
-    lines.push(`• Ciudad / Región: ${customer.city.trim()}`);
+    lines.push(`• Localidad / Provincia: ${customer.city.trim()}`);
   }
 
   if (customer.address) {
-    lines.push(`• Dirección: ${customer.address.trim()}`);
+    lines.push(`• Dirección de entrega: ${customer.address.trim()}`);
   }
 
   if (customer.notes) {
-    lines.push(`• Observaciones: ${customer.notes.trim()}`);
+    lines.push(`• Observaciones / Expreso preferido: ${customer.notes.trim()}`);
   }
 
   lines.push(
     `\n----------------------------------------`,
-    `¿Me podrían confirmar disponibilidad de stock y datos para realizar el pago? ¡Muchas gracias!`
+    `¿Me podrían confirmar disponibilidad y datos bancarios (CBU / Alias / Mercado Pago) para abonar? ¡Muchas gracias!`
   );
 
   return lines.join('\n');

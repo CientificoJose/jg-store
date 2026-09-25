@@ -23,8 +23,6 @@ graph TD
     end
 
     subgraph Pendientes [Tareas Pendientes Activas]
-        BM["🟡 Consolidar Concepto de Negocio (B2B / B2C)"]
-        BR["🟡 Branding, Logo e Identidad Visual"]
         CL["🟡 Conexión con Clerk (Autenticación)"]
         DB["🟡 Backend & Base de Datos"]
     end
@@ -34,8 +32,8 @@ graph TD
     CS --> BUN
     BUN --> FE
     
-    JG -.-> BM
-    JG -.-> BR
+    JG --> BM
+    JG --> BR
     JG -.-> CL
     JG -.-> DB
     
@@ -47,8 +45,8 @@ graph TD
     classDef completed fill:#22c55e,stroke:#15803d,color:#fff;
     classDef pending fill:#eab308,stroke:#a16207,color:#000;
     
-    class CS,BUN,FE completed;
-    class BM,BR,CL,DB pending;
+    class CS,BUN,FE,BR,BM completed;
+    class CL,DB pending;
 ```
 
 ---
@@ -69,9 +67,15 @@ graph TD
 * **Estado:** Completado.
 * **Detalles:** Documentación viva y reproducible en `.agents/knowledge/` y skill especializada en `.agents/skills/project-continuity/` para que el proyecto mantenga su contexto entre diferentes IAs y colaboradores.
 
-### 4. 🟡 Consolidación de Concepto e Idea de Negocio (`business-model`)
-* **Estado:** Pendiente.
-* **Objetivo:** Definir el catálogo, reglas de venta al mayor (volumen mínimo, descuentos escalonados, aprobación de cuentas B2B) y venta al detal (checkout minorista tradicional).
+### 4. 🟢 Consolidación de Concepto de Negocio Argentino B2B/B2C (`business-model`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Localización total para el mercado de la República Argentina (Polirrubro B2B / B2C).
+  - Precios de catálogo reales en Pesos Argentinos (`$` ARS) con formateo `es-AR`.
+  - **Barra de Progreso Mayorista ($ 50.000 ARS):** Desbloqueo automático de precios mayoristas en toda la orden al alcanzar el umbral de $ 50.000 ARS, o por cantidad unitaria de producto.
+  - Reglas de facturación comercial AFIP/ARCA: Factura A (Responsable Inscripto con CUIT) y Factura B (Consumidor Final / Monotributo).
+  - Medios de pago nacionales: Mercado Pago y Transferencia Bancaria CBU/CVU/Alias con 10% de descuento.
+  - Envíos a todo el país: Andreani, Correo Argentino y Expresos de Carga al interior con despacho en CABA/GBA.
 * **Referencia:** [business-rules.md](./business-rules.md).
 
 ### 5. 🟢 Branding, Logo e Identidad Visual Oficial (`branding`)

@@ -1,11 +1,20 @@
-# Reglas y Conceptos de Negocio (B2B + B2C) - JG Store
+# Reglas y Conceptos de Negocio (B2B + B2C) - JG Store (Mercado Argentina)
 
-Este documento contiene los principios comerciales y operativos para las ventas al mayor y al detal de **JG Store**.
+Este documento contiene los principios comerciales y operativos para las ventas al mayor y al detal de **JG Store**, adaptados estrictamente al **mercado de la República Argentina**.
+
+---
+
+## 🇦🇷 Contexto de Mercado y Localización (Argentina)
+* **País:** Argentina.
+* **Moneda Oficial:** Pesos Argentinos (`ARS` / `$`). Precios sin decimales superfluos (formato `es-AR`: `$ 8.500`).
+* **Medios de Pago Locales:** Mercado Pago (QR, tarjetas, cuotas), Transferencia Bancaria (CBU/CVU, Alias) con descuento por pago de contado, y Efectivo en sucursal/depósito.
+* **Logística y Envíos:** Andreani, Correo Argentino, Moto mensajería / Flete CABA y GBA, y Despacho por Expresos/Transportes de carga al interior (Vía Cargo, Cruz del Sur, etc.).
+* **Régimen Fiscal (AFIP / ARCA):** Factura A (Responsable Inscripto) y Factura B (Consumidor Final y Monotributo). CUIT / CUIL / DNI.
 
 ---
 
 ## 🏬 Nicho de Mercado y 24 Categorías Oficiales
-**JG Store** es una tienda departamental multirrubro y distribuidora que opera en 24 rubros:
+**JG Store** es una tienda departamental polirrubro y distribuidora que opera en 24 rubros:
 1. **Aromatización y Velas** (`aromatizacion-velas`)
 2. **Arte y Manualidades** (`arte-manualidades`)
 3. **Artículos para Viaje** (`articulos-viaje`)

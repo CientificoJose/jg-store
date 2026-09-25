@@ -59,6 +59,13 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Carrusel / Cuadrícula de recomendaciones: *"Quienes vieron este producto también compraron"*.
   - Enrutamiento dinámico en App Router (`src/app/producto/[id]/page.tsx`) con metadatos OpenGraph SEO automáticos.
   - Enlaces directos desde las tarjetas de producto (`ProductCard`) y modal de vista rápida.
+- [x] **Localización para el Mercado Argentino (Polirrubro B2B / B2C) y Barra Mayorista:**
+  - Catálogo actualizado a valores reales en Pesos Argentinos (`$` ARS) en `initial-catalog.ts` y script SQL de Supabase.
+  - Formato de moneda `es-AR` sin decimales espurios (`formatPrice`).
+  - **Barra de Progreso Dinámica de Compra Mayorista ($ 50.000 ARS)** en `CartDrawer`: desbloqueo automático de precios mayoristas en toda la cesta al alcanzar el monto global de $ 50.000 ARS, o por volumen unitario.
+  - Checkout y cotización por WhatsApp con campos argentinos: CUIT/DNI, Factura A (Responsable Inscripto) vs Factura B (Consumidor Final), Provincia, Código Postal y tipo de logística (Andreani / Correo Arg / Expreso al interior).
+  - Medios de pago argentinos: Mercado Pago y Transferencia CBU/Alias con 10% OFF.
+  - Hero banner y footer con bandera 🇦🇷, voseo y propuesta de valor nacional.
 
 ---
 

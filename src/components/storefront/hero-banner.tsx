@@ -23,8 +23,8 @@ export function HeroBanner({ onExploreCatalog }: HeroBannerProps) {
         <div className="text-center max-w-3xl mx-auto">
           {/* Badge superior */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E63946]/10 border border-[#E63946]/20 text-[#E63946] text-xs font-semibold mb-6 font-gotham">
-            <Icons.sparkles className="w-3.5 h-3.5" />
-            <span>Venta Mayorista B2B & Detal B2C • 24 Departamentos</span>
+            <span className="text-base leading-none">🇦🇷</span>
+            <span>Polirrubro Mayorista & Minorista • Envíos a Todo el País</span>
           </div>
 
           {/* Título Principal con Bebas Neue */}
@@ -37,7 +37,7 @@ export function HeroBanner({ onExploreCatalog }: HeroBannerProps) {
 
           {/* Subtítulo con Gotham */}
           <p className="mt-4 text-sm sm:text-base text-[#6C757D] max-w-2xl mx-auto leading-relaxed font-gotham">
-            Compra desde 1 unidad a precio de detal o aprovecha descuentos automáticos por cantidad con precio mayorista. Control de stock en tiempo real y cierre de pedido directo por WhatsApp.
+            Comprá desde 1 unidad al detal o activá precios mayoristas superando los $ 50.000 o por cantidad. Despachos a todo el país por expresos, Mercado Pago y 10% OFF por transferencia.
           </p>
 
           {/* Botones de Acción */}
@@ -72,9 +72,9 @@ export function HeroBanner({ onExploreCatalog }: HeroBannerProps) {
                 <Icons.tags className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-foreground">Doble Precio Dinámico</h4>
+                <h4 className="text-xs font-bold text-foreground">Tarifa Mayorista</h4>
                 <p className="text-[11px] text-[#6C757D] mt-0.5 leading-snug">
-                  Descuento automático al superar la cantidad mayorista.
+                  Automática a partir de $ 50.000 o por cantidad mínima.
                 </p>
               </div>
             </div>
@@ -86,19 +86,19 @@ export function HeroBanner({ onExploreCatalog }: HeroBannerProps) {
               <div>
                 <h4 className="text-xs font-bold text-foreground">Stock en Tiempo Real</h4>
                 <p className="text-[11px] text-[#6C757D] mt-0.5 leading-snug">
-                  Inventario físico actualizado sin sorpresas.
+                  Inventario físico actualizado en 24 departamentos.
                 </p>
               </div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-card border border-border/70 flex items-start gap-3 shadow-xs">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <Icons.whatsapp className="w-4 h-4" />
+                <Icons.check className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-foreground">Pedido por WhatsApp</h4>
+                <h4 className="text-xs font-bold text-foreground">Mercado Pago & CBU</h4>
                 <p className="text-[11px] text-[#6C757D] mt-0.5 leading-snug">
-                  Mensaje estructurado con SKU, total y ahorro.
+                  10% OFF abonando por transferencia o cuotas con tarjeta.
                 </p>
               </div>
             </div>
@@ -108,9 +108,9 @@ export function HeroBanner({ onExploreCatalog }: HeroBannerProps) {
                 <Icons.truck className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-foreground">Envíos y Retiros</h4>
+                <h4 className="text-xs font-bold text-foreground">Envíos a Todo el País</h4>
                 <p className="text-[11px] text-[#6C757D] mt-0.5 leading-snug">
-                  Despachos a todo el país o retiro en sucursal.
+                  Expresos al interior, Andreani o retiro en depósito.
                 </p>
               </div>
             </div>
