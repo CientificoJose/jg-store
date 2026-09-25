@@ -42,7 +42,11 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Esquema de base de datos SQL para `users`, `favorites` y vista `vw_favoritos_detalle` en `supabase/migrations/20260925_create_users_and_favorites_tables.sql`.
   - Store Zustand con persistencia en LocalStorage (`src/hooks/use-favorites-store.ts`).
   - Botón de guardado rápido de favoritos (corazón) en tarjetas de productos y modal.
-  - Filtro interactivo de favoritos con contador en el header de la tienda.
+  - Filtro interactivo de favoritos con contador en el header de la tienda y enlace a la página dedicada.
+  - **Página Dedicada de "Mis Favoritos" (`/favoritos`):**
+    - Vista personalizada con resumen del valor total referencial al Detal y al Mayor con cálculo de ahorro potencial acumulado.
+    - Acciones masivas con un solo clic: *"Agregar Todos al Carrito"* (respetando la modalidad de tarifa activa) y *"Cotizar Todos por WhatsApp"* (mensaje formateado con desglose de SKUs, rubros y montos).
+    - Estado vacío amigable (Empty State) con botón de exploración y sección de sugerencias de productos destacados.
 - [x] **Página de Producto en Grande Estilo Mercado Libre (`/producto/[id]`):**
   - Componente `ProductDetailView` con diseño idéntico a Mercado Libre adaptado a la identidad JG Store:
     - Migas de pan de navegación (`Volver al catálogo > Inicio > Categoría > Producto`).

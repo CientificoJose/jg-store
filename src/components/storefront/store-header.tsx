@@ -164,28 +164,24 @@ export function StoreHeader({
             </button>
 
             {/* Botón Mis Favoritos */}
-            <button
-              onClick={toggleShowOnlyFavorites}
-              title={showOnlyFavorites ? 'Ver todos los productos' : 'Filtrar por mis productos favoritos'}
+            <Link
+              href="/favoritos"
+              title="Ver mi lista de productos favoritos"
               aria-label="Ver productos favoritos"
               className={`h-10 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                showOnlyFavorites
-                  ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm shadow-[#E63946]/30 ring-2 ring-[#E63946]/20'
-                  : favoriteCount > 0
-                    ? 'bg-card hover:bg-muted border-[#FF85A2]/60 text-[#E63946]'
-                    : 'bg-card hover:bg-muted border-border text-[#6C757D] hover:text-foreground'
+                favoriteCount > 0
+                  ? 'bg-card hover:bg-muted border-[#FF85A2]/60 text-[#E63946]'
+                  : 'bg-card hover:bg-muted border-border text-[#6C757D] hover:text-foreground'
               }`}
             >
               <Icons.heart className={`w-3.5 h-3.5 ${favoriteCount > 0 ? 'fill-current text-[#E63946]' : ''}`} />
               <span className="hidden sm:inline">Favoritos</span>
               {favoriteCount > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                  showOnlyFavorites ? 'bg-white text-[#E63946]' : 'bg-[#E63946] text-white'
-                }`}>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#E63946] text-white">
                   {favoriteCount}
                 </span>
               )}
-            </button>
+            </Link>
 
             {/* Enlace al Panel Administrativo */}
             <Link
