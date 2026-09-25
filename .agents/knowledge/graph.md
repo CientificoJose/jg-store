@@ -74,9 +74,14 @@ graph TD
 * **Objetivo:** Definir el catálogo, reglas de venta al mayor (volumen mínimo, descuentos escalonados, aprobación de cuentas B2B) y venta al detal (checkout minorista tradicional).
 * **Referencia:** [business-rules.md](./business-rules.md).
 
-### 5. 🟡 Branding, Logo e Identidad Visual (`branding`)
-* **Estado:** Pendiente.
-* **Objetivo:** Diseñar la identidad de marca, paleta cromática personalizada, logotipo, isotipo y banners de la tienda.
+### 5. 🟢 Branding, Logo e Identidad Visual Oficial (`branding`)
+* **Estado:** Completado.
+* **Detalles:** 
+  - Paleta cromática oficial implementada: `#E63946` (Rojo Pasión / Principal), `#FF85A2` (Rosa Cálido / Acento), `#D4A017` (Dorado Calidad / Mayorista VIP), `#F8F8F7` / `#FFFFFF` (Superficie y Fondo Diurno), `#6C757D` (Gris Pizarra / Neutros).
+  - Tipografías oficiales configuradas: **Bebas Neue Cyrillic** para Display/Títulos y **Gotham** para UI/Cuerpo/Botones.
+  - Tema oficial `jg-store` registrado en `src/styles/themes/jg-store.css` y `theme.config.ts`.
+  - Botón selector interactivo de **Modo Diurno (fondo blanco puro #FFFFFF)** y **Modo Nocturno (#111215)** integrado en el header del storefront.
+  - Skill de diseño [`.agents/skills/brand-design-system/SKILL.md`](../skills/brand-design-system/SKILL.md).
 
 ### 6. 🟡 Conexión con Clerk (`auth-clerk`)
 * **Estado:** Pendiente.

@@ -18,7 +18,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 ### 🟢 Fase 2: Concepto Comercial, 24 Categorías y Storefront Frontend (Completado)
 - [x] **24 Categorías Oficiales:** Mapeo tipado en `src/constants/categories.ts` (Aromatización, Bazar, Juguetería, Librería, Marroquinería, etc.).
 - [x] **Reglas de Negocio Dual:** Venta al Detal (B2C) y Venta al Mayor (B2B) a partir de umbral $X$ unidades (`business-rules.md`).
-- [x] **Branding & Identidad:** Componente de marca `Logo` (`src/components/brand/logo.tsx`) y paleta azul eléctrico / cian.
+- [x] **Branding & Identidad Visual Oficial:**
+  - Paleta de marca institucional: `#E63946` (Rojo Pasión / Principal), `#FF85A2` (Rosa Cálido / Acentos), `#D4A017` (Dorado Calidad / Mayorista VIP), `#F8F8F7` & `#FFFFFF` (Superficie / Blanco Diurno), `#6C757D` (Gris Pizarra / Neutros).
+  - Tipografías oficiales: **Bebas Neue Cyrillic** (Display / Títulos) y **Gotham** (UI / Textos / Botones).
+  - Tema oficial `jg-store` configurado en `src/styles/themes/jg-store.css`.
+  - Skill de diseño [`.agents/skills/brand-design-system/SKILL.md`](../skills/brand-design-system/SKILL.md).
+  - Selector interactivo **Modo Diurno / Modo Nocturno** en el header con fondo blanco puro (`#ffffff`) para modo diurno y modo oscuro refinado (`#111215`).
 - [x] **Catálogo Inicial Representativo:** 27 productos con SKUs reales, imágenes HD, precios detal/mayor y stock en `src/constants/initial-catalog.ts`.
 - [x] **Storefront Moderno:**
   - `StoreHeader`: Buscador en tiempo real, menú de 24 categorías, conmutador de modo mayorista y carrito con badge dinámico.
