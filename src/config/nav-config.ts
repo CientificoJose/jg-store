@@ -76,7 +76,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Users',
+        title: 'Clientes y Usuarios',
         url: '/dashboard/users',
         icon: 'teams',
         shortcut: ['u', 'u'],

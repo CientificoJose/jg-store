@@ -75,7 +75,10 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Formulario de creación y edición (`/dashboard/product/new` y `/dashboard/product/[id]`):
     - Gestión de SKU, nombre, 24 departamentos, unidad de venta, PVP detal, tarifa mayor, mínimo mayorista, stock y URL de foto con vista previa en vivo.
     - Sincronización instantánea con el catálogo de la tienda y la base de datos Supabase PostgREST.
-- [ ] Panel de Gestión de Usuarios y Clientes Mayoristas en `/dashboard/users`.
+- [x] **Panel de Gestión de Usuarios y Clientes Mayoristas (`/dashboard/users`):**
+  - Tabla de administración adaptada al modelo B2B/B2C con Cliente/Contacto, Razón Social / Empresa, RIF/CUIT, enlace directo a WhatsApp, Tipo de Cuenta (Mayorista B2B VIP, Cliente al Detal, Administrador, Asesor Comercial), Estado (Activo, Pendiente Aprobación, Inactivo) y contador de pedidos.
+  - Cajón lateral interactivo (`Sheet`) para registro y edición de clientes/usuarios con validación Zod.
+  - Menú de opciones rápidas con chat directo de WhatsApp pre-rellenado, edición y eliminación.
 - [ ] Panel de Gestión de Pedidos y Cotizaciones en `/dashboard/orders`.
 - [ ] Ejecutar migración SQL en la base de datos PostgreSQL de Dokploy (`http://jg-store-bd.press-cloud.com`) para persistir productos en BD remota.
 - [ ] Subida de imágenes a Supabase Storage Bucket (`products`).

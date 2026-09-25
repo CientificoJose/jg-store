@@ -1,4 +1,5 @@
 'use client';
+
 import { AlertModal } from '@/components/modal/alert-modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,13 +29,15 @@ export function CellAction({ data }: CellActionProps) {
   const deleteMutation = useMutation({
     ...deleteUserMutation,
     onSuccess: () => {
-      toast.success('User deleted successfully');
+      toast.success('Usuario eliminado exitosamente');
       setDeleteOpen(false);
     },
     onError: () => {
-      toast.error('Failed to delete user');
+      toast.error('No se pudo eliminar el usuario');
     }
   });
+
+  const cleanPhone = data.phone?.replace(/[^0-9]/g, '');
 
   return (
     <>
@@ -46,20 +49,38 @@ export function CellAction({ data }: CellActionProps) {
       />
       <UserFormSheet user={data} open={editOpen} onOpenChange={setEditOpen} />
       <DropdownMenu modal={false}>
-        <DropdownMenuTrigger render={<Button variant='ghost' className='h-8 w-8 p-0' />}>
-          <span className='sr-only'>Open menu</span>
+        <DropdownMenuTrigger render={<Button variant='ghost' className='h-8 w-8 p-0 cursor-pointer' />}>
+          <span className='sr-only'>Abrir menú</span>
           <Icons.ellipsis className='h-4 w-4' />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end'>
+        <DropdownMenuContent align='end' className='font-gotham'>
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>Opciones</DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => setEditOpen(true)}>
-              <Icons.edit className='mr-2 h-4 w-4' /> Update
+            {cleanPhone && (
+              <DropdownMenuItem
+                className='cursor-pointer text-emerald-600'
+                onClick={() =>
+                  window.open(
+                    `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+                      `¡Hola ${data.first_name}! Te saludamos desde la administración de JG Store Polirubro.`
+                    )}`,
+                    '_blank'
+                  )
+                }
+              >
+                <Icons.whatsapp className='mr-2 h-4 w-4' /> Chatear por WhatsApp
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem className='cursor-pointer' onClick={() => setEditOpen(true)}>
+              <Icons.edit className='mr-2 h-4 w-4' /> Editar Datos
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setDeleteOpen(true)}>
-              <Icons.trash className='mr-2 h-4 w-4' /> Delete
+            <DropdownMenuItem
+              className='cursor-pointer text-destructive'
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Icons.trash className='mr-2 h-4 w-4' /> Eliminar
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

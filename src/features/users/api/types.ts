@@ -23,6 +23,10 @@ export type UserMutationPayload = {
   last_name: string;
   email: string;
   phone: string;
-  role: string;
-  status: string;
+  role: 'Mayorista B2B' | 'Cliente al Detal' | 'Administrador' | 'Asesor Comercial';
+  status: 'Activo' | 'Pendiente' | 'Inactivo';
+  empresa?: string;
+  rif_cuit?: string;
+  ciudad?: string;
+  pedidos_count?: number;
 };
