@@ -20,32 +20,33 @@ export const metadata: Metadata = {
     ? { metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL) }
     : {}),
   title: {
-    default: 'Shadcn Dashboard - Next.js Admin Dashboard Template',
-    template: '%s | Shadcn Dashboard'
+    default: 'JG Store | Venta al Detal y al Mayor B2B - 24 Departamentos',
+    template: '%s | JG Store'
   },
   description:
-    'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.',
+    'Tienda departamental y distribuidora oficial JG Store. Precios directos al detal y al mayor con descuentos automáticos por volumen, 24 departamentos comerciales y pedidos vía WhatsApp.',
+  icons: {
+    icon: [
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico', sizes: '32x32' }
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }
+    ],
+    shortcut: '/favicon.ico'
+  },
   openGraph: {
-    title: 'Shadcn Dashboard - Next.js Admin Dashboard Template',
+    title: 'JG Store | Venta al Detal y al Mayor B2B - 24 Departamentos',
     description:
-      'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.',
-    siteName: 'Shadcn Dashboard',
-    type: 'website',
-    images: [
-      {
-        url: '/shadcn-dashboard.png',
-        width: 3200,
-        height: 1600,
-        alt: 'Shadcn Dashboard overview page'
-      }
-    ]
+      'Tienda departamental y distribuidora oficial JG Store. Precios directos al detal y al mayor con descuentos automáticos por volumen, 24 departamentos comerciales y pedidos vía WhatsApp.',
+    siteName: 'JG Store',
+    type: 'website'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Shadcn Dashboard - Next.js Admin Dashboard Template',
+    title: 'JG Store | Venta al Detal y al Mayor B2B',
     description:
-      'Free, open source admin dashboard starter built with Next.js 16, shadcn/ui, Tailwind CSS, and TypeScript.',
-    images: ['/shadcn-dashboard.png']
+      'Tienda departamental y distribuidora oficial JG Store. Precios al detal y al mayor.'
   }
 };
 
