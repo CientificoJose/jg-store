@@ -26,6 +26,9 @@ FROM node:${NODE_VERSION} AS builder
 
 WORKDIR /app
 
+# Install bun for building
+RUN npm install -g bun@1.3.13
+
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
@@ -40,7 +43,7 @@ ARG NEXT_PUBLIC_SENTRY_DISABLED=true
 
 ENV BUILD_STANDALONE=true
 
-RUN npm run build
+RUN bun run build
 
 # ============================================
 # Stage 3: Production runner
