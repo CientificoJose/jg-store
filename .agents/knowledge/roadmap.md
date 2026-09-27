@@ -37,7 +37,9 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - `StoreFooter`: Pie de página departamental y condiciones comerciales.
 - [x] **Experiencia de Búsqueda Inteligente y Sugerencias de Catálogo:**
   - Ocultamiento dinámico del carrusel / hero banner al escribir en el buscador para enfocar los resultados de productos.
-  - Alerta ultra-compacta en banner horizontal cuando no hay coincidencias exactas para un término de búsqueda, dejando espacio visible para la sección inferior de productos sugeridos y más vendidos.
+  - **Motor Híbrido Nativo (`src/lib/search-engine.ts`):** Búsqueda difusa (Fuzzy Levenshtein) para corrección automática de errores tipográficos (ej. *"cuaderbo"* ➔ *"cuaderno"*) y matriz de conceptos/sinónimos polirrubro (ej. *"telefono"* ➔ *"Tecnología, Celulares y Gadgets"* mostrando lámpara con carga Qi, mochila USB, etc.).
+  - Banner inteligente en `ProductGrid`: informa con precisión cuando los productos mostrados son por relación temática (*"No encontramos productos llamados X, pero encontramos artículos relacionados en Y"*) o corrección ortográfica (*"Mostrando resultados para Z"*).
+  - Alerta ultra-compacta en banner horizontal cuando no hay coincidencias exactas ni afines, dejando espacio visible para los productos sugeridos y más vendidos.
   - Acciones rápidas de "Limpiar búsqueda" y "Ver todo el catálogo".
 - [x] **Integración WhatsApp:** Generación de mensajes estructurados con desglose de SKUs, ahorros y datos en `src/lib/whatsapp.ts`.
 - [x] **Branding & Logos Oficiales:**
