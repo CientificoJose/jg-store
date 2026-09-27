@@ -29,6 +29,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - `StoreHeader`: Buscador en tiempo real, menú de 24 categorías, conmutador de modo mayorista y carrito con badge dinámico.
   - `CategoryBar`: Barra deslizante con las 24 categorías oficiales e iconos semánticos.
   - `HeroBanner`: Propuesta de valor B2B/B2C, 4 pilares de confianza y accesos directos.
+  - `PromoCarousel`: Carrusel interactivo de banners promocionales de alta definición (auto-play con pausa al posar el cursor, swipe táctil, botones de navegación e indicadores pill) con 4 campañas argentinas: Compra Mayorista desde $50.000, Aromatización & Bazar, Gadgets & Tecnología Smart, y 10% OFF en transferencias CBU/Alias.
   - `ProductCard`: Semáforo de stock (En stock / Últimas unidades / Agotado), doble precio dinámico, selector de cantidad con tope de stock e indicador de ahorro mayorista.
   - `ProductGrid`: Cuadrícula responsiva con filtros por stock, categoría, búsqueda y ordenamiento.
   - `ProductQuickView`: Modal de detalle con escala de precios y especificaciones.
@@ -66,15 +67,6 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Checkout y cotización por WhatsApp con campos argentinos: CUIT/DNI, Factura A (Responsable Inscripto) vs Factura B (Consumidor Final), Provincia, Código Postal y tipo de logística (Andreani / Correo Arg / Expreso al interior).
   - Medios de pago argentinos: Mercado Pago y Transferencia CBU/Alias con 10% OFF.
   - Hero banner y footer con bandera 🇦🇷, voseo y propuesta de valor nacional.
-- [x] **Carrusel Promocional Hero de Imágenes (`HeroCarousel`):**
-  - Slider interactivo premium en la portada con rotación automática cada 5 segundos y pausa al pasar el cursor (hover).
-  - 4 diapositivas promocionales de alta definición:
-    1. *Super Mayorista 🇦🇷:* Precios directos de distribución y desbloqueo a partir de $ 50.000 ARS.
-    2. *Nueva Temporada 2026:* Novedades en los 24 departamentos (Bazar, Aromatización, Deco, Juguetes).
-    3. *Logística Nacional:* Despachos a toda la Argentina por Andreani y Expresos de carga al interior.
-    4. *Beneficios de Pago:* 10% de descuento por transferencia CBU/Alias y Mercado Pago.
-  - Soporte gestual táctil (Touch Swipe en dispositivos móviles), flechas de navegación flotantes y píldoras indicadoras de progreso.
-  - Integración de los 4 pilares de confianza comercial bajo el carrusel.
 
 ---
 

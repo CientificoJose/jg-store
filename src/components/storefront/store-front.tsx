@@ -7,7 +7,7 @@ import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { CATEGORY_MAP } from '@/constants/categories';
 import { StoreHeader } from './store-header';
 import { CategoryBar } from './category-bar';
-import { HeroCarousel } from './hero-carousel';
+import { HeroBanner } from './hero-banner';
 import { ProductGrid } from './product-grid';
 import { CartDrawer } from './cart-drawer';
 import { ProductQuickView } from './product-quick-view';
@@ -108,8 +108,11 @@ export function StoreFront() {
         onSelectCategory={setSelectedCategory}
       />
 
-      {/* Carrusel de Imágenes Promocionales Hero */}
-      <HeroCarousel onExploreCatalog={handleExploreCatalog} />
+      {/* Hero Banner con Carrusel Promocional */}
+      <HeroBanner
+        onExploreCatalog={handleExploreCatalog}
+        onSelectCategory={setSelectedCategory}
+      />
 
       {/* Barra de 24 Categorías Pegajosa */}
       <CategoryBar

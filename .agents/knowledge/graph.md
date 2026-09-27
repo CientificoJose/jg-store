@@ -92,9 +92,8 @@ graph TD
 ### 6. 🟢 Storefront & Experiencia de Compra Dual B2B/B2C (`storefront`)
 * **Estado:** Completado.
 * **Detalles:**
-  - **Carrusel Promocional Hero (`HeroCarousel`):** Slider dinámico en portada con 4 diapositivas fotográficas de alta resolución, rotación automática (5s), pausa en hover, soporte táctil (swipe móvil), flechas de navegación e indicadores con gradientes de marca.
-  - 24 departamentos oficiales, barra de categorías pegajosa, filtro interactivo de favoritos.
-  - Carrito deslizable con barra de progreso dinámica de $ 50.000 ARS para desbloqueo de precios mayoristas en toda la compra.
+  - 24 departamentos oficiales, Hero Banner con propuesta de valor, filtro interactivo de favoritos.
+  - Carrito deslizable con cálculo dinámico de ahorro mayorista y checkout por WhatsApp estructurado.
   - Sistema de favoritos (Wishlist) con Zustand y persistencia LocalStorage + migración SQL para tablas `users` y `favorites`.
   - **Página de Producto Grande estilo Mercado Libre (`/producto/[id]`):** Tira de miniaturas verticales, zoom de fotografía principal, condición y calificaciones, bloque de precios dual Detal/Mayor con % de descuento, caja de compra ("Buy Box") con botón de WhatsApp directo y botón de carrito, ficha técnica de especificaciones y sección de recomendados *"Quienes vieron este producto también compraron"*.
 
