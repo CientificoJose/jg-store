@@ -9,11 +9,7 @@ interface LogoProps {
   showSubtitle?: boolean;
 }
 
-export function Logo({
-  className = '',
-  size = 'md',
-  variant = 'horizontal'
-}: LogoProps) {
+export function Logo({ className = '', size = 'md', variant = 'horizontal' }: LogoProps) {
   // Alturas proporcionales para el formato horizontal (ideal para barra superior)
   const horizontalHeights = {
     sm: 'h-8',
@@ -32,24 +28,29 @@ export function Logo({
 
   if (variant === 'stacked') {
     return (
-      <Link href="/" className={`inline-flex items-center group cursor-pointer select-none ${className}`}>
-        <div className={`relative ${stackedHeights[size]} w-auto transition-transform duration-300 group-hover:scale-105`}>
+      <Link
+        href='/'
+        className={`inline-flex items-center group cursor-pointer select-none ${className}`}
+      >
+        <div
+          className={`relative ${stackedHeights[size]} w-auto transition-transform duration-300 group-hover:scale-105`}
+        >
           {/* Logo oficial apilado para Modo Diurno (Fondo blanco) */}
           <Image
-            src="/brand/logo-full.png"
-            alt="JG-STORE Polirubro"
+            src='/brand/logo-full.png'
+            alt='JG-STORE Polirubro'
             width={316}
             height={526}
-            className="h-full w-auto object-contain dark:hidden"
+            className='h-full w-auto object-contain dark:hidden'
             priority
           />
           {/* Logo oficial apilado para Modo Nocturno (Texto blanco) */}
           <Image
-            src="/brand/logo-full-dark.png"
-            alt="JG-STORE Polirubro"
+            src='/brand/logo-full-dark.png'
+            alt='JG-STORE Polirubro'
             width={316}
             height={526}
-            className="h-full w-auto object-contain hidden dark:block"
+            className='h-full w-auto object-contain hidden dark:block'
             priority
           />
         </div>
@@ -59,27 +60,35 @@ export function Logo({
 
   // Por defecto: Logo horizontal (Bolsa + JG-STORE POLIRUBRO) perfecto para el navbar
   return (
-    <Link href="/" className={`inline-flex items-center group cursor-pointer select-none ${className}`}>
-      <div className={`relative ${horizontalHeights[size]} w-auto transition-transform duration-300 group-hover:scale-105`}>
+    <Link
+      href='/'
+      className={`inline-flex items-center group cursor-pointer select-none ${className}`}
+    >
+      <div
+        className={`relative ${horizontalHeights[size]} w-auto transition-transform duration-300 group-hover:scale-105`}
+      >
         {/* Modo Diurno / Claro (Texto carbón #222222) */}
         <Image
-          src="/brand/logo-horizontal.png"
-          alt="JG-STORE Polirubro"
+          src='/brand/logo-horizontal.png'
+          alt='JG-STORE Polirubro'
           width={280}
           height={100}
-          className="h-full w-auto object-contain dark:hidden"
+          className='h-full w-auto object-contain dark:hidden'
           priority
         />
         {/* Modo Nocturno / Oscuro (Texto blanco #FFFFFF) */}
         <Image
-          src="/brand/logo-horizontal-dark.png"
-          alt="JG-STORE Polirubro"
+          src='/brand/logo-horizontal-dark.png'
+          alt='JG-STORE Polirubro'
           width={280}
           height={100}
-          className="h-full w-auto object-contain hidden dark:block"
+          className='h-full w-auto object-contain hidden dark:block'
           priority
         />
       </div>
     </Link>
   );
 }
+
+export const BrandLogo = Logo;
+export default Logo;
