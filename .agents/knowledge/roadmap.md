@@ -35,6 +35,10 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - `ProductQuickView`: Modal de detalle con escala de precios y especificaciones.
   - `CartDrawer`: Panel lateral deslizable con cálculo de ahorro mayorista, formulario de cliente y checkout automatizado vía WhatsApp.
   - `StoreFooter`: Pie de página departamental y condiciones comerciales.
+- [x] **Experiencia de Búsqueda Inteligente y Sugerencias de Catálogo:**
+  - Ocultamiento dinámico del carrusel / hero banner al escribir en el buscador para enfocar los resultados de productos.
+  - Alerta ultra-compacta en banner horizontal cuando no hay coincidencias exactas para un término de búsqueda, dejando espacio visible para la sección inferior de productos sugeridos y más vendidos.
+  - Acciones rápidas de "Limpiar búsqueda" y "Ver todo el catálogo".
 - [x] **Integración WhatsApp:** Generación de mensajes estructurados con desglose de SKUs, ahorros y datos en `src/lib/whatsapp.ts`.
 - [x] **Branding & Logos Oficiales:**
   - Favicon e Isotipo oficial para pestañas (`src/app/icon.png`, `public/brand/logo-icon.png`, etc.) con escalado multiformato.

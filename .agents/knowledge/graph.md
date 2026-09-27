@@ -94,6 +94,7 @@ graph TD
 * **Detalles:**
   - 24 departamentos oficiales, Hero Banner con propuesta de valor, filtro interactivo de favoritos.
   - Carrito deslizable con cálculo dinámico de ahorro mayorista y checkout por WhatsApp estructurado.
+  - Experiencia de búsqueda optimizada: supresión automática del carrusel promocional al tipear un término, banner de alerta horizontal ultra-compacto cuando no hay coincidencia exacta y despliegue inmediato de productos sugeridos.
   - Sistema de favoritos (Wishlist) con Zustand y persistencia LocalStorage + migración SQL para tablas `users` y `favorites`.
   - **Página de Producto Grande estilo Mercado Libre (`/producto/[id]`):** Tira de miniaturas verticales, zoom de fotografía principal, condición y calificaciones, bloque de precios dual Detal/Mayor con % de descuento, caja de compra ("Buy Box") con botón de WhatsApp directo y botón de carrito, ficha técnica de especificaciones y sección de recomendados *"Quienes vieron este producto también compraron"*.
 
