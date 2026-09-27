@@ -1,5 +1,3 @@
-import { ClerkProvider } from '@clerk/nextjs';
-import { shadcn } from '@clerk/ui/themes';
 import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { fontVariables } from '@/components/themes/font.config';
@@ -81,24 +79,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           fontVariables
         )}
       >
-        {/* ClerkProvider con tema shadcn para que los formularios de auth coincidan con el diseño */}
-        <ClerkProvider appearance={{ theme: shadcn }}>
-          <NextTopLoader color='var(--primary)' showSpinner={false} />
-          <NuqsAdapter>
-            <ThemeProvider
-              attribute='class'
-              defaultTheme='system'
-              enableSystem
-              disableTransitionOnChange
-              enableColorScheme
-            >
-              <Providers activeThemeValue={themeToApply}>
-                <Toaster />
-                {children}
-              </Providers>
-            </ThemeProvider>
-          </NuqsAdapter>
-        </ClerkProvider>
+        <NextTopLoader color='var(--primary)' showSpinner={false} />
+        <NuqsAdapter>
+          <ThemeProvider
+            attribute='class'
+            defaultTheme='system'
+            enableSystem
+            disableTransitionOnChange
+            enableColorScheme
+          >
+            <Providers activeThemeValue={themeToApply}>
+              <Toaster />
+              {children}
+            </Providers>
+          </ThemeProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );

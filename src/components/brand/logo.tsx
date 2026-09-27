@@ -83,3 +83,5 @@ export function Logo({
     </Link>
   );
 }
+
+export const BrandLogo = Logo;
