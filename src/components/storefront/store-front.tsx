@@ -12,6 +12,7 @@ import { ProductGrid } from './product-grid';
 import { CartDrawer } from './cart-drawer';
 import { ProductQuickView } from './product-quick-view';
 import { StoreFooter } from './store-footer';
+import { INITIAL_PRODUCTS } from '@/constants/initial-catalog';
 
 export function StoreFront() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -99,6 +100,13 @@ export function StoreFront() {
     }
   };
 
+  // Productos recomendados para búsquedas sin resultados
+  const recommendedProducts = useMemo(() => {
+    return products.length > 0 ? products.slice(0, 8) : INITIAL_PRODUCTS.slice(0, 8);
+  }, [products]);
+
+  const isSearching = searchQuery.trim().length > 0;
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-[#E63946] selection:text-white font-gotham transition-colors duration-200">
       {/* Header Fijo */}
@@ -108,11 +116,13 @@ export function StoreFront() {
         onSelectCategory={setSelectedCategory}
       />
 
-      {/* Hero Banner con Carrusel Promocional */}
-      <HeroBanner
-        onExploreCatalog={handleExploreCatalog}
-        onSelectCategory={setSelectedCategory}
-      />
+      {/* Hero Banner con Carrusel Promocional (se oculta al realizar una búsqueda para enfocar los resultados) */}
+      {!isSearching && (
+        <HeroBanner
+          onExploreCatalog={handleExploreCatalog}
+          onSelectCategory={setSelectedCategory}
+        />
+      )}
 
       {/* Barra de 24 Categorías Pegajosa */}
       <CategoryBar
@@ -140,6 +150,9 @@ export function StoreFront() {
             onToggleInStock={() => setOnlyInStock((v) => !v)}
             onResetFilters={handleResetFilters}
             onQuickView={setQuickViewProduct}
+            searchQuery={searchQuery}
+            onClearSearch={() => setSearchQuery('')}
+            recommendedProducts={recommendedProducts}
           />
         )}
       </main>
