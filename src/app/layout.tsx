@@ -1,3 +1,5 @@
+import { ClerkProvider } from '@clerk/nextjs';
+import { shadcn } from '@clerk/ui/themes';
 import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { fontVariables } from '@/components/themes/font.config';
@@ -64,7 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const themeToApply = isValidTheme ? activeThemeValue! : DEFAULT_THEME;
 
   return (
-    <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
+    <html lang='es' suppressHydrationWarning data-theme={themeToApply}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -79,21 +81,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           fontVariables
         )}
       >
-        <NextTopLoader color='var(--primary)' showSpinner={false} />
-        <NuqsAdapter>
-          <ThemeProvider
-            attribute='class'
-            defaultTheme='system'
-            enableSystem
-            disableTransitionOnChange
-            enableColorScheme
-          >
-            <Providers activeThemeValue={themeToApply}>
-              <Toaster />
-              {children}
-            </Providers>
-          </ThemeProvider>
-        </NuqsAdapter>
+        {/* ClerkProvider con tema shadcn para que los formularios de auth coincidan con el diseño */}
+        <ClerkProvider appearance={{ theme: shadcn }}>
+          <NextTopLoader color='var(--primary)' showSpinner={false} />
+          <NuqsAdapter>
+            <ThemeProvider
+              attribute='class'
+              defaultTheme='system'
+              enableSystem
+              disableTransitionOnChange
+              enableColorScheme
+            >
+              <Providers activeThemeValue={themeToApply}>
+                <Toaster />
+                {children}
+              </Providers>
+            </ThemeProvider>
+          </NuqsAdapter>
+        </ClerkProvider>
       </body>
     </html>
   );

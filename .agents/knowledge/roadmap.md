@@ -1,4 +1,4 @@
-# Roadmap & Backlog de Tareas - JG Store
+# Roadmap & Backlog de Tareas - JS Store
 
 Este documento centraliza el estado actual de las tareas para que cualquier IA o miembro del equipo sepa exactamente qué está hecho, qué está pendiente y en qué orden ejecutarlo.
 

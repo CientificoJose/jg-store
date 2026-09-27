@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <style>
+      .brand-handle { fill: none; stroke: #e11d48; stroke-width: 12; stroke-linecap: round; }
+      .brand-bag { fill: #ff6f91; }
+      .brand-pointer { fill: #e11d48; }
+    </style>
+  </defs>
+
+  <!-- Handle -->
+  <path class="brand-handle" d="M 82 45 C 82 20, 118 20, 118 45" />
+
+  <!-- Bag Shape with Arrow Cutout -->
+  <path class="brand-bag" d="
+    M 70 50
+    L 130 50
+    C 137 50, 142 55, 143 62
+    L 150 125
+    C 151 135, 144 142, 134 142
+    L 105 142
+    C 99 142, 94 136, 95 130
+    C 98 116, 96 106, 90 99
+    C 83 91, 71 91, 57 96
+    C 52 98, 48 94, 50 89
+    L 55 62
+    C 56 55, 62 50, 70 50
+    Z
+  " />
+
+  <!-- Pointer / Cursor Arrow -->
+  <path class="brand-pointer" d="
+    M 79 101
+    C 83 105, 82 111, 77 114
+    L 49 130
+    C 44 133, 39 129, 40 124
+    L 48 96
+    C 50 90, 56 89, 59 92
+    L 79 101
+    Z
+  " />
+</svg>

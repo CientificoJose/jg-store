@@ -20,6 +20,7 @@ graph TD
 
     subgraph Fundacion [Infraestructura & UI]
         FE[🟢 Frontend Base: Next.js 16 + shadcn/ui]
+        BR[🟢 Branding, Logo e Identidad Visual]
     end
 
     subgraph Pendientes [Tareas Pendientes Activas]

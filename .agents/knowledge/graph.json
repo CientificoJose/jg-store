@@ -1,24 +1,24 @@
 {
   "project": {
-    "name": "JG Store",
-    "description": "Plataforma de comercio electrónico para ventas online al mayor y al detal (B2B y B2C)",
+    "name": "JS Store",
+    "description": "Plataforma de comercio electrónico en Argentina (ARS) con abastecimiento vía scraping de Coronel y venta dual B2B / B2C",
     "repository": "https://github.com/CientificoJose/jg-store",
-    "lastUpdated": "2026-09-10"
+    "lastUpdated": "2026-09-14"
   },
   "nodes": [
     {
       "id": "business-model",
       "type": "Domain",
-      "title": "Modelo de Negocio B2B + B2C",
-      "status": "pending",
-      "description": "Venta dual al mayor y detal con catálogos, precios diferenciados y condiciones de compra por volumen."
+      "title": "Modelo de Negocio B2B + B2C (Coronel ARS)",
+      "status": "in-progress",
+      "description": "Reventa y distribución en Argentina (ARS) basada en catálogo extraído por scraping de Coronel con márgenes diferenciales para detal y mayor."
     },
     {
       "id": "branding",
       "type": "Identity",
-      "title": "Branding & Activos Visuales",
-      "status": "pending",
-      "description": "Diseño de logotipo, isotipo, paleta de colores de marca y banners de tienda."
+      "title": "Branding & Activos Visuales (JG-STORE Polirubro)",
+      "status": "completed",
+      "description": "Logotipo vectorial SVG oficial, isotipo, paleta Rosado & Blanco y tema CSS jg-store."
     },
     {
       "id": "frontend-foundation",
@@ -38,8 +38,8 @@
       "id": "auth-clerk",
       "type": "Integration",
       "title": "Autenticación con Clerk",
-      "status": "pending",
-      "description": "Conexión y configuración de Clerk para login, sesiones y roles de usuario (administrador, cliente mayorista, cliente minorista). Tarea marcada como pendiente."
+      "status": "completed",
+      "description": "Conexión y configuración de Clerk para login, sesiones y roles de usuario. ClerkProvider, proxy Next.js 16 y vistas /sign-in y /sign-up totalmente operativas."
     },
     {
       "id": "backend-database",

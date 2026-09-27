@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <style>
+      .brand-handle { fill: none; stroke: #e11d48; stroke-width: 18; stroke-linecap: round; }
+      .brand-bag { fill: #ff6f91; }
+      .brand-pointer { fill: #e11d48; }
+      .brand-title { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 900; font-size: 46px; fill: #18181b; letter-spacing: 1px; }
+      .brand-subtitle { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 19px; fill: #18181b; letter-spacing: 7px; }
+    </style>
+  </defs>
+
+  <!-- Handle -->
+  <path class="brand-handle" d="M 222 145 C 222 108, 278 108, 278 145" />
+
+  <!-- Bag Shape with Arrow Cutout -->
+  <path class="brand-bag" d="
+    M 205 150
+    L 295 150
+    C 305 150, 312 158, 314 168
+    L 325 260
+    C 327 274, 316 286, 302 286
+    L 255 286
+    C 246 286, 240 278, 242 269
+    C 246 250, 244 235, 235 224
+    C 224 213, 206 213, 185 220
+    C 178 223, 172 217, 175 210
+    L 182 168
+    C 184 158, 193 150, 205 150
+    Z
+  " />
+
+  <!-- Pointer / Cursor Arrow -->
+  <path class="brand-pointer" d="
+    M 218 228
+    C 223 233, 222 242, 215 246
+    L 174 270
+    C 167 274, 159 269, 161 261
+    L 173 219
+    C 175 211, 184 209, 189 214
+    L 218 228
+    Z
+  " />
+
+  <!-- Brand Typography -->
+  <text x="250" y="348" text-anchor="middle" class="brand-title">JG-STORE</text>
+  <text x="253" y="378" text-anchor="middle" class="brand-subtitle">POLIRUBRO</text>
+</svg>
