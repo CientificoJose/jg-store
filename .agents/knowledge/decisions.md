@@ -31,9 +31,21 @@ Este documento registra las decisiones clave tomadas en el proyecto para que cua
 
 ---
 
+---
+
 ## ADR 004: Memoria Persistente en el Repositorio (Repo-Carried Memory)
 * **Fecha:** 2026-09-10
 * **Estado:** Aceptado
 * **Contexto:** Múltiples personas o diferentes IAs trabajarán en el proyecto en distintas máquinas. Se requiere que el contexto, el grafo de conocimiento y el backlog viajen dentro de Git.
 * **Decisión:** Centralizar el grafo de conocimiento en `.agents/knowledge/`, con una skill `.agents/skills/project-continuity/` y un archivo raíz `AGENTS.md` para auto-descubrimiento.
 * **Consecuencias:** Ninguna IA ni nuevo desarrollador necesitará explicaciones repetitivas; bastará con consultar los archivos de `.agents/knowledge/`.
+
+---
+
+## ADR 005: Pausa Estratégica en Carga Masiva de Productos
+* **Fecha:** 2026-09-26
+* **Estado:** En Pausa / Por Definir
+* **Contexto:** Se formuló la propuesta técnica para la carga masiva mediante plantilla Excel (.xlsx)/CSV, dry-run de validaciones, estrategia de Upsert de precios/stock y asignación de fotos por SKU.
+* **Decisión:** El usuario indicó mantener la tarea en pausa temporalmente para definir con precisión la metodología operativa y formatos comerciales antes de implementarla.
+* **Consecuencias:** No se bloquea el desarrollo de otros módulos de la tienda; la propuesta y especificación quedan documentadas para su reactivación inmediata cuando el usuario lo determine.
+

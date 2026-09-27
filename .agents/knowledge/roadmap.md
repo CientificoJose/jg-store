@@ -98,6 +98,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
       - Desglose de ítems con miniaturas, SKUs, unidades y precios unitarios.
       - Selector de cambio de estado operativo y botón para imprimir Remito Oficial de Despacho.
   - Migración SQL en `supabase/migrations/20260926_create_orders_tables.sql` con tablas `orders` y `order_items` con RLS e índices.
+- [ ] **Carga Masiva de Productos (Bulk Import & Upsert Excel/CSV):** *(En pausa estratégica)* — Propuesta estructurada en ADR 005 para definir formato final (Excel vs CSV vs integración) y flujo operativo con el usuario.
 - [ ] Ejecutar migración SQL en la base de datos PostgreSQL de Dokploy (`http://jg-store-bd.press-cloud.com`) para persistir productos en BD remota.
 - [ ] Subida de imágenes a Supabase Storage Bucket (`products`).
 
