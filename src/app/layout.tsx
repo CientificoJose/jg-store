@@ -51,7 +51,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: META_THEME_COLORS.light
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: META_THEME_COLORS.light },
+    { media: '(prefers-color-scheme: dark)', color: META_THEME_COLORS.dark }
+  ]
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -68,18 +71,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link
           href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
           rel="stylesheet"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                // Set meta theme color
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '${META_THEME_COLORS.dark}')
-                }
-              } catch (_) {}
-            `
-          }}
         />
       </head>
       <body
