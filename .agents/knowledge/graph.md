@@ -104,5 +104,15 @@ graph TD
 
 ### 8. 🟡 Backend y Base de Datos (`backend-database`)
 * **Estado:** Pendiente de migración remota.
-* **Objetivo:** Conexión con PostgreSQL / Supabase Dokploy (`http://jg-store-bd.press-cloud.com`) ejecutando los scripts SQL preparados (`20260917_create_products_table.sql` y `20260925_create_users_and_favorites_tables.sql`).
+* **Objetivo:** Conexión con PostgreSQL / Supabase Dokploy (`http://jg-store-bd.press-cloud.com`) ejecutando los scripts SQL preparados (`20260917_create_products_table.sql`, `20260925_create_users_and_favorites_tables.sql`, `20260926_create_orders_tables.sql`).
+
+### 9. 🟢 Panel de Gestión de Pedidos y Cotizaciones (`orders-management`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Panel administrativo completo en `/dashboard/orders` integrado en la barra de navegación lateral.
+  - Soporte B2B y B2C en Argentina: discriminación de Factura A (CUIT) vs Factura B (DNI), medios de pago (Mercado Pago / Transferencia CBU con 10% OFF), logística a todo el país (Andreani / Correo Argentino / Expresos al interior / Retiro en depósito).
+  - 4 métricas ejecutivas en `$ ARS`: Facturación total, Pedidos Mayoristas B2B, Pedidos Minoristas B2C, y Pendientes de preparación.
+  - Cajón lateral interactivo `OrderDetailSheet` con desglose de ítems, cálculo de ahorro mayorista, editor de número de guía/remito y botón de contacto por WhatsApp.
+  - Tabla TanStack Table con búsqueda y filtros sincronizados en URL con `nuqs`.
+  - Migración SQL en `supabase/migrations/20260926_create_orders_tables.sql`.
 

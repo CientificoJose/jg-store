@@ -85,8 +85,18 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 - [x] **Panel de Gestión de Usuarios y Clientes Mayoristas (`/dashboard/users`):**
   - Tabla de administración adaptada al modelo B2B/B2C con Cliente/Contacto, Razón Social / Empresa, RIF/CUIT, enlace directo a WhatsApp, Tipo de Cuenta (Mayorista B2B VIP, Cliente al Detal, Administrador, Asesor Comercial), Estado (Activo, Pendiente Aprobación, Inactivo) y contador de pedidos.
   - Cajón lateral interactivo (`Sheet`) para registro y edición de clientes/usuarios con validación Zod.
-  - Menú de opciones rápidas con chat directo de WhatsApp pre-rellenado, edición y eliminación.
-- [ ] Panel de Gestión de Pedidos y Cotizaciones en `/dashboard/orders`.
+- [x] **Panel de Gestión de Pedidos y Cotizaciones (`/dashboard/orders`):**
+  - Módulo completo adaptado a Argentina con soporte B2B Mayorista y B2C Minorista:
+    - **4 Tarjetas de Métricas Ejecutivas:** Total Facturado en Pesos Argentinos (`$` ARS), Pedidos Mayoristas B2B, Pedidos Minoristas B2C y Pendientes de Despacho en depósito.
+    - **Tabla de Pedidos TanStack Table + nuqs:** Búsqueda en tiempo real por número de orden, cliente, CUIT/DNI o localidad; filtros por Tipo de Venta (Mayorista B2B / Minorista B2C), Estado del Pedido (Nueva, En Preparación, Lista p/ Despacho, Completada, Cancelada) y Estado de Pago (Pagado / Pendiente).
+    - **Ficha y Cajón Lateral de Pedido (`OrderDetailSheet`):**
+      - Datos fiscales AFIP: Factura A (Responsable Inscripto con CUIT) y Factura B (Consumidor Final con DNI).
+      - Integración WhatsApp con un clic: mensaje pre-armado con número de orden, nombre y monto en ARS.
+      - Logística nacional: Andreani, Correo Argentino, Retiro en Depósito o Expreso de Carga al interior con editor de número de guía/remito en vivo.
+      - Desglose financiero: Subtotal, Ahorro Mayorista, Descuento Transferencia CBU (10% OFF), Flete y Total final en `$ ARS`.
+      - Desglose de ítems con miniaturas, SKUs, unidades y precios unitarios.
+      - Selector de cambio de estado operativo y botón para imprimir Remito Oficial de Despacho.
+  - Migración SQL en `supabase/migrations/20260926_create_orders_tables.sql` con tablas `orders` y `order_items` con RLS e índices.
 - [ ] Ejecutar migración SQL en la base de datos PostgreSQL de Dokploy (`http://jg-store-bd.press-cloud.com`) para persistir productos en BD remota.
 - [ ] Subida de imágenes a Supabase Storage Bucket (`products`).
 

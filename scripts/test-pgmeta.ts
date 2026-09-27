@@ -18,7 +18,7 @@ async function testHeaders() {
     };
     const res = await fetch(base + '/api/pg-meta/default/query', {
       method: 'POST',
-      headers: h,
+      headers: h as unknown as Record<string, string>,
       body: JSON.stringify({ query: 'SELECT 1;' })
     });
     console.log(`Config ${i}:`, res.status, await res.text());

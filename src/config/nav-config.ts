@@ -84,6 +84,14 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: 'Pedidos y Órdenes',
+        url: '/dashboard/orders',
+        icon: 'billing',
+        shortcut: ['o', 'o'],
+        isActive: false,
+        items: []
+      },
+      {
         title: 'Kanban',
         url: '/dashboard/kanban',
         icon: 'kanban',
