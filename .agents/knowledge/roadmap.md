@@ -66,6 +66,15 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Checkout y cotización por WhatsApp con campos argentinos: CUIT/DNI, Factura A (Responsable Inscripto) vs Factura B (Consumidor Final), Provincia, Código Postal y tipo de logística (Andreani / Correo Arg / Expreso al interior).
   - Medios de pago argentinos: Mercado Pago y Transferencia CBU/Alias con 10% OFF.
   - Hero banner y footer con bandera 🇦🇷, voseo y propuesta de valor nacional.
+- [x] **Carrusel Promocional Hero de Imágenes (`HeroCarousel`):**
+  - Slider interactivo premium en la portada con rotación automática cada 5 segundos y pausa al pasar el cursor (hover).
+  - 4 diapositivas promocionales de alta definición:
+    1. *Super Mayorista 🇦🇷:* Precios directos de distribución y desbloqueo a partir de $ 50.000 ARS.
+    2. *Nueva Temporada 2026:* Novedades en los 24 departamentos (Bazar, Aromatización, Deco, Juguetes).
+    3. *Logística Nacional:* Despachos a toda la Argentina por Andreani y Expresos de carga al interior.
+    4. *Beneficios de Pago:* 10% de descuento por transferencia CBU/Alias y Mercado Pago.
+  - Soporte gestual táctil (Touch Swipe en dispositivos móviles), flechas de navegación flotantes y píldoras indicadoras de progreso.
+  - Integración de los 4 pilares de confianza comercial bajo el carrusel.
 
 ---
 
