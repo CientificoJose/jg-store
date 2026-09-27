@@ -37,7 +37,7 @@ export function ProductGrid({
   const isSearchEmpty = Boolean(searchQuery?.trim()) && products.length === 0;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 font-gotham">
+    <section className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-gotham ${isSearchEmpty ? 'py-3 sm:py-5' : 'py-8 sm:py-12'}`}>
       {/* Barra de Filtros y Ordenamiento (Solo si hay productos o si no es búsqueda vacía) */}
       {!isSearchEmpty && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/80">
@@ -92,36 +92,40 @@ export function ProductGrid({
 
       {/* Manejo de Resultados */}
       {products.length === 0 ? (
-        <div className="py-8 font-gotham">
-          {/* Caso 1: Búsqueda sin coincidencias */}
+        <div className="py-2 font-gotham">
+          {/* Caso 1: Búsqueda sin coincidencias - Barra Compacta */}
           {searchQuery?.trim() ? (
-            <div className="space-y-10">
-              <div className="p-8 rounded-3xl bg-card border border-border/80 text-center max-w-2xl mx-auto shadow-sm">
-                <div className="w-16 h-16 rounded-2xl bg-[#E63946]/10 text-[#E63946] flex items-center justify-center mx-auto mb-4 border border-[#E63946]/20">
-                  <Icons.search className="w-8 h-8" />
+            <div className="space-y-5">
+              {/* Alerta compacta horizontal */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-card border border-border/70 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#E63946]/10 text-[#E63946] flex items-center justify-center shrink-0 border border-[#E63946]/20">
+                    <Icons.search className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
+                      No encontramos resultados para <span className="text-[#E63946]">"{searchQuery}"</span>
+                    </h3>
+                    <p className="text-[11px] text-[#6C757D] leading-tight">
+                      Revisá la ortografía o mirá los productos destacados que te sugerimos abajo:
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bebas tracking-wide text-foreground">
-                  No encontramos resultados para{' '}
-                  <span className="text-[#E63946]">"{searchQuery}"</span>
-                </h3>
-                <p className="text-xs sm:text-sm text-[#6C757D] mt-2 max-w-md mx-auto leading-relaxed">
-                  No hay publicaciones que coincidan exactamente con tu término de búsqueda. Revisá que esté bien escrito o explorá las opciones que tenemos disponibles.
-                </p>
 
                 {onClearSearch && (
-                  <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                     <button
                       onClick={onClearSearch}
-                      className="px-5 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs transition-all cursor-pointer shadow-md shadow-[#E63946]/20 flex items-center gap-1.5"
+                      className="h-8 px-3 rounded-lg bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
                     >
-                      <Icons.close className="w-3.5 h-3.5" />
+                      <Icons.close className="w-3 h-3" />
                       <span>Limpiar búsqueda</span>
                     </button>
                     <button
                       onClick={onResetFilters}
-                      className="px-5 py-2.5 rounded-xl border border-border bg-muted/30 hover:bg-muted text-foreground font-semibold text-xs transition-all cursor-pointer"
+                      className="h-8 px-3 rounded-lg border border-border bg-muted/30 hover:bg-muted text-foreground font-semibold text-xs transition-all cursor-pointer"
                     >
-                      Ver todo el catálogo
+                      Ver todo
                     </button>
                   </div>
                 )}
@@ -129,8 +133,8 @@ export function ProductGrid({
 
               {/* Recomendaciones / Otros Productos Disponibles */}
               {recommendedProducts.length > 0 && (
-                <div className="pt-4 border-t border-border/60">
-                  <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
                     <div>
                       <h4 className="text-xl sm:text-2xl font-bebas tracking-wide text-foreground flex items-center gap-2">
                         <span>🔥 Productos Sugeridos de JG Store</span>
@@ -138,8 +142,8 @@ export function ProductGrid({
                           Recomendados
                         </span>
                       </h4>
-                      <p className="text-xs text-[#6C757D] mt-0.5 font-gotham">
-                        Te mostramos los productos más vendidos con stock inmediato en depósito:
+                      <p className="text-xs text-[#6C757D] font-gotham">
+                        Los más vendidos y con stock inmediato en depósito:
                       </p>
                     </div>
                   </div>
@@ -158,19 +162,19 @@ export function ProductGrid({
             </div>
           ) : (
             /* Caso 2: Categoría o filtro vacío sin búsqueda */
-            <div className="py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-muted/60 text-[#6C757D] flex items-center justify-center mx-auto mb-4">
-                <Icons.search className="w-8 h-8" />
+            <div className="py-12 text-center">
+              <div className="w-12 h-12 rounded-xl bg-muted/60 text-[#6C757D] flex items-center justify-center mx-auto mb-3">
+                <Icons.search className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-foreground">No encontramos productos en esta sección</h3>
+              <h3 className="text-sm font-bold text-foreground">No encontramos productos en esta sección</h3>
               <p className="text-xs text-[#6C757D] mt-1 max-w-sm mx-auto">
                 Prueba seleccionando otro rubro o desactivando el filtro de solo stock.
               </p>
               <button
                 onClick={onResetFilters}
-                className="mt-5 px-4 py-2 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs transition-colors cursor-pointer shadow-sm shadow-[#E63946]/20"
+                className="mt-4 px-4 py-2 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs transition-colors cursor-pointer shadow-sm shadow-[#E63946]/20"
               >
-                Restablecer todos los filtros
+                Restablecer filtros
               </button>
             </div>
           )}
