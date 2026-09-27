@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { StoreProduct, ProductSortOption } from '@/types/store';
-import { fetchStoreProducts } from '@/lib/store-service';
+import { fetchStoreProductsWithMeta } from '@/lib/store-service';
+import { SearchMatchMetadata } from '@/lib/search-engine';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { CATEGORY_MAP } from '@/constants/categories';
 import { StoreHeader } from './store-header';
@@ -24,6 +25,7 @@ export function StoreFront() {
   const { favoriteIds, showOnlyFavorites, setShowOnlyFavorites } = useFavoritesStore();
 
   const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [searchMetadata, setSearchMetadata] = useState<SearchMatchMetadata | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Carga de productos
@@ -31,7 +33,7 @@ export function StoreFront() {
     let isMounted = true;
     setIsLoading(true);
 
-    fetchStoreProducts({
+    fetchStoreProductsWithMeta({
       category: selectedCategory,
       search: searchQuery,
       sort: sortOption,
@@ -39,7 +41,8 @@ export function StoreFront() {
     })
       .then((data) => {
         if (isMounted) {
-          setProducts(data);
+          setProducts(data.products);
+          setSearchMetadata(data.searchMetadata);
           setIsLoading(false);
         }
       })
@@ -153,6 +156,7 @@ export function StoreFront() {
             searchQuery={searchQuery}
             onClearSearch={() => setSearchQuery('')}
             recommendedProducts={recommendedProducts}
+            searchMetadata={searchMetadata}
           />
         )}
       </main>

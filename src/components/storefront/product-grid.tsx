@@ -4,6 +4,7 @@ import React from 'react';
 import { StoreProduct, ProductSortOption } from '@/types/store';
 import { ProductCard } from './product-card';
 import { Icons } from '@/components/icons';
+import { SearchMatchMetadata } from '@/lib/search-engine';
 
 interface ProductGridProps {
   products: StoreProduct[];
@@ -18,6 +19,7 @@ interface ProductGridProps {
   searchQuery?: string;
   onClearSearch?: () => void;
   recommendedProducts?: StoreProduct[];
+  searchMetadata?: SearchMatchMetadata;
 }
 
 export function ProductGrid({
@@ -32,7 +34,8 @@ export function ProductGrid({
   onQuickView,
   searchQuery,
   onClearSearch,
-  recommendedProducts = []
+  recommendedProducts = [],
+  searchMetadata
 }: ProductGridProps) {
   const isSearchEmpty = Boolean(searchQuery?.trim()) && products.length === 0;
 
@@ -43,13 +46,21 @@ export function ProductGrid({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/80">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bebas tracking-wide text-foreground flex items-center gap-2.5">
-              <span>{categoryTitle}</span>
+              <span>
+                {searchMetadata?.matchType === 'related'
+                  ? `Artículos Relacionados con "${searchQuery}"`
+                  : searchMetadata?.matchType === 'typo'
+                  ? `Resultados para "${searchMetadata.correctedWord}"`
+                  : categoryTitle}
+              </span>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20 font-gotham">
                 {products.length} producto{products.length === 1 ? '' : 's'}
               </span>
             </h2>
             <p className="text-xs text-[#6C757D] mt-0.5 font-gotham">
-              Precios con descuento mayorista automático por volumen y PVP para compras al detal.
+              {searchMetadata?.matchType === 'related' && searchMetadata.matchedConcept
+                ? `Búsqueda inteligente: asociamos tu término con ${searchMetadata.matchedConcept}.`
+                : 'Precios con descuento mayorista automático por volumen y PVP para compras al detal.'}
             </p>
           </div>
 
@@ -181,14 +192,72 @@ export function ProductGrid({
         </div>
       ) : (
         /* Caso 3: Listado con productos */
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 mt-6">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onQuickView={onQuickView}
-            />
-          ))}
+        <div className="mt-6">
+          {/* Banner de Relación Inteligente */}
+          {searchMetadata?.matchType === 'related' && (
+            <div className="mb-6 p-3 sm:p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                  <Icons.sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
+                    No encontramos productos llamados <span className="text-[#E63946]">"{searchQuery}"</span>, pero encontramos artículos relacionados en <span className="text-amber-600 dark:text-amber-400 font-bold">{searchMetadata.matchedConcept}</span>:
+                  </h3>
+                  <p className="text-[11px] text-[#6C757D] leading-tight">
+                    Mostrando las mejores alternativas disponibles en depósito para tu búsqueda:
+                  </p>
+                </div>
+              </div>
+              {onClearSearch && (
+                <button
+                  onClick={onClearSearch}
+                  className="h-8 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground cursor-pointer shrink-0 self-end sm:self-auto flex items-center gap-1.5 transition-colors"
+                >
+                  <Icons.close className="w-3.5 h-3.5" />
+                  <span>Limpiar búsqueda</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Banner de Corrección Tipográfica */}
+          {searchMetadata?.matchType === 'typo' && (
+            <div className="mb-6 p-3 sm:p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
+                  <Icons.search className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
+                    Mostrando resultados para <span className="text-blue-600 dark:text-blue-400 font-bold">"{searchMetadata.correctedWord}"</span>:
+                  </h3>
+                  <p className="text-[11px] text-[#6C757D] leading-tight">
+                    Corregimos automáticamente el término similar a "{searchQuery}".
+                  </p>
+                </div>
+              </div>
+              {onClearSearch && (
+                <button
+                  onClick={onClearSearch}
+                  className="h-8 px-3 rounded-lg border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground cursor-pointer shrink-0 self-end sm:self-auto flex items-center gap-1.5 transition-colors"
+                >
+                  <Icons.close className="w-3.5 h-3.5" />
+                  <span>Limpiar</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onQuickView={onQuickView}
+              />
+            ))}
+          </div>
         </div>
       )}
     </section>

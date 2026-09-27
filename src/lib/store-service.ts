@@ -14,9 +14,16 @@ export interface FetchProductsOptions {
   onlyInStock?: boolean;
 }
 
-export async function fetchStoreProducts(
+import { performSmartSearch, SearchMatchMetadata } from './search-engine';
+
+export interface FetchProductsResult {
+  products: StoreProduct[];
+  searchMetadata?: SearchMatchMetadata;
+}
+
+export async function fetchStoreProductsWithMeta(
   options: FetchProductsOptions = {}
-): Promise<StoreProduct[]> {
+): Promise<FetchProductsResult> {
   const { category, search, sort = 'popular', onlyInStock = false } = options;
 
   let products: StoreProduct[] = [];
@@ -67,21 +74,31 @@ export async function fetchStoreProducts(
     products = [...localCatalog];
   }
 
-  // 1. Filtrar por categoría
-  if (category && category !== 'all') {
+  const allAvailableProducts = [...products];
+
+  // 1. Filtrar por categoría (si no hay búsqueda o como filtro base)
+  if (category && category !== 'all' && (!search || search.trim() === '')) {
     products = products.filter((p) => p.category_slug === category);
   }
 
-  // 2. Filtrar por búsqueda (nombre, SKU, descripción, tags)
+  let searchMetadata: SearchMatchMetadata | undefined;
+
+  // 2. Filtrar por búsqueda inteligente (coincidencias, fuzzy typos y sinónimos polirrubro)
   if (search && search.trim() !== '') {
-    const q = search.toLowerCase().trim();
-    products = products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.tags?.some((t) => t.toLowerCase().includes(q))
-    );
+    // Si hay categoría seleccionada, probamos primero en esa categoría
+    let pool = (category && category !== 'all')
+      ? products.filter((p) => p.category_slug === category)
+      : products;
+
+    let smartRes = performSmartSearch(pool, search);
+
+    // Si dentro de la categoría no hubo nada, buscamos en todo el catálogo
+    if (smartRes.products.length === 0 && category && category !== 'all') {
+      smartRes = performSmartSearch(allAvailableProducts, search);
+    }
+
+    products = smartRes.products;
+    searchMetadata = smartRes.metadata;
   }
 
   // 3. Filtrar solo productos en stock
@@ -113,7 +130,14 @@ export async function fetchStoreProducts(
       break;
   }
 
-  return products;
+  return { products, searchMetadata };
+}
+
+export async function fetchStoreProducts(
+  options: FetchProductsOptions = {}
+): Promise<StoreProduct[]> {
+  const res = await fetchStoreProductsWithMeta(options);
+  return res.products;
 }
 
 export async function fetchProductById(id: string): Promise<StoreProduct | null> {
