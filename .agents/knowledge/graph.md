@@ -118,3 +118,22 @@ graph TD
   - Tabla TanStack Table con búsqueda y filtros sincronizados en URL con `nuqs`.
   - Migración SQL en `supabase/migrations/20260926_create_orders_tables.sql`.
 
+### 10. 🟡 Limpieza de Navegación y Menús Extra (`dashboard-cleanup`)
+* **Estado:** Pendiente prioritaria.
+* **Objetivo:** Ocultar rutas y menús de demostración (Kanban, AI Chat, Chat genérico, Forms demo, etc.) en `src/config/nav-config.ts` para dejar únicamente la operatoria de JG Store.
+
+### 11. 🟡 Módulo de Configuración de la Tienda (`store-config`)
+* **Estado:** Pendiente prioritaria.
+* **Objetivo:** Crear menú `/dashboard/config` con dos submenús:
+  1. **Información básica:** Datos comerciales, CUIT, WhatsApp, depósito, horarios y redes.
+  2. **Orden visual de landing page:** Gestor para ordenar las 24 categorías, carrusel y secciones destacadas.
+
+### 12. 🟡 Jerarquía de Productos en Base de Datos (`hierarchical-products`)
+* **Estado:** Pendiente prioritaria.
+* **Objetivo:** Estructura SQL relacional de 3 niveles: Categorías ➔ Sub-categorías ➔ Sub-sub-categorías conectada con la tabla `products`.
+
+### 13. 🟡 Testing & Calidad (`system-testing`)
+* **Estado:** Pendiente prioritaria.
+* **Objetivo:** Suite de pruebas funcionales para storefront, buscador, carrito, pedidos WhatsApp y panel de administración.
+
+

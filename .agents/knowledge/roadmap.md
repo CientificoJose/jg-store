@@ -110,7 +110,27 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 
 ---
 
-### ⚪ Fase 4: Autenticación & Expansión (Pospuesto intencionalmente)
+### 🎯 Fase 4: Backlog Prioritario Solicitado por el Usuario (Paso a Paso)
+- [ ] **1. Ocultar los Menús Extra del Panel de Administración:**
+  - Limpieza de `src/config/nav-config.ts` y componentes de navegación.
+  - Ocultar vistas de demostración del starter que no corresponden al negocio (Kanban demo, Chat genérico, AI Chat demo, Formularios demo, React Query demo con Pokémon, etc.).
+  - Mantener visible únicamente la operativa real de JG Store: Overview, Productos, Pedidos/Cotizaciones, Usuarios/Clientes y Configuración.
+- [ ] **2. Menú de Configuración de la Tienda (`/dashboard/config`):**
+  - Creación de grupo en la barra de navegación con dos submódulos dedicados:
+    - **Submenú 2.1: Información Básica de la Tienda:** Edición de datos institucionales (Razón social / Nombre fantasía, CUIT, teléfono/WhatsApp principal de ventas y facturación, dirección física de depósito/retiro, email de contacto, redes sociales y textos de términos/políticas).
+    - **Submenú 2.2: Orden Visual de la Landing Page:** Gestor administrativo interactivo para reordenar la presentación de las 24 categorías, habilitar/deshabilitar banners del carrusel hero, configurar el banner de ofertas y secciones destacadas del Storefront.
+- [ ] **3. Esquema y Tablas de Base de Datos para Productos Jerárquicos (3 Niveles):**
+  - Diseño y migración SQL en Supabase/PostgreSQL Dokploy compatible con jerarquía completa:
+    - **Nivel 1:** Categorías principales (Departamentos oficiales).
+    - **Nivel 2:** Subcategorías asociadas.
+    - **Nivel 3:** Sub-subcategorías (específicas por línea o tipo de producto).
+  - Vinculación relacional con `products` (vía `category_id`, `subcategory_id`, `sub_subcategory_id` o modelo recursivo con `parent_id`), índices de búsqueda y sincronización con el servicio de catálogo.
+- [ ] **4. Testing & Aseguramiento de Calidad:**
+  - Suite de pruebas de flujos críticos del sistema: navegación storefront, motor de búsqueda difusa y sinónimos, cálculo de precios y umbrales mayoristas ($ 50.000 ARS y por bulto), generación de pedidos WhatsApp, y CRUD de productos y órdenes en dashboard.
+
+---
+
+### ⚪ Fase 5: Expansión & Despliegue en Producción (Pospuesto intencionalmente)
 - [x] **Optimización de Build en Docker para Dokploy:** Fijación de Bun a `1.3.13` y remoción de `--frozen-lockfile` en `Dockerfile` y `Dockerfile.bun` para evitar fallos de parseo en cosmiconfig.
 - [ ] Conexión de producción con Clerk cuando el usuario proporcione credenciales activas.
 - [ ] Pasarela de pago complementaria a WhatsApp (opcional).
