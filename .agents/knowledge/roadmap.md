@@ -111,6 +111,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 ---
 
 ### ⚪ Fase 4: Autenticación & Expansión (Pospuesto intencionalmente)
+- [x] **Optimización de Build en Docker para Dokploy:** Fijación de Bun a `1.3.13` y remoción de `--frozen-lockfile` en `Dockerfile` y `Dockerfile.bun` para evitar fallos de parseo en cosmiconfig.
 - [ ] Conexión de producción con Clerk cuando el usuario proporcione credenciales activas.
 - [ ] Pasarela de pago complementaria a WhatsApp (opcional).
 - [ ] Despliegue en producción con SSL/Traefik en Dokploy.
