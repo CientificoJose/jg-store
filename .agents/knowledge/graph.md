@@ -118,9 +118,9 @@ graph TD
   - Tabla TanStack Table con búsqueda y filtros sincronizados en URL con `nuqs`.
   - Migración SQL en `supabase/migrations/20260926_create_orders_tables.sql`.
 
-### 10. 🟡 Limpieza de Navegación y Menús Extra (`dashboard-cleanup`)
-* **Estado:** Pendiente prioritaria.
-* **Objetivo:** Ocultar rutas y menús de demostración (Kanban, AI Chat, Chat genérico, Forms demo, etc.) en `src/config/nav-config.ts` para dejar únicamente la operatoria de JG Store.
+### 10. 🟢 Limpieza de Navegación y Menús Extra (`dashboard-cleanup`)
+* **Estado:** Completado.
+* **Detalles:** Ocultados de `src/config/nav-config.ts` los menús demo marcados por el usuario (Workspaces, Teams, Kanban, Chat, AI Chat, sección Elements completa y Pro), dejando la barra lateral depurada y exclusiva para JG Store.
 
 ### 11. 🟡 Módulo de Configuración de la Tienda (`store-config`)
 * **Estado:** Pendiente prioritaria.

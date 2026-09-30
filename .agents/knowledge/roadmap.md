@@ -111,10 +111,10 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 ---
 
 ### 🎯 Fase 4: Backlog Prioritario Solicitado por el Usuario (Paso a Paso)
-- [ ] **1. Ocultar los Menús Extra del Panel de Administración:**
+- [x] **1. Ocultar los Menús Extra del Panel de Administración:**
   - Limpieza de `src/config/nav-config.ts` y componentes de navegación.
-  - Ocultar vistas de demostración del starter que no corresponden al negocio (Kanban demo, Chat genérico, AI Chat demo, Formularios demo, React Query demo con Pokémon, etc.).
-  - Mantener visible únicamente la operativa real de JG Store: Overview, Productos, Pedidos/Cotizaciones, Usuarios/Clientes y Configuración.
+  - Ocultados todos los elementos demo marcados con punto rojo por el usuario: Workspaces, Teams, Kanban, Chat, AI Chat, sección Elements completa (Forms, React Query, Icons) y Pro.
+  - Navegación depurada y enfocada 100% en la operatoria de JG Store: Dashboard, Ver Tienda Online, Productos JG Store, Clientes y Usuarios, Pedidos y Órdenes, y Cuenta.
 - [ ] **2. Menú de Configuración de la Tienda (`/dashboard/config`):**
   - Creación de grupo en la barra de navegación con dos submódulos dedicados:
     - **Submenú 2.1: Información Básica de la Tienda:** Edición de datos institucionales (Razón social / Nombre fantasía, CUIT, teléfono/WhatsApp principal de ventas y facturación, dirección física de depósito/retiro, email de contacto, redes sociales y textos de términos/políticas).
