@@ -122,11 +122,12 @@ graph TD
 * **Estado:** Completado.
 * **Detalles:** Ocultados de `src/config/nav-config.ts` los menús demo marcados por el usuario (Workspaces, Teams, Kanban, Chat, AI Chat, sección Elements completa y Pro), dejando la barra lateral depurada y exclusiva para JG Store.
 
-### 11. 🟡 Módulo de Configuración de la Tienda (`store-config`)
-* **Estado:** Pendiente prioritaria.
-* **Objetivo:** Crear menú `/dashboard/config` con dos submenús:
-  1. **Información básica:** Datos comerciales, CUIT, WhatsApp, depósito, horarios y redes.
-  2. **Orden visual de landing page:** Gestor para ordenar las 24 categorías, carrusel y secciones destacadas.
+### 11. 🟢 Módulo de Configuración de la Tienda (`store-config`)
+* **Estado:** Completado.
+* **Detalles:** Grupo de configuración en el panel administrativo (`/dashboard/config`) con 3 submódulos interactivos y sincronización en tiempo real con el Storefront:
+  1. **Información General (`/dashboard/config/general`):** Configuración del número oficial de WhatsApp (actualiza dinámicamente todos los enlaces y botones de compra del carrito, fichas y favoritos), descripción del pie de página, horarios, dirección de depósito, CUIT, email y redes sociales.
+  2. **Diseño de Landing (`/dashboard/config/landing`):** Vitrina de categorías estilo SHOPLUXE con fotos miniatura circulares de productos reales, alternancia de estilo (fotos vs pills) y gestor de carruseles de productos de costado con flechas de navegación y enlaces a cada departamento.
+  3. **Temas y Apariencia (`/dashboard/config/theme`):** Selector interactivo con vista previa de colores para las 11 paletas del sistema y selector de modo diurno (blanco) / nocturno (oscuro) / sistema.
 
 ### 12. 🟡 Jerarquía de Productos en Base de Datos (`hierarchical-products`)
 * **Estado:** Pendiente prioritaria.

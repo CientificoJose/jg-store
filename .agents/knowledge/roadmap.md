@@ -115,10 +115,15 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Limpieza de `src/config/nav-config.ts` y componentes de navegación.
   - Ocultados todos los elementos demo marcados con punto rojo por el usuario: Workspaces, Teams, Kanban, Chat, AI Chat, sección Elements completa (Forms, React Query, Icons) y Pro.
   - Navegación depurada y enfocada 100% en la operatoria de JG Store: Dashboard, Ver Tienda Online, Productos JG Store, Clientes y Usuarios, Pedidos y Órdenes, y Cuenta.
-- [ ] **2. Menú de Configuración de la Tienda (`/dashboard/config`):**
-  - Creación de grupo en la barra de navegación con dos submódulos dedicados:
-    - **Submenú 2.1: Información Básica de la Tienda:** Edición de datos institucionales (Razón social / Nombre fantasía, CUIT, teléfono/WhatsApp principal de ventas y facturación, dirección física de depósito/retiro, email de contacto, redes sociales y textos de términos/políticas).
-    - **Submenú 2.2: Orden Visual de la Landing Page:** Gestor administrativo interactivo para reordenar la presentación de las 24 categorías, habilitar/deshabilitar banners del carrusel hero, configurar el banner de ofertas y secciones destacadas del Storefront.
+- [x] **2. Menú de Configuración de la Tienda (`/dashboard/config`):**
+  - Creación de grupo en la barra de navegación con tres submódulos interactivos y tienda en vivo:
+    - **Submenú 2.1: Información General (`/dashboard/config/general`):** Edición del número oficial de WhatsApp (con sincronización dinámica e instantánea con todos los botones de compra del carrito, fichas y favoritos), descripción del pie de página, horarios de atención, dirección del depósito, CUIT, email y redes sociales.
+    - **Submenú 2.2: Diseño de Landing (`/dashboard/config/landing`):**
+      - Vitrina de categorías estilo SHOPLUXE con fotos miniatura circulares de productos reales y navegación con flechas.
+      - Gestor dinámico de carruseles de productos horizontales (&quot;de costado&quot;): agregar, reordenar y alternar visibilidad de secciones por rubro (Bazar, Electro, Tendencias, Mayorista) con flechas `&lt; &gt;` y enlace &quot;Ver todo el departamento&quot;.
+    - **Submenú 2.3: Temas y Apariencia (`/dashboard/config/theme`):**
+      - Selector visual de las 11 paletas de colores del sistema (JG Store Oficial, Claude, Discord, Supabase, Vercel, Mono, Notebook, Light Green, Zen, Astro Vista, WhatsApp).
+      - Conmutador interactivo de modo diurno (blanco puro), nocturno y automático del dispositivo.
 - [ ] **3. Esquema y Tablas de Base de Datos para Productos Jerárquicos (3 Niveles):**
   - Diseño y migración SQL en Supabase/PostgreSQL Dokploy compatible con jerarquía completa:
     - **Nivel 1:** Categorías principales (Departamentos oficiales).
