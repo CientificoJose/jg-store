@@ -79,6 +79,37 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
+    label: 'Configuración',
+    items: [
+      {
+        title: 'Ajustes de Tienda',
+        url: '#',
+        icon: 'settings',
+        isActive: true,
+        items: [
+          {
+            title: 'Información General',
+            url: '/dashboard/config/general',
+            icon: 'store',
+            shortcut: ['c', 'g']
+          },
+          {
+            title: 'Diseño de Landing',
+            url: '/dashboard/config/landing',
+            icon: 'layout',
+            shortcut: ['c', 'l']
+          },
+          {
+            title: 'Temas y Apariencia',
+            url: '/dashboard/config/theme',
+            icon: 'palette',
+            shortcut: ['c', 't']
+          }
+        ]
+      }
+    ]
+  },
+  {
     label: 'Cuenta',
     items: [
       {

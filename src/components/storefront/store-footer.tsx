@@ -7,11 +7,16 @@ import { Icons } from '@/components/icons';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
 import { JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
 
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+
 interface StoreFooterProps {
   onSelectCategory: (slug: string) => void;
 }
 
 export function StoreFooter({ onSelectCategory }: StoreFooterProps) {
+  const general = useStoreConfigStore((s) => s.general);
+  const cleanPhone = (general.whatsappNumber || '5491155550000').replace(/[^0-9]/g, '');
+
   // Primeras 8 categorías destacadas para el pie de página
   const highlightedCategories = PRODUCT_CATEGORIES.slice(0, 8);
   const secondColumnCategories = PRODUCT_CATEGORIES.slice(8, 16);
@@ -25,21 +30,32 @@ export function StoreFooter({ onSelectCategory }: StoreFooterProps) {
           <div className="space-y-4">
             <Logo size="lg" />
             <p className="text-xs text-[#6C757D] leading-relaxed">
-              Distribuidora y tienda departamental multirrubro. Ofrecemos catálogo mayorista para comerciantes y venta minorista al detal con precios altamente competitivos.
+              {general.footerDescription ||
+                'Distribuidora y tienda departamental multirrubro. Ofrecemos catálogo mayorista para comerciantes y venta minorista al detal con precios altamente competitivos.'}
             </p>
-            <div className="pt-2 flex items-center gap-3 text-[#6C757D]">
-              <a
-                href={`https://wa.me/${JG_STORE_WHATSAPP_NUMBER}`}
-                target="_blank"
-                rel="noreferrer"
-                className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 flex items-center justify-center transition-colors"
-                title="WhatsApp Oficial"
-              >
-                <Icons.whatsapp className="w-4 h-4" />
-              </a>
+            <div className="pt-2 flex flex-col gap-2 text-[#6C757D]">
+              <div className="flex items-center gap-3">
+                <a
+                  href={`https://wa.me/${cleanPhone}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 flex items-center justify-center transition-colors"
+                  title="WhatsApp Oficial"
+                >
+                  <Icons.whatsapp className="w-4 h-4" />
+                </a>
+                <span className="text-xs font-medium text-foreground">
+                  +{cleanPhone}
+                </span>
+              </div>
               <span className="text-xs text-[#6C757D]">
-                Atención comercial: Lunes a Sábado 8:00 AM - 6:00 PM
+                🕒 {general.schedule || 'Lunes a Sábado de 8:00 a 18:00 hs'}
               </span>
+              {general.address && (
+                <span className="text-xs text-[#6C757D]">
+                  📍 {general.address}
+                </span>
+              )}
             </div>
           </div>
 

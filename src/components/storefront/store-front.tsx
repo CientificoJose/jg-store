@@ -5,10 +5,13 @@ import { StoreProduct, ProductSortOption } from '@/types/store';
 import { fetchStoreProductsWithMeta } from '@/lib/store-service';
 import { SearchMatchMetadata } from '@/lib/search-engine';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 import { CATEGORY_MAP } from '@/constants/categories';
 import { StoreHeader } from './store-header';
 import { CategoryBar } from './category-bar';
 import { HeroBanner } from './hero-banner';
+import { CategoryShowcase } from './category-showcase';
+import { HorizontalProductRow } from './horizontal-product-row';
 import { ProductGrid } from './product-grid';
 import { CartDrawer } from './cart-drawer';
 import { ProductQuickView } from './product-quick-view';
@@ -108,6 +111,26 @@ export function StoreFront() {
     return products.length > 0 ? products.slice(0, 8) : INITIAL_PRODUCTS.slice(0, 8);
   }, [products]);
 
+  const landing = useStoreConfigStore((s) => s.landing);
+
+  // Computar productos para cada fila horizontal de la landing
+  const getRowProducts = (row: (typeof landing.productRows)[0]) => {
+    if (row.type === 'trending') {
+      const featured = products.filter((p) => p.featured);
+      return featured.length > 0 ? featured.slice(0, row.limit) : products.slice(0, row.limit);
+    }
+    if (row.type === 'wholesale') {
+      const wholesale = products.filter(
+        (p) => (p.retail_price - p.wholesale_price) / p.retail_price >= 0.25 || p.min_wholesale_qty <= 6
+      );
+      return wholesale.length > 0 ? wholesale.slice(0, row.limit) : products.slice(0, row.limit);
+    }
+    if (row.type === 'category' && row.categorySlug) {
+      return products.filter((p) => p.category_slug === row.categorySlug).slice(0, row.limit);
+    }
+    return products.slice(0, row.limit);
+  };
+
   const isSearching = searchQuery.trim().length > 0;
 
   return (
@@ -127,13 +150,46 @@ export function StoreFront() {
         />
       )}
 
+      {/* Vitrina de Categorías con Fotos Miniatura (Inspiración SHOPLUXE) */}
+      {!isSearching && selectedCategory === 'all' && !showOnlyFavorites && landing.showCategoryCards && (
+        <CategoryShowcase
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          style={landing.categoryStyle}
+        />
+      )}
+
       {/* Barra de 24 Categorías Pegajosa */}
       <CategoryBar
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
       />
 
-      {/* Cuadrícula de Productos */}
+      {/* Filas de Productos Horizontales "de costado" configurables desde el panel de control */}
+      {!isSearching && selectedCategory === 'all' && !showOnlyFavorites && (
+        <div>
+          {landing.productRows
+            .filter((row) => row.enabled)
+            .map((row) => {
+              const rowItems = getRowProducts(row);
+              if (rowItems.length === 0) return null;
+              return (
+                <HorizontalProductRow
+                  key={row.id}
+                  id={row.id}
+                  title={row.title}
+                  subtitle={row.subtitle}
+                  products={rowItems}
+                  categorySlug={row.categorySlug}
+                  onSelectCategory={setSelectedCategory}
+                  onQuickView={setQuickViewProduct}
+                />
+              );
+            })}
+        </div>
+      )}
+
+      {/* Cuadrícula Principal de Productos */}
       <main id="catalogo-productos" className="flex-1">
         {isLoading ? (
           <div className="max-w-7xl mx-auto px-4 py-16 text-center">

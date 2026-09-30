@@ -7,6 +7,7 @@ import { StoreProduct } from '@/types/store';
 import { formatPrice, JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { ProductCard } from './product-card';
@@ -19,6 +20,7 @@ interface ProductDetailViewProps {
 export function ProductDetailView({ product, relatedProducts }: ProductDetailViewProps) {
   const { addItem, setOpen } = useCartStore();
   const { isFavorite, toggleFavorite } = useFavoritesStore();
+  const whatsappNumber = useStoreConfigStore((s) => s.general.whatsappNumber);
   const isFav = isFavorite(product.id);
 
   // Selector de cantidad
@@ -72,7 +74,8 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
   const handleBuyNowWhatsApp = () => {
     if (isOutOfStock) return;
     const directMessage = `¡Hola JG Store! Quiero comprar ahora este producto:\n\n📦 *${product.name}*\n🔢 SKU: ${product.sku}\n📊 Cantidad: ${quantity} ${product.unit}(s)\n💰 Precio unitario: ${formatPrice(activeUnitPrice)} (${qualifiesForWholesale ? 'Mayorista' : 'Detal'})\n💵 Total estimado: ${formatPrice(subtotal)}${savings > 0 ? `\n🎉 Ahorro Mayorista: ${formatPrice(savings)}` : ''}\n\n¿Tienen disponibilidad para coordinar el pago y envío?`;
-    const url = `https://wa.me/${JG_STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(directMessage)}`;
+    const cleanPhone = (whatsappNumber || JG_STORE_WHATSAPP_NUMBER).replace(/[^0-9]/g, '');
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(directMessage)}`;
     window.open(url, '_blank');
   };
 

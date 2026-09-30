@@ -8,6 +8,7 @@ import { fetchStoreProducts } from '@/lib/store-service';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { formatPrice, JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { ProductCard } from './product-card';
@@ -16,6 +17,7 @@ import { ProductQuickView } from './product-quick-view';
 export function FavoritesView() {
   const { favoriteIds, clearFavorites } = useFavoritesStore();
   const { addItem, setOpen, wholesaleMode } = useCartStore();
+  const whatsappNumber = useStoreConfigStore((s) => s.general.whatsappNumber);
 
   const [allProducts, setAllProducts] = useState<StoreProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,7 +91,8 @@ export function FavoritesView() {
     }
     msg += `\n¿Me confirman disponibilidad y tiempos de entrega? ¡Gracias!`;
 
-    const url = `https://wa.me/${JG_STORE_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    const cleanPhone = (whatsappNumber || JG_STORE_WHATSAPP_NUMBER).replace(/[^0-9]/g, '');
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 

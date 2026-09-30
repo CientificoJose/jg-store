@@ -152,6 +152,7 @@ export const Icons = {
   dashboard: IconLayoutDashboard,
   kanban: IconLayoutKanban,
   panelLeft: IconLayoutSidebar,
+  layout: IconLayout,
 
   // User
   user: IconUser,
@@ -274,6 +275,5 @@ export const Icons = {
   paw: IconPaw,
   backpack: IconBackpack,
   heart: IconHeart,
-  flag: IconFlag,
-  layout: IconLayout
+  flag: IconFlag
 };

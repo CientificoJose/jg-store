@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { formatPrice, buildWhatsAppUrl, WHOLESALE_MIN_AMOUNT_ARS } from '@/lib/whatsapp';
 import { Icons } from '@/components/icons';
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 import { toast } from 'sonner';
 
 export function CartDrawer() {
@@ -20,6 +21,7 @@ export function CartDrawer() {
     getSummary
   } = useCartStore();
 
+  const whatsappNumber = useStoreConfigStore((s) => s.general.whatsappNumber);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   if (!isOpen) return null;
@@ -44,7 +46,7 @@ export function CartDrawer() {
       return;
     }
 
-    const whatsappUrl = buildWhatsAppUrl(items, customer);
+    const whatsappUrl = buildWhatsAppUrl(items, customer, whatsappNumber);
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     toast.success('Abriendo WhatsApp con el detalle de tu pedido...');
   };
