@@ -1,3 +1,26 @@
+export interface SubSubCategory {
+  id: string;
+  subcategory_id: string;
+  subcategory_slug: string;
+  category_slug: string;
+  slug: string;
+  name: string;
+  description?: string;
+  display_order?: number;
+}
+
+export interface SubCategory {
+  id: string;
+  category_id: string;
+  category_slug: string;
+  slug: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  display_order?: number;
+  sub_subcategories?: SubSubCategory[];
+}
+
 export interface StoreProduct {
   id: string;
   sku: string;
@@ -5,6 +28,12 @@ export interface StoreProduct {
   description: string;
   category_slug: string;
   category_name: string;
+  subcategory_id?: string;
+  subcategory_slug?: string;
+  subcategory_name?: string;
+  sub_subcategory_id?: string;
+  sub_subcategory_slug?: string;
+  sub_subcategory_name?: string;
   retail_price: number;       // PVP para cliente detal (desde 1 unidad)
   wholesale_price: number;    // Precio mayorista por unidad
   min_wholesale_qty: number;  // Cantidad mínima requerida para activar precio mayorista

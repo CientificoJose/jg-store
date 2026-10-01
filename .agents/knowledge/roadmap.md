@@ -148,12 +148,32 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Libreta de Direcciones de Entrega:** Registro y guardado de direcciones habituales (Calle, Altura, Localidad, Provincia, Código Postal) y expreso/transporte preferido para auto-completar el formulario de checkout del carrito.
   - **Historial de Pedidos y Cotizaciones:** Listado de órdenes solicitadas por WhatsApp con detalle de ítems, estado del pedido y número de guía/remito.
   - **Seguridad y Perfil:** Cambio de credenciales de acceso y visualización del nivel de cuenta (Cliente al Detal o Mayorista B2B VIP Verificado).
-- [ ] **4. Esquema y Tablas de Base de Datos para Productos Jerárquicos (3 Niveles):**
-  - Diseño y migración SQL en Supabase/PostgreSQL Dokploy compatible con jerarquía completa:
-    - **Nivel 1:** Categorías principales (Departamentos oficiales).
-    - **Nivel 2:** Subcategorías asociadas.
-    - **Nivel 3:** Sub-subcategorías (específicas por línea o tipo de producto).
-  - Vinculación relacional con `products` (vía `category_id`, `subcategory_id`, `sub_subcategory_id` o modelo recursivo con `parent_id`), índices de búsqueda y sincronización con el servicio de catálogo.
+- [x] **4. Esquema, Base de Datos y Catálogo para Productos Jerárquicos (3 Niveles):**
+  - **Migración SQL en Supabase/PostgreSQL Dokploy (`supabase/migrations/20261001_hierarchical_product_categories_3_levels.sql`):**
+    - Tabla `public.categories` (Nivel 1 - 24 departamentos oficiales de JG Store Polirrubro).
+    - Tabla `public.subcategories` (Nivel 2 - con FK `category_id` y `category_slug`).
+    - Tabla `public.sub_subcategories` (Nivel 3 - con FK `subcategory_id`, `subcategory_slug` y `category_slug`).
+    - Modificación de `public.products` incorporando columnas opcionales `subcategory_id`, `subcategory_slug`, `subcategory_name`, `sub_subcategory_id`, `sub_subcategory_slug`, `sub_subcategory_name`.
+    - Índices B-Tree en todos los niveles para filtrado y navegación instantánea.
+    - Vistas desnormalizadas `public.vw_product_hierarchy` (árbol de jerarquía y breadcrumbs) y `public.vw_products_with_hierarchy`.
+    - Políticas RLS completas de lectura pública y mutación administrativa.
+    - Seed data exhaustivo para las 24 categorías oficiales con subcategorías y líneas adaptadas al comercio mayorista y minorista argentino.
+  - **Tipado TypeScript y Modelo de Dominio (`src/types/store.ts`):** Interfaces `SubCategory`, `SubSubCategory` y campos jerárquicos en `StoreProduct`.
+  - **Estructura Jerárquica y Funciones Auxiliares (`src/constants/categories.ts` y `src/features/products/constants/product-options.ts`):**
+    - Mapeo anidado de los 3 niveles para las 24 categorías.
+    - Funciones `getSubcategoriesByCategory()`, `getSubSubcategories()`, `formatCategoryBreadcrumb()`, `getSubcategoryOptions()` y `getSubSubcategoryOptions()`.
+  - **Selectores en Cascada en el Formulario Administrativo (`src/features/products/components/product-form.tsx`):**
+    - Selectores dependientes Nivel 1 ➔ Nivel 2 ➔ Nivel 3 utilizando `useStore` de TanStack Form.
+    - Auto-reseteo automático de hijos cuando el usuario cambia la categoría o subcategoría padre.
+    - Badge con previsualización en vivo de la ruta de categorías (*"Ruta: Aromatización y Velas > Difusores y Esencias > Difusores de Ambiente con Varillas"*).
+    - Estados `disabled` controlados en `SelectField` cuando un nivel dependiente aún no está disponible.
+  - **Capa de Servicios y Persistencia (`src/features/products/api/service.ts` y `src/lib/store-service.ts`):**
+    - Mapeo y persistencia de subcategorías y sub-subcategorías en el catálogo local y en Supabase.
+    - Soporte de filtrado por `subcategory` y `sub_subcategory` en `fetchStoreProductsWithMeta`.
+  - **Indexación en el Motor de Búsqueda (`src/lib/search-engine.ts`):**
+    - Subcategorías y sub-subcategorías incorporadas en los tokens de coincidencia exacta, corrección ortográfica fuzzy (Levenshtein) y puntuación de sinónimos polirrubro.
+  - **Migas de Pan en Ficha de Producto (`src/components/storefront/product-detail-view.tsx`):**
+    - Navegación visual y semántica completa de 3 niveles estilo Mercado Libre (`Inicio > Categoría > Subcategoría > Línea > Producto`).
 - [ ] **5. Testing & Aseguramiento de Calidad:**
   - Suite de pruebas de flujos críticos del sistema: navegación storefront, motor de búsqueda difusa y sinónimos, cálculo de precios y umbrales mayoristas ($ 50.000 ARS y por bulto), generación de pedidos WhatsApp, y CRUD de productos y órdenes en dashboard.
 

@@ -134,9 +134,14 @@ graph TD
   2. **Diseño de Landing (`/dashboard/config/landing`):** Vitrina de categorías estilo SHOPLUXE con fotos miniatura circulares de productos reales (permanece visible al seleccionar categoría), gestor de carruseles de productos de costado con flechas de navegación, y **sección de visibilidad de bloques & filtros opcionales** (switches interactivos para alternar los 4 pilares de confianza del Hero Banner, la barra de categorías en texto, el filtro de Tienda Oficial JG en búsqueda y el cintillo de avisos).
   3. **Temas y Apariencia (`/dashboard/config/theme`):** Selector interactivo con vista previa de colores para las 11 paletas del sistema y selector de modo diurno (blanco) / nocturno (oscuro) / sistema.
 
-### 12. 🟡 Jerarquía de Productos en Base de Datos (`hierarchical-products`)
-* **Estado:** Pendiente prioritaria.
-* **Objetivo:** Estructura SQL relacional de 3 niveles: Categorías ➔ Sub-categorías ➔ Sub-sub-categorías conectada con la tabla `products`.
+### 12. 🟢 Jerarquía de Productos en 3 Niveles en Base de Datos y Catálogo (`hierarchical-products`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Estructura Relacional SQL (`supabase/migrations/20261001_hierarchical_product_categories_3_levels.sql`):** Tablas `categories` (Nivel 1 - 24 departamentos oficiales), `subcategories` (Nivel 2 - subcategorías comerciales) y `sub_subcategories` (Nivel 3 - líneas específicas de producto), vinculadas a `products` con columnas opcionales, claves foráneas, índices de búsqueda y vistas desnormalizadas `vw_product_hierarchy` y `vw_products_with_hierarchy`.
+  - **Dominio TypeScript (`src/types/store.ts` y `src/constants/categories.ts`):** Interfaces `SubCategory` y `SubSubCategory`, catálogo completo de las 24 categorías anidadas en 3 niveles y funciones de ayuda (`getSubcategoriesByCategory`, `getSubSubcategories`, `formatCategoryBreadcrumb`).
+  - **Formulario Administrativo de Productos (`src/features/products/components/product-form.tsx`):** Selectores en cascada Nivel 1 ➔ Nivel 2 ➔ Nivel 3 con `useStore` reactivo de TanStack Form, auto-reseteo de niveles descendientes y badge de previsualización de ruta.
+  - **Indexación y Búsqueda (`src/lib/search-engine.ts` y `src/lib/store-service.ts`):** Coincidencia de tokens, typos fuzzy y puntuación de sinónimos polirrubro sobre nombres y slugs de subcategorías y sub-subcategorías, además de soporte para filtrado directo.
+  - **Ficha de Producto Storefront (`src/components/storefront/product-detail-view.tsx`):** Migas de pan de 3 niveles completas (`Inicio > Categoría > Subcategoría > Línea > Producto`).
 
 ### 13. 🟡 Testing & Calidad (`system-testing`)
 * **Estado:** Pendiente prioritaria.

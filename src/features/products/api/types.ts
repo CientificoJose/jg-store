@@ -3,8 +3,14 @@ export interface Product {
   sku: string;
   name: string;
   description: string;
-  category: string; // slug
+  category: string; // slug Nivel 1
   category_name: string;
+  subcategory_id?: string;
+  subcategory_slug?: string; // slug Nivel 2
+  subcategory_name?: string;
+  sub_subcategory_id?: string;
+  sub_subcategory_slug?: string; // slug Nivel 3
+  sub_subcategory_name?: string;
   retail_price: number;
   wholesale_price: number;
   min_wholesale_qty: number;
@@ -51,6 +57,10 @@ export type ProductMutationPayload = {
   name: string;
   category: string;
   category_name?: string;
+  subcategory?: string;
+  subcategory_name?: string;
+  sub_subcategory?: string;
+  sub_subcategory_name?: string;
   retail_price: number;
   wholesale_price: number;
   min_wholesale_qty: number;

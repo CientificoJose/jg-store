@@ -201,12 +201,20 @@ export function performSmartSearch(
     const pDesc = normalizeText(p.description);
     const pBrand = normalizeText(p.brand || '');
     const pCatName = normalizeText(p.category_name || '');
+    const pSubcatName = normalizeText(p.subcategory_name || '');
+    const pSubSubcatName = normalizeText(p.sub_subcategory_name || '');
+    const pSubcatSlug = normalizeText((p.subcategory_slug || '').replace(/-/g, ' '));
+    const pSubSubcatSlug = normalizeText((p.sub_subcategory_slug || '').replace(/-/g, ' '));
     const pTags = (p.tags || []).map(normalizeText);
     const pAllWords = [
       ...pName.split(' '),
       ...pDesc.split(' '),
       ...pBrand.split(' '),
       ...pCatName.split(' '),
+      ...pSubcatName.split(' '),
+      ...pSubSubcatName.split(' '),
+      ...pSubcatSlug.split(' '),
+      ...pSubSubcatSlug.split(' '),
       ...pTags.flatMap((t) => t.split(' ')),
       pSku
     ].filter(Boolean);
@@ -257,8 +265,10 @@ export function performSmartSearch(
   const typoMatches = allProducts.filter((p) => {
     const wordsInProduct = [
       ...normalizeText(p.name).split(' '),
+      ...normalizeText(p.subcategory_name || '').split(' '),
+      ...normalizeText(p.sub_subcategory_name || '').split(' '),
       ...(p.tags || []).map(normalizeText)
-    ];
+    ].filter(Boolean);
 
     for (const qToken of queryTokens) {
       if (qToken.length < 4) continue; // no aplicar a palabras muy cortas
@@ -315,6 +325,8 @@ export function performSmartSearch(
         const pDesc = normalizeText(product.description);
         const pTags = (product.tags || []).map(normalizeText).join(' ');
         const pCat = normalizeText(product.category_slug);
+        const pSubCat = normalizeText(product.subcategory_name || '');
+        const pSubSubCat = normalizeText(product.sub_subcategory_name || '');
 
         // Coincidencia en categorías asociadas
         if (matchedFamily?.categorySlugs?.includes(product.category_slug)) {
@@ -325,6 +337,8 @@ export function performSmartSearch(
         for (const term of matchedFamily?.targetTerms || []) {
           const normTerm = normalizeText(term);
           if (pName.includes(normTerm)) score += 40;
+          if (pSubSubCat.includes(normTerm)) score += 35;
+          if (pSubCat.includes(normTerm)) score += 30;
           if (pTags.includes(normTerm)) score += 30;
           if (pDesc.includes(normTerm)) score += 15;
           if (pCat.includes(normTerm)) score += 20;

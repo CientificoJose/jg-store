@@ -5,7 +5,13 @@ import { LoadingButton } from '@/components/ui/loading-button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
 import { useAppForm } from '@/lib/form';
-import { categoryOptions } from '@/features/products/constants/product-options';
+import { useStore } from '@tanstack/react-form';
+import {
+  categoryOptions,
+  getSubcategoryOptions,
+  getSubSubcategoryOptions
+} from '@/features/products/constants/product-options';
+import { formatCategoryBreadcrumb } from '@/constants/categories';
 import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -55,7 +61,9 @@ export default function ProductForm({
     defaultValues: {
       sku: initialData?.sku ?? `JG-${Math.floor(100 + Math.random() * 900)}`,
       name: initialData?.name ?? '',
-      category: initialData?.category ?? 'bazar',
+      category: initialData?.category ?? 'bazar-cocina',
+      subcategory: initialData?.subcategory_slug ?? '',
+      sub_subcategory: initialData?.sub_subcategory_slug ?? '',
       retail_price: initialData?.retail_price ?? undefined,
       wholesale_price: initialData?.wholesale_price ?? undefined,
       min_wholesale_qty: initialData?.min_wholesale_qty ?? 6,
@@ -74,6 +82,8 @@ export default function ProductForm({
         sku: value.sku,
         name: value.name,
         category: value.category,
+        subcategory: value.subcategory || undefined,
+        sub_subcategory: value.sub_subcategory || undefined,
         retail_price: Number(value.retail_price),
         wholesale_price: Number(value.wholesale_price),
         min_wholesale_qty: Number(value.min_wholesale_qty || 6),
@@ -94,6 +104,23 @@ export default function ProductForm({
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  // Seguimiento reactivo de los 3 niveles de jerarquía
+  const selectedCategory = useStore(form.store, (s) => s.values.category);
+  const selectedSubcategory = useStore(form.store, (s) => s.values.subcategory);
+  const selectedSubSubcategory = useStore(form.store, (s) => s.values.sub_subcategory);
+
+  const subcategoryOptions = getSubcategoryOptions(selectedCategory);
+  const subSubcategoryOptions = getSubSubcategoryOptions(
+    selectedCategory,
+    selectedSubcategory || ''
+  );
+
+  const breadcrumbPreview = formatCategoryBreadcrumb(
+    selectedCategory,
+    selectedSubcategory,
+    selectedSubSubcategory
+  );
+
   return (
     <Card className='mx-auto w-full max-w-4xl border border-border/80 shadow-md font-gotham'>
       <CardHeader>
@@ -101,7 +128,7 @@ export default function ProductForm({
           {pageTitle}
         </CardTitle>
         <CardDescription className='text-xs text-[#6C757D]'>
-          Administra los datos comerciales, fotos, inventario y la escala de precios dual
+          Administra los datos comerciales, jerarquía de 3 niveles, inventario y precios duales
           (Minorista / Mayorista) para JG Store Polirubro.
         </CardDescription>
       </CardHeader>
@@ -141,22 +168,85 @@ export default function ProductForm({
               </div>
             </div>
 
-            {/* Renglón 2: Rubro y Unidad */}
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
-              <div className='md:col-span-2'>
+            {/* Renglón 2: Jerarquía de Clasificación en 3 Niveles */}
+            <div className='p-4 rounded-2xl bg-muted/20 border border-border/70 space-y-3'>
+              <div className='flex flex-wrap items-center justify-between gap-2'>
+                <div className='text-xs font-bold text-[#E63946] uppercase tracking-wider'>
+                  Jerarquía de Catálogo en 3 Niveles
+                </div>
+                {breadcrumbPreview && (
+                  <div className='text-[11px] font-medium text-foreground/80 bg-background px-3 py-1 rounded-full border border-border/60 shadow-xs flex items-center gap-1.5'>
+                    <span className='w-1.5 h-1.5 rounded-full bg-[#E63946]' />
+                    <span>Ruta: <strong>{breadcrumbPreview}</strong></span>
+                  </div>
+                )}
+              </div>
+
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+                {/* Nivel 1: Categoría Principal */}
                 <form.AppField
                   name='category'
+                  listeners={{
+                    onChange: () => {
+                      form.setFieldValue('subcategory', '');
+                      form.setFieldValue('sub_subcategory', '');
+                    }
+                  }}
                   children={(field) => (
                     <field.SelectField
-                      label='Rubro / Departamento (24 Oficiales)'
+                      label='1. Rubro / Departamento (24)'
                       required
                       options={categoryOptions}
                       placeholder='Selecciona un departamento'
                     />
                   )}
                 />
-              </div>
 
+                {/* Nivel 2: Subcategoría Comercial */}
+                <form.AppField
+                  name='subcategory'
+                  listeners={{
+                    onChange: () => {
+                      form.setFieldValue('sub_subcategory', '');
+                    }
+                  }}
+                  children={(field) => (
+                    <field.SelectField
+                      label='2. Subcategoría Comercial'
+                      options={subcategoryOptions}
+                      placeholder={
+                        subcategoryOptions.length > 0
+                          ? 'Selecciona subcategoría'
+                          : 'Sin subcategorías'
+                      }
+                      disabled={subcategoryOptions.length === 0}
+                    />
+                  )}
+                />
+
+                {/* Nivel 3: Sub-subcategoría / Línea Específica */}
+                <form.AppField
+                  name='sub_subcategory'
+                  children={(field) => (
+                    <field.SelectField
+                      label='3. Línea de Producto (Nivel 3)'
+                      options={subSubcategoryOptions}
+                      placeholder={
+                        subSubcategoryOptions.length > 0
+                          ? 'Selecciona línea de producto'
+                          : selectedSubcategory
+                          ? 'Sin líneas adicionales'
+                          : 'Elige subcategoría primero'
+                      }
+                      disabled={subSubcategoryOptions.length === 0}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Renglón 3: Unidad de Venta */}
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <form.AppField
                 name='unit'
                 children={(field) => (

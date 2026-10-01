@@ -9,6 +9,8 @@ let localCatalog: StoreProduct[] = [...INITIAL_PRODUCTS];
 
 export interface FetchProductsOptions {
   category?: string;
+  subcategory?: string;
+  sub_subcategory?: string;
   search?: string;
   sort?: ProductSortOption;
   onlyInStock?: boolean;
@@ -24,7 +26,7 @@ export interface FetchProductsResult {
 export async function fetchStoreProductsWithMeta(
   options: FetchProductsOptions = {}
 ): Promise<FetchProductsResult> {
-  const { category, search, sort = 'popular', onlyInStock = false } = options;
+  const { category, subcategory, sub_subcategory, search, sort = 'popular', onlyInStock = false } = options;
 
   let products: StoreProduct[] = [];
 
@@ -52,12 +54,19 @@ export async function fetchStoreProductsWithMeta(
             description: item.description || '',
             category_slug: item.category_slug,
             category_name: item.category_name,
+            subcategory_id: item.subcategory_id,
+            subcategory_slug: item.subcategory_slug,
+            subcategory_name: item.subcategory_name,
+            sub_subcategory_id: item.sub_subcategory_id,
+            sub_subcategory_slug: item.sub_subcategory_slug,
+            sub_subcategory_name: item.sub_subcategory_name,
             retail_price: Number(item.retail_price),
             wholesale_price: Number(item.wholesale_price),
             min_wholesale_qty: Number(item.min_wholesale_qty || 6),
             stock: Number(item.stock || 0),
             image_url: item.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
             unit: item.unit || 'unidad',
+            brand: item.brand,
             featured: Boolean(item.featured),
             is_seasonal: Boolean(item.is_seasonal),
             tags: item.tags || []
@@ -79,6 +88,16 @@ export async function fetchStoreProductsWithMeta(
   // 1. Filtrar por categoría (si no hay búsqueda o como filtro base)
   if (category && category !== 'all' && (!search || search.trim() === '')) {
     products = products.filter((p) => p.category_slug === category);
+  }
+
+  // Filtrar por subcategoría comercial (Nivel 2)
+  if (subcategory && subcategory !== 'all' && (!search || search.trim() === '')) {
+    products = products.filter((p) => p.subcategory_slug === subcategory);
+  }
+
+  // Filtrar por línea específica de producto (Nivel 3)
+  if (sub_subcategory && sub_subcategory !== 'all' && (!search || search.trim() === '')) {
+    products = products.filter((p) => p.sub_subcategory_slug === sub_subcategory);
   }
 
   let searchMetadata: SearchMatchMetadata | undefined;

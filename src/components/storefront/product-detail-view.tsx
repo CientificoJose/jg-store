@@ -84,7 +84,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
     <div className="min-h-screen bg-muted/40 py-6 sm:py-8 font-gotham">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Breadcrumb estilo Mercado Libre */}
+        {/* Breadcrumb estilo Mercado Libre con soporte de 3 niveles */}
         <nav className="flex items-center gap-2 text-xs text-[#6C757D] mb-4 overflow-x-auto whitespace-nowrap">
           <Link href="/" className="hover:text-[#E63946] flex items-center gap-1">
             <Icons.chevronLeft className="w-3.5 h-3.5" />
@@ -93,9 +93,23 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
           <span className="text-border">/</span>
           <Link href="/" className="hover:text-[#E63946]">Inicio</Link>
           <span className="text-border">/</span>
-          <span className="font-semibold text-foreground">{product.category_name}</span>
+          <Link href={`/?category=${product.category_slug}`} className="hover:text-[#E63946] font-medium">
+            {product.category_name}
+          </Link>
+          {product.subcategory_name && (
+            <>
+              <span className="text-border">/</span>
+              <span className="text-[#6C757D] font-medium">{product.subcategory_name}</span>
+            </>
+          )}
+          {product.sub_subcategory_name && (
+            <>
+              <span className="text-border">/</span>
+              <span className="text-[#6C757D] font-medium">{product.sub_subcategory_name}</span>
+            </>
+          )}
           <span className="text-border">/</span>
-          <span className="text-[#6C757D] truncate max-w-xs">{product.name}</span>
+          <span className="font-semibold text-foreground truncate max-w-xs">{product.name}</span>
         </nav>
 
         {/* CONTENEDOR PRINCIPAL: Tarjeta Blanca Estilo Mercado Libre */}
