@@ -83,7 +83,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Catálogo actualizado a valores reales en Pesos Argentinos (`$` ARS) en `initial-catalog.ts` y script SQL de Supabase.
   - Formato de moneda `es-AR` sin decimales espurios (`formatPrice`).
   - **Barra de Progreso Dinámica de Compra Mayorista ($ 50.000 ARS)** en `CartDrawer`: desbloqueo automático de precios mayoristas en toda la cesta al alcanzar el monto global de $ 50.000 ARS, o por volumen unitario.
-  - Checkout y cotización por WhatsApp con campos argentinos: CUIT/DNI, Factura A (Responsable Inscripto) vs Factura B (Consumidor Final), Provincia, Código Postal y tipo de logística (Andreani / Correo Arg / Expreso al interior).
+  - Checkout y cotización por WhatsApp con campos argentinos: CUIT/DNI, Factura A (Responsable Inscripto) vs Factura B (Consumidor Final), y modalidades de entrega "🚚 Envío" (con campos de domicilio, C.P. y expreso) y "🤝 Retiro en Persona" (con punto de retiro y horario en depósito central).
   - Medios de pago argentinos: Mercado Pago y Transferencia CBU/Alias con 10% OFF.
   - Hero banner y footer con bandera 🇦🇷, voseo y propuesta de valor nacional.
 
