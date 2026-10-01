@@ -142,13 +142,19 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - **Submenú 2.3: Temas y Apariencia (`/dashboard/config/theme`):**
       - Selector visual de las 11 paletas de colores del sistema (JG Store Oficial, Claude, Discord, Supabase, Vercel, Mono, Notebook, Light Green, Zen, Astro Vista, WhatsApp).
       - Conmutador interactivo de modo diurno (blanco puro), nocturno y automático del dispositivo.
-- [ ] **3. Esquema y Tablas de Base de Datos para Productos Jerárquicos (3 Niveles):**
+- [ ] **3. Interfaz de Configuración de Cuenta para Clientes Normales (No Admin):**
+  - Portal y vista de cuenta dedicada para clientes minoristas (B2C) y comerciantes mayoristas (B2B) (`/cuenta` o `/perfil-cliente`), completamente separada del panel administrativo (`/dashboard`).
+  - **Datos Personales y Fiscales:** Edición de Nombre, Apellido, Razón Social, CUIT/DNI, Teléfono / WhatsApp de contacto y preferencia de comprobante (Factura A / Factura B).
+  - **Libreta de Direcciones de Entrega:** Registro y guardado de direcciones habituales (Calle, Altura, Localidad, Provincia, Código Postal) y expreso/transporte preferido para auto-completar el formulario de checkout del carrito.
+  - **Historial de Pedidos y Cotizaciones:** Listado de órdenes solicitadas por WhatsApp con detalle de ítems, estado del pedido y número de guía/remito.
+  - **Seguridad y Perfil:** Cambio de credenciales de acceso y visualización del nivel de cuenta (Cliente al Detal o Mayorista B2B VIP Verificado).
+- [ ] **4. Esquema y Tablas de Base de Datos para Productos Jerárquicos (3 Niveles):**
   - Diseño y migración SQL en Supabase/PostgreSQL Dokploy compatible con jerarquía completa:
     - **Nivel 1:** Categorías principales (Departamentos oficiales).
     - **Nivel 2:** Subcategorías asociadas.
     - **Nivel 3:** Sub-subcategorías (específicas por línea o tipo de producto).
   - Vinculación relacional con `products` (vía `category_id`, `subcategory_id`, `sub_subcategory_id` o modelo recursivo con `parent_id`), índices de búsqueda y sincronización con el servicio de catálogo.
-- [ ] **4. Testing & Aseguramiento de Calidad:**
+- [ ] **5. Testing & Aseguramiento de Calidad:**
   - Suite de pruebas de flujos críticos del sistema: navegación storefront, motor de búsqueda difusa y sinónimos, cálculo de precios y umbrales mayoristas ($ 50.000 ARS y por bulto), generación de pedidos WhatsApp, y CRUD de productos y órdenes en dashboard.
 
 ---

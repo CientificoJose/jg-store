@@ -142,4 +142,13 @@ graph TD
 * **Estado:** Pendiente prioritaria.
 * **Objetivo:** Suite de pruebas funcionales para storefront, buscador, carrito, pedidos WhatsApp y panel de administración.
 
+### 14. 🟡 Interfaz de Configuración de Cuenta de Cliente No Administrador (`customer-account-settings`)
+* **Estado:** Pendiente prioritaria solicitada por el usuario.
+* **Objetivo:** Portal y vista de cuenta de usuario no administrativo (`/cuenta` o `/perfil-cliente`), independiente del panel de control de administración (`/dashboard`).
+* **Módulos incluidos:**
+  - **Datos Personales y Fiscales:** Edición de Nombre, Razón Social, CUIT/DNI, Teléfono/WhatsApp y tipo de factura por defecto (A o B).
+  - **Libreta de Direcciones:** Guardado de domicilios de entrega (localidad, código postal, calle, expreso habitual) con auto-completado en el checkout.
+  - **Historial de Pedidos:** Registro y seguimiento de cotizaciones y pedidos enviados por WhatsApp con remitos y estados.
+  - **Seguridad y Nivel de Cuenta:** Gestión de contraseña y condición comercial (Cliente Detal B2C / Mayorista B2B VIP Verificado).
+
 

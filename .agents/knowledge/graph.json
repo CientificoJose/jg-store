@@ -54,6 +54,13 @@
       "title": "Sistema de Continuidad y Memoria en Repo",
       "status": "completed",
       "description": "Grafo de conocimiento, bitácora de decisiones y skill de sincronización para que cualquier IA o colaborador retome el contexto sin pérdidas."
+    },
+    {
+      "id": "customer-account-settings",
+      "type": "Storefront",
+      "title": "Configuración de Cuenta para Clientes No Admin",
+      "status": "pending",
+      "description": "Interfaz de cuenta para usuarios finales y comerciantes B2B/B2C: perfil personal, datos fiscales AFIP, libreta de direcciones e historial de pedidos."
     }
   ],
   "edges": [
@@ -86,6 +93,11 @@
       "from": "continuity-system",
       "to": "business-model",
       "relation": "tracks-roadmap"
+    },
+    {
+      "from": "customer-account-settings",
+      "to": "business-model",
+      "relation": "stores-buyer-profile"
     }
   ]
 }
