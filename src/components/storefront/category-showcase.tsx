@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { PRODUCT_CATEGORIES, ProductCategory } from '@/constants/categories';
 import { Icons } from '@/components/icons';
@@ -9,6 +9,67 @@ interface CategoryShowcaseProps {
   selectedCategory: string;
   onSelectCategory: (slug: string) => void;
   style?: 'photos' | 'pills';
+}
+
+function CategoryCircleItem({
+  cat,
+  isSelected,
+  onSelect
+}: {
+  cat: ProductCategory;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const [imgSrc, setImgSrc] = useState(cat.imageUrl);
+  const itemRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isSelected && itemRef.current) {
+      itemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [isSelected]);
+
+  return (
+    <button
+      ref={itemRef}
+      onClick={onSelect}
+      className={`shrink-0 flex flex-col items-center gap-2 group cursor-pointer transition-all duration-200 ${
+        isSelected ? 'scale-105' : 'hover:scale-105'
+      }`}
+    >
+      <div
+        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 border-2 transition-all overflow-hidden shadow-md ${
+          isSelected
+            ? 'border-[#E63946] ring-4 ring-[#E63946]/25 shadow-lg shadow-[#E63946]/20'
+            : 'border-border/80 hover:border-[#E63946]/60 group-hover:shadow-lg'
+        }`}
+      >
+        <div className="relative w-full h-full rounded-full overflow-hidden bg-muted/30 flex items-center justify-center">
+          <Image
+            src={imgSrc}
+            alt={cat.name}
+            fill
+            sizes="(max-width: 640px) 64px, 80px"
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            onError={() => {
+              setImgSrc('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80');
+            }}
+          />
+        </div>
+      </div>
+
+      <span
+        className={`text-xs text-center max-w-[84px] line-clamp-2 leading-tight font-medium transition-colors ${
+          isSelected
+            ? 'font-bold text-[#E63946]'
+            : 'text-foreground group-hover:text-[#E63946]'
+        }`}
+        title={cat.name}
+      >
+        {cat.name}
+      </span>
+    </button>
+  );
 }
 
 export function CategoryShowcase({
@@ -80,7 +141,7 @@ export function CategoryShowcase({
               <div
                 className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-1 border-2 transition-all flex items-center justify-center shadow-md ${
                   selectedCategory === 'all'
-                    ? 'border-[#E63946] bg-[#E63946]/10 ring-4 ring-[#E63946]/20'
+                    ? 'border-[#E63946] bg-[#E63946]/10 ring-4 ring-[#E63946]/20 shadow-lg shadow-[#E63946]/20'
                     : 'border-border/80 bg-muted/40 hover:border-[#E63946]/50'
                 }`}
               >
@@ -100,48 +161,14 @@ export function CategoryShowcase({
             </button>
 
             {/* Categorías con miniaturas de fotos */}
-            {PRODUCT_CATEGORIES.map((cat: ProductCategory) => {
-              const isSelected = selectedCategory === cat.slug;
-
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => onSelectCategory(cat.slug)}
-                  className={`shrink-0 flex flex-col items-center gap-2 group cursor-pointer transition-all duration-200 ${
-                    isSelected ? 'scale-105' : 'hover:scale-105'
-                  }`}
-                >
-                  <div
-                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 border-2 transition-all overflow-hidden shadow-md ${
-                      isSelected
-                        ? 'border-[#E63946] ring-4 ring-[#E63946]/25 shadow-[#E63946]/20'
-                        : 'border-border/80 hover:border-[#E63946]/60 group-hover:shadow-lg'
-                    }`}
-                  >
-                    <div className="relative w-full h-full rounded-full overflow-hidden bg-muted/30">
-                      <Image
-                        src={cat.imageUrl}
-                        alt={cat.name}
-                        fill
-                        sizes="(max-width: 640px) 64px, 80px"
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
-                  </div>
-
-                  <span
-                    className={`text-xs text-center max-w-[84px] line-clamp-2 leading-tight font-medium transition-colors ${
-                      isSelected
-                        ? 'font-bold text-[#E63946]'
-                        : 'text-foreground group-hover:text-[#E63946]'
-                    }`}
-                    title={cat.name}
-                  >
-                    {cat.name}
-                  </span>
-                </button>
-              );
-            })}
+            {PRODUCT_CATEGORIES.map((cat: ProductCategory) => (
+              <CategoryCircleItem
+                key={cat.id}
+                cat={cat}
+                isSelected={selectedCategory === cat.slug}
+                onSelect={() => onSelectCategory(cat.slug)}
+              />
+            ))}
           </div>
         ) : (
           /* Estilo Pills alternativo */

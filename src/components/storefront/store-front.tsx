@@ -159,22 +159,27 @@ export function StoreFront() {
       )}
 
       {/* Vitrina de Categorías con Fotos Miniatura (Inspiración SHOPLUXE) */}
-      {!isSearching && selectedCategory === 'all' && !showOnlyFavorites && landing.showCategoryCards && (
+      {!isSearching && !showOnlyFavorites && landing.showCategoryCards && (
         <CategoryShowcase
           selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
+          onSelectCategory={(cat) => {
+            setSelectedCategory(cat);
+            setSearchQuery('');
+          }}
           style={landing.categoryStyle}
         />
       )}
 
-      {/* Barra de 24 Categorías Pegajosa */}
-      <CategoryBar
-        selectedCategory={selectedCategory}
-        onSelectCategory={(cat) => {
-          setSelectedCategory(cat);
-          setSearchQuery('');
-        }}
-      />
+      {/* Barra de Categorías Pegajosa (Solo visible si no se usan las tarjetas circulares con fotos) */}
+      {!isSearching && !showOnlyFavorites && !landing.showCategoryCards && (
+        <CategoryBar
+          selectedCategory={selectedCategory}
+          onSelectCategory={(cat) => {
+            setSelectedCategory(cat);
+            setSearchQuery('');
+          }}
+        />
+      )}
 
       {/* Filas de Productos Horizontales "de costado" configurables desde el panel de control */}
       {!isSearching && selectedCategory === 'all' && !showOnlyFavorites && (

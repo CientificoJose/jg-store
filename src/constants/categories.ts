@@ -61,7 +61,7 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
     name: 'Cartucheras y Carpetas',
     description: 'Cartucheras escolares, carpetas clasificadoras y folios.',
     icon: 'folder',
-    imageUrl: 'https://images.unsplash.com/photo-1588795914947-662eb74f3ff5?w=300&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=300&auto=format&fit=crop&q=80',
     featured: false
   },
   {
