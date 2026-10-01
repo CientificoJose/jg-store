@@ -60,7 +60,7 @@ const SYNONYM_FAMILIES: SynonymFamily[] = [
     concept: 'Tecnología, Celulares y Gadgets',
     keywords: [
       'telefono', 'telefonos', 'celular', 'celulares', 'celu', 'smartphone', 'smartphones',
-      'movil', 'moviles', 'iphone', 'samsung', 'xiaomi', 'motorola', 'cargador', 'cables'
+      'movil', 'moviles', 'iphone', 'samsung', 'sansung', 'samsun', 'xiaomi', 'motorola', 'cargador', 'cables', 'tecnologia'
     ],
     targetTerms: ['smartphone', 'smartphones', 'celular', 'carga', 'inalambrica', 'usb', 'tecnologia', 'gadget', 'cargador', 'notebook'],
     categorySlugs: ['electro']
@@ -199,10 +199,14 @@ export function performSmartSearch(
     const pName = normalizeText(p.name);
     const pSku = normalizeText(p.sku);
     const pDesc = normalizeText(p.description);
+    const pBrand = normalizeText(p.brand || '');
+    const pCatName = normalizeText(p.category_name || '');
     const pTags = (p.tags || []).map(normalizeText);
     const pAllWords = [
       ...pName.split(' '),
       ...pDesc.split(' '),
+      ...pBrand.split(' '),
+      ...pCatName.split(' '),
       ...pTags.flatMap((t) => t.split(' ')),
       pSku
     ].filter(Boolean);

@@ -138,8 +138,16 @@ export function StoreFront() {
       {/* Header Fijo */}
       <StoreHeader
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSelectCategory={setSelectedCategory}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          if (q.trim()) {
+            setSelectedCategory('all');
+          }
+        }}
+        onSelectCategory={(cat) => {
+          setSelectedCategory(cat);
+          setSearchQuery('');
+        }}
       />
 
       {/* Hero Banner con Carrusel Promocional (se oculta al realizar una búsqueda para enfocar los resultados) */}
@@ -162,7 +170,10 @@ export function StoreFront() {
       {/* Barra de 24 Categorías Pegajosa */}
       <CategoryBar
         selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
+        onSelectCategory={(cat) => {
+          setSelectedCategory(cat);
+          setSearchQuery('');
+        }}
       />
 
       {/* Filas de Productos Horizontales "de costado" configurables desde el panel de control */}

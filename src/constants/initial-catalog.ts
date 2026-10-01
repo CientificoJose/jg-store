@@ -15,6 +15,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 45,
     image_url: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'AromaZen',
     featured: true,
     tags: ['Velas', 'Aromaterapia', 'Hogar']
   },
@@ -31,6 +32,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 28,
     image_url: 'https://images.unsplash.com/photo-1617897903246-719242758050?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Mikado',
     featured: false,
     tags: ['Difusores', 'Lavanda']
   },
@@ -49,6 +51,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 20,
     image_url: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80',
     unit: 'pack',
+    brand: 'Acrilex',
     featured: true,
     tags: ['Arte', 'Pintura', 'Acrílicos']
   },
@@ -67,6 +70,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 35,
     image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80',
     unit: 'set',
+    brand: 'TravelPro',
     featured: false,
     tags: ['Viaje', 'Organizadores']
   },
@@ -85,8 +89,9 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 50,
     image_url: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Stanley',
     featured: true,
-    tags: ['Bazar', 'Termos', 'Cocina']
+    tags: ['Bazar', 'Termos', 'Cocina', 'Stanley']
   },
   {
     id: 'prod-006',
@@ -101,6 +106,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 24,
     image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80',
     unit: 'pack',
+    brand: 'CristalArt',
     featured: false,
     tags: ['Vasos', 'Vidrio', 'Bazar']
   },
@@ -119,6 +125,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 18,
     image_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Lumina',
     featured: true,
     tags: ['Belleza', 'Maquillaje', 'Espejos']
   },
@@ -137,8 +144,9 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 60,
     image_url: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Mooving',
     featured: false,
-    tags: ['Escolar', 'Cartucheras']
+    tags: ['Escolar', 'Cartucheras', 'Mooving']
   },
 
   // 7. Cotillón
@@ -155,6 +163,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 100,
     image_url: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&auto=format&fit=crop&q=80',
     unit: 'pack',
+    brand: 'PartyTime',
     featured: false,
     tags: ['Fiestas', 'Globos', 'Cotillón']
   },
@@ -173,16 +182,17 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 30,
     image_url: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'DecoHome',
     featured: true,
     tags: ['Deco', 'Organización', 'Hogar']
   },
 
-  // 9. Electro
+  // 9. Electro & Gadgets
   {
     id: 'prod-011',
     sku: 'JG-ELE-001',
-    name: 'Lámpara de Escritorio LED Flexo USB con Carga Inalámbrica',
-    description: 'Control touch, 5 intensidades de brillo y pad de carga rápida Qi para smartphones.',
+    name: 'Lámpara de Escritorio LED Flexo USB con Carga Inalámbrica Qi',
+    description: 'Control touch, 5 intensidades de brillo y base de carga rápida inalámbrica para teléfonos Samsung, iPhone y smartphones.',
     category_slug: 'electro',
     category_name: 'Electro',
     retail_price: 29900,
@@ -191,8 +201,43 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 15,
     image_url: 'https://images.unsplash.com/photo-1534073828943-f801091bb18c?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Samsung Gadgets',
     featured: true,
-    tags: ['Electro', 'Iluminación', 'Tecnología']
+    tags: ['Electro', 'Iluminación', 'Tecnología', 'Samsung', 'Teléfono', 'Celulares']
+  },
+  {
+    id: 'prod-028',
+    sku: 'JG-CEL-001',
+    name: 'Soporte Magnético de Celular para Auto con Carga Rápida Qi 15W',
+    description: 'Brazo articulado 360°, imanes Neodimio N52 ultra potentes y cargador rápido inductivo compatible con Samsung Galaxy y smartphones.',
+    category_slug: 'electro',
+    category_name: 'Electro',
+    retail_price: 19500,
+    wholesale_price: 13500,
+    min_wholesale_qty: 4,
+    stock: 35,
+    image_url: 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600&auto=format&fit=crop&q=80',
+    unit: 'unidad',
+    brand: 'Samsung',
+    featured: true,
+    tags: ['Celulares', 'Samsung', 'Tecnología', 'Teléfono', 'Accesorios', 'Auto']
+  },
+  {
+    id: 'prod-029',
+    sku: 'JG-CEL-002',
+    name: 'Auriculares Inalámbricos Bluetooth 5.3 con Estuche de Carga',
+    description: 'Sonido estéreo Hi-Fi, baja latencia, controles táctiles y micrófono integrado para llamadas en teléfonos y notebooks.',
+    category_slug: 'electro',
+    category_name: 'Electro',
+    retail_price: 24500,
+    wholesale_price: 16900,
+    min_wholesale_qty: 3,
+    stock: 28,
+    image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+    unit: 'unidad',
+    brand: 'Xiaomi',
+    featured: true,
+    tags: ['Auriculares', 'Xiaomi', 'Bluetooth', 'Tecnología', 'Audio', 'Teléfono']
   },
 
   // 10. Embalajes
@@ -209,6 +254,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 80,
     image_url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
     unit: 'pack',
+    brand: 'PackTape',
     featured: false,
     tags: ['Embalaje', 'Cintas', 'Envíos']
   },
@@ -227,6 +273,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 25,
     image_url: 'https://images.unsplash.com/photo-1517420704952-d9f39e95b43e?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Black+Decker',
     featured: false,
     tags: ['Ferretería', 'Outdoor', 'Linternas']
   },
@@ -245,6 +292,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 70,
     image_url: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=600&auto=format&fit=crop&q=80',
     unit: 'pack',
+    brand: 'CleanPro',
     featured: false,
     tags: ['Limpieza', 'Microfibra']
   },
@@ -253,179 +301,172 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
   {
     id: 'prod-015',
     sku: 'JG-IND-001',
-    name: 'Gorra Urbana Lisa Ajustable Gabardina Premium',
-    description: 'Confección en algodón 100% reforzado con hebilla metálica. Ideal para bordados o uso diario.',
+    name: 'Pack 3 Remeras Básicas 100% Algodón Peinado Unisex',
+    description: 'Corte regular fit preencogido. Cuello redondo reforzado. Colores: Blanco, Negro, Gris.',
     category_slug: 'indumentaria',
     category_name: 'Indumentaria',
-    retail_price: 10000,
-    wholesale_price: 6800,
-    min_wholesale_qty: 8,
-    stock: 65,
-    image_url: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&auto=format&fit=crop&q=80',
-    unit: 'unidad',
+    retail_price: 24000,
+    wholesale_price: 16800,
+    min_wholesale_qty: 4,
+    stock: 40,
+    image_url: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80',
+    unit: 'pack',
+    brand: 'UrbanWear',
     featured: true,
-    tags: ['Moda', 'Gorras', 'Accesorios']
+    tags: ['Ropa', 'Remeras', 'Algodón']
   },
 
   // 14. Juguetería
   {
     id: 'prod-016',
     sku: 'JG-JUG-001',
-    name: 'Bloques de Construcción Magnéticos 64 Piezas',
-    description: 'Juego didáctico STEM con piezas traslúcidas de bordes redondeados y potentes imanes.',
+    name: 'Set de Bloques Magnéticos de Construcción 64 Piezas',
+    description: 'Piezas geométricas translúcidas con imanes de neodimio para estimular motricidad y creatividad.',
     category_slug: 'jugueteria',
     category_name: 'Juguetería',
-    retail_price: 26000,
-    wholesale_price: 18000,
+    retail_price: 27500,
+    wholesale_price: 19000,
     min_wholesale_qty: 3,
     stock: 22,
     image_url: 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600&auto=format&fit=crop&q=80',
-    unit: 'set',
+    unit: 'caja',
+    brand: 'ToyBox',
     featured: true,
-    tags: ['Juguetes', 'Didácticos', 'Niños']
+    tags: ['Juguetes', 'Bloques', 'Didácticos']
   },
 
   // 15. Librería
   {
     id: 'prod-017',
     sku: 'JG-LIB-001',
-    name: 'Cuaderno Universitario Tapa Dura Cuadriculado A4',
-    description: '100 hojas de 90g resistentes a tinta gel y pluma. Encuadernación anillada doble.',
+    name: 'Cuaderno Universitario A4 Tapa Dura 100 Hojas Rayadas',
+    description: 'Papel obra 80g microprepicado con espiral metálico doble ring binder.',
     category_slug: 'libreria',
     category_name: 'Librería',
-    retail_price: 6500,
-    wholesale_price: 4200,
-    min_wholesale_qty: 12,
+    retail_price: 6800,
+    wholesale_price: 4500,
+    min_wholesale_qty: 10,
     stock: 120,
-    image_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+    image_url: 'https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Faber-Castell',
     featured: true,
     tags: ['Librería', 'Cuadernos', 'Papelería']
-  },
-  {
-    id: 'prod-018',
-    sku: 'JG-LIB-002',
-    name: 'Set Marcadores Doble Punta Pincel & Fina x 24',
-    description: 'Tinta base al agua para lettering, bullet journal, dibujo e ilustraciones.',
-    category_slug: 'libreria',
-    category_name: 'Librería',
-    retail_price: 14500,
-    wholesale_price: 9800,
-    min_wholesale_qty: 4,
-    stock: 35,
-    image_url: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=600&auto=format&fit=crop&q=80',
-    unit: 'pack',
-    featured: false,
-    tags: ['Librería', 'Marcadores', 'Lettering']
   },
 
   // 16. Libros
   {
-    id: 'prod-019',
+    id: 'prod-018',
     sku: 'JG-LBR-001',
-    name: 'Libro de Colorear Anti-Estrés Mandalas & Naturaleza',
-    description: 'Papel de 140g para colorear con lápices o fibras. Diseños intrincados para relajación.',
+    name: 'Libro Infantil de Cuentos Ilustrados Tapa Acolchada',
+    description: 'Historias breves con valores, ilustraciones a todo color y bordes redondeados seguros.',
     category_slug: 'libros',
     category_name: 'Libros',
-    retail_price: 9000,
-    wholesale_price: 6200,
-    min_wholesale_qty: 6,
-    stock: 40,
-    image_url: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&auto=format&fit=crop&q=80',
+    retail_price: 11000,
+    wholesale_price: 7500,
+    min_wholesale_qty: 5,
+    stock: 30,
+    image_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Sudamericana',
     featured: false,
-    tags: ['Libros', 'Creatividad', 'Arte']
+    tags: ['Libros', 'Infantil', 'Lectura']
   },
 
   // 17. Marroquinería
   {
-    id: 'prod-020',
+    id: 'prod-019',
     sku: 'JG-MAR-001',
-    name: 'Billetera Bifold Cuero Ecológico con Bloqueo RFID',
-    description: 'Diseño ultra slim con 8 tarjeteros, doble compartimento para billetes y protección contra clonación.',
+    name: 'Billetera Bifold Hombre Cuero PU con Bloqueo RFID',
+    description: 'Diseño ultrafino con 8 ranuras para tarjetas, doble visor y compartimento para billetes.',
     category_slug: 'marroquineria',
     category_name: 'Marroquinería',
-    retail_price: 16000,
-    wholesale_price: 10500,
+    retail_price: 14500,
+    wholesale_price: 9900,
     min_wholesale_qty: 6,
-    stock: 42,
+    stock: 45,
     image_url: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'MarroquiLuxe',
     featured: true,
-    tags: ['Marroquinería', 'Billeteras', 'Accesorios']
+    tags: ['Billeteras', 'Cuero', 'RFID']
   },
 
   // 18. Mascotas
   {
-    id: 'prod-021',
+    id: 'prod-020',
     sku: 'JG-MAS-001',
-    name: 'Comedero Lento Anti-Ansiedad Mascotas Antideslizante',
-    description: 'Diseño en laberinto que previene la ingesta rápida y asfixia. Material no tóxico grado alimenticio.',
+    name: 'Comedero y Bebedero Doble de Acero Inox con Base Elevada',
+    description: 'Inclinación ergonómica de 15° para digestión saludable y base antideslizante lavable.',
     category_slug: 'mascotas',
     category_name: 'Mascotas',
-    retail_price: 11000,
-    wholesale_price: 7200,
-    min_wholesale_qty: 5,
+    retail_price: 16000,
+    wholesale_price: 11000,
+    min_wholesale_qty: 4,
     stock: 32,
-    image_url: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&auto=format&fit=crop&q=80',
+    image_url: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
-    featured: false,
-    tags: ['Mascotas', 'Perros', 'Gatos']
+    brand: 'PetCare',
+    featured: true,
+    tags: ['Mascotas', 'Perros', 'Gatos', 'Comedero']
   },
 
   // 19. Mochilas y Maletines
   {
-    id: 'prod-022',
+    id: 'prod-021',
     sku: 'JG-MOC-001',
-    name: 'Mochila Urbana Antirrobo para Notebook 15.6" con Puerto USB',
-    description: 'Tela Oxford impermeable de alta resistencia con costuras reforzadas, bolsillo oculto y puerto USB.',
+    name: 'Mochila Urbana Antirrobo Impermeable para Notebook 15.6"',
+    description: 'Cremalleras ocultas, puerto USB externo, respaldo ergonómico y correa para valija.',
     category_slug: 'mochilas-maletines',
     category_name: 'Mochilas y Maletines',
-    retail_price: 34000,
-    wholesale_price: 23500,
+    retail_price: 38000,
+    wholesale_price: 26500,
     min_wholesale_qty: 3,
-    stock: 25,
+    stock: 20,
     image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'SwissBag',
     featured: true,
-    tags: ['Mochilas', 'Notebook', 'Equipaje']
+    tags: ['Mochilas', 'Notebook', 'Antirrobo']
   },
 
   // 20. Navidad (Estacional)
   {
-    id: 'prod-023',
+    id: 'prod-022',
     sku: 'JG-NAV-001',
-    name: 'Guirnalda de Luces LED Cálidas 10m con 8 Efectos',
-    description: 'Cable transparente para interior y exterior con control de efectos luminosos.',
+    name: 'Guirnalda de Luces LED Cálidas 10m 100 Focos Exterior',
+    description: 'Cable verde flexible con 8 secuencias de destello y enchufe homologado a 220V.',
     category_slug: 'navidad',
     category_name: 'Navidad',
-    retail_price: 8500,
-    wholesale_price: 5500,
-    min_wholesale_qty: 10,
-    stock: 85,
+    retail_price: 9800,
+    wholesale_price: 6400,
+    min_wholesale_qty: 8,
+    stock: 55,
     image_url: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'NavidadMagica',
     is_seasonal: true,
     featured: false,
-    tags: ['Navidad', 'Luces', 'Fiestas']
+    tags: ['Navidad', 'Luces', 'Deco']
   },
 
   // 21. Peluchería
   {
-    id: 'prod-024',
+    id: 'prod-023',
     sku: 'JG-PEL-001',
-    name: 'Peluche Oso Clásico Premium Hipoalergénico 40cm',
-    description: 'Textura extra suave afelpada, relleno de vellón siliconado lavable con moño de raso.',
+    name: 'Oso de Peluche Gigante Soft 80cm con Moño Satinado',
+    description: 'Relleno de vellón siliconado hipoalergénico ultra suave de alta densidad.',
     category_slug: 'pelucheria',
     category_name: 'Peluchería',
-    retail_price: 19500,
-    wholesale_price: 13000,
-    min_wholesale_qty: 4,
-    stock: 19,
+    retail_price: 32000,
+    wholesale_price: 22000,
+    min_wholesale_qty: 2,
+    stock: 12,
     image_url: 'https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Plushy',
     featured: false,
-    tags: ['Peluches', 'Regalos', 'Infantil']
+    tags: ['Peluches', 'Regalería', 'Niños']
   },
 
   // 22. Símbolos Patrios
@@ -442,6 +483,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 30,
     image_url: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'PatriaMia',
     featured: false,
     tags: ['Banderas', 'Patria', 'Argentina']
   },
@@ -460,6 +502,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 26,
     image_url: 'https://images.unsplash.com/photo-1616627547584-bf28cee262db?w=600&auto=format&fit=crop&q=80',
     unit: 'set',
+    brand: 'TextilHogar',
     featured: true,
     tags: ['Textil', 'Toallas', 'Baño']
   },
@@ -478,6 +521,7 @@ export const INITIAL_PRODUCTS: StoreProduct[] = [
     stock: 14,
     image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80',
     unit: 'unidad',
+    brand: 'Bestway',
     is_seasonal: true,
     featured: false,
     tags: ['Verano', 'Inflables', 'Playa']

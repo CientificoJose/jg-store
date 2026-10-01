@@ -36,8 +36,21 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - `CartDrawer`: Panel lateral deslizable con cálculo de ahorro mayorista, formulario de cliente y checkout automatizado vía WhatsApp.
   - `StoreFooter`: Pie de página departamental y condiciones comerciales.
 - [x] **Experiencia de Búsqueda Inteligente y Sugerencias de Catálogo:**
-  - Ocultamiento dinámico del carrusel / hero banner al escribir en el buscador para enfocar los resultados de productos.
-  - **Motor Híbrido Nativo (`src/lib/search-engine.ts`):** Búsqueda difusa (Fuzzy Levenshtein) para corrección automática de errores tipográficos (ej. *"cuaderbo"* ➔ *"cuaderno"*) y matriz de conceptos/sinónimos polirrubro (ej. *"telefono"* ➔ *"Tecnología, Celulares y Gadgets"* mostrando lámpara con carga Qi, mochila USB, etc.).
+  - **Disparador en Enter Exclusivo:** El buscador ahora espera a que el usuario presione la tecla **Enter** (o haga clic en el botón de búsqueda) para ejecutar la consulta, evitando búsquedas instantáneas por tecla mientras se escribe.
+  - **Barra Lateral de Resultados Estilo Mercado Libre (`SearchSidebarFilter`):**
+    - Al realizar una búsqueda, el storefront transforma el catálogo en un layout de 2 columnas inspirado exactamente en Mercado Libre:
+      - Encabezado con el término buscado y contador de resultados (ej. *"teléfono" • 3 resultados*).
+      - Chips de filtros activos con botón individual de remoción `x` y acción de *"Limpiar todos los filtros"*.
+      - Switch interactivo *"En stock inmediato"* (filtra productos disponibles en depósito).
+      - Switch interactivo *"Tarifa Mayorista B2B"* (filtra ofertas con alto ahorro por volumen).
+      - Switch interactivo *"Tienda Oficial JG"* (artículos destacados garantizados).
+      - Sección de **Categorías** presentes en los resultados con conteo individual de productos y botón *"Mostrar más / menos"*.
+      - Sección de **Marcas** del producto buscado (ej. Samsung, Xiaomi, Stanley, Acrilex) con conteo individual y filtro interactivo.
+      - Sección de **Rango de Precio**: accesos directos (*Hasta $10.000*, *$10.000 a $25.000*, *Más de $25.000*) y formulario de precios mínimos y máximos con botón de aplicación `>`.
+      - Secciones de **Condición** (*Nuevo en caja*) y **Envíos y Despacho** nacional.
+      - **Drawer Responsivo Móvil:** Botón flotante superior *"Filtros (N)"* con badge de filtros activos que abre un panel deslizable en pantallas pequeñas con botón *"Ver N resultados"*.
+  - Ocultamiento dinámico del carrusel / hero banner al realizar una búsqueda para enfocar los resultados de productos.
+  - **Motor Híbrido Nativo (`src/lib/search-engine.ts`):** Búsqueda exacta y por tokens (nombre, descripción, marca, categoría, tags y SKU), búsqueda difusa (Fuzzy Levenshtein) para corrección automática de errores tipográficos (ej. *"cuaderbo"* ➔ *"cuaderno"*, *"sansung"* ➔ *"samsung"*) y matriz de conceptos/sinónimos polirrubro (ej. *"telefono"* ➔ *"Tecnología, Celulares y Gadgets"* mostrando accesorios Samsung, auriculares Xiaomi, lámparas con carga Qi, etc.).
   - Banner inteligente en `ProductGrid`: informa con precisión cuando los productos mostrados son por relación temática (*"No encontramos productos llamados X, pero encontramos artículos relacionados en Y"*) o corrección ortográfica (*"Mostrando resultados para Z"*).
   - Alerta ultra-compacta en banner horizontal cuando no hay coincidencias exactas ni afines, dejando espacio visible para los productos sugeridos y más vendidos.
   - Acciones rápidas de "Limpiar búsqueda" y "Ver todo el catálogo".

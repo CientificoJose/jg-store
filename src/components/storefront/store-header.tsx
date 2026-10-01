@@ -35,6 +35,23 @@ export function StoreHeader({
 
   const isDark = mounted && (resolvedTheme === 'dark' || theme === 'dark');
 
+  // Estado local del buscador para disparar la búsqueda únicamente al presionar Enter o enviar
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearchChange(localSearch.trim());
+  };
+
+  const handleClearSearch = () => {
+    setLocalSearch('');
+    onSearchChange('');
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full bg-background/90 backdrop-blur-md border-b border-border/80 transition-all font-gotham">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -106,25 +123,33 @@ export function StoreHeader({
               )}
             </div>
 
-            {/* Input de Búsqueda */}
-            <div className="relative flex-1">
-              <Icons.search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6C757D] pointer-events-none" />
+            {/* Input de Búsqueda con disparador en Enter */}
+            <form onSubmit={handleSearchSubmit} className="relative flex-1">
+              <button
+                type="submit"
+                title="Buscar (Presiona Enter)"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 text-[#6C757D] hover:text-[#E63946] transition-colors cursor-pointer"
+              >
+                <Icons.search className="w-4 h-4" />
+              </button>
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Buscar por producto, marca, SKU o palabra clave..."
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                placeholder="Buscar por producto, marca, SKU o palabra clave (Enter para buscar)..."
                 className="w-full h-10 pl-9 pr-8 rounded-xl border border-border/80 bg-card focus:bg-background text-xs sm:text-sm text-foreground focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] transition-all outline-none"
               />
-              {searchQuery && (
+              {localSearch && (
                 <button
-                  onClick={() => onSearchChange('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6C757D] hover:text-foreground"
+                  type="button"
+                  onClick={handleClearSearch}
+                  title="Borrar búsqueda"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6C757D] hover:text-foreground cursor-pointer p-0.5"
                 >
                   <Icons.close className="w-3.5 h-3.5" />
                 </button>
               )}
-            </div>
+            </form>
           </div>
 
           {/* Acciones del Lado Derecho */}
@@ -213,26 +238,32 @@ export function StoreHeader({
           </div>
         </div>
 
-        {/* Buscador móvil */}
+        {/* Buscador móvil con disparador en Enter */}
         <div className="pb-3 md:hidden">
-          <div className="relative w-full">
-            <Icons.search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6C757D] pointer-events-none" />
+          <form onSubmit={handleSearchSubmit} className="relative w-full">
+            <button
+              type="submit"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 text-[#6C757D] hover:text-[#E63946]"
+            >
+              <Icons.search className="w-4 h-4" />
+            </button>
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Buscar entre 24 categorías..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              placeholder="Buscar entre 24 categorías (Enter para buscar)..."
               className="w-full h-9 pl-9 pr-8 rounded-xl border border-border bg-card text-xs text-foreground focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
             />
-            {searchQuery && (
+            {localSearch && (
               <button
-                onClick={() => onSearchChange('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6C757D]"
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6C757D] p-0.5"
               >
                 <Icons.close className="w-3.5 h-3.5" />
               </button>
             )}
-          </div>
+          </form>
         </div>
       </div>
     </header>

@@ -11,6 +11,7 @@ export interface StoreProduct {
   stock: number;              // Unidades disponibles en almacén
   image_url: string;
   unit: string;               // 'unidad', 'docena', 'pack', 'caja'
+  brand?: string;             // Marca del producto (ej. Samsung, Stanley, Acrilex)
   featured?: boolean;
   is_seasonal?: boolean;
   tags?: string[];
