@@ -22,6 +22,8 @@ export function CartDrawer() {
   } = useCartStore();
 
   const whatsappNumber = useStoreConfigStore((s) => s.general.whatsappNumber);
+  const storeAddress = useStoreConfigStore((s) => s.general.address);
+  const storeSchedule = useStoreConfigStore((s) => s.general.schedule);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   if (!isOpen) return null;
@@ -337,7 +339,7 @@ export function CartDrawer() {
                                 : 'bg-background hover:bg-muted border-border text-foreground'
                             }`}
                           >
-                            🚚 Envío / Expreso
+                            🚚 Envío
                           </button>
                           <button
                             type="button"
@@ -348,63 +350,97 @@ export function CartDrawer() {
                                 : 'bg-background hover:bg-muted border-border text-foreground'
                             }`}
                           >
-                            🏬 Retiro en Depósito
+                            🤝 Retiro en Persona
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="col-span-2">
-                          <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
-                            Localidad / Provincia
-                          </label>
-                          <input
-                            type="text"
-                            value={customer.city || ''}
-                            onChange={(e) => setCustomerInfo({ city: e.target.value })}
-                            placeholder="Ej. Rosario, Santa Fe"
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
-                            C. Postal
-                          </label>
-                          <input
-                            type="text"
-                            value={customer.postal_code || ''}
-                            onChange={(e) => setCustomerInfo({ postal_code: e.target.value })}
-                            placeholder="Ej. 2000"
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
-                          />
-                        </div>
-                      </div>
+                      {customer.delivery_type === 'shipping' ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="col-span-2">
+                              <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
+                                Localidad / Provincia
+                              </label>
+                              <input
+                                type="text"
+                                value={customer.city || ''}
+                                onChange={(e) => setCustomerInfo({ city: e.target.value })}
+                                placeholder="Ej. Rosario, Santa Fe"
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
+                                C. Postal
+                              </label>
+                              <input
+                                type="text"
+                                value={customer.postal_code || ''}
+                                onChange={(e) => setCustomerInfo({ postal_code: e.target.value })}
+                                placeholder="Ej. 2000"
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
+                              />
+                            </div>
+                          </div>
 
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
-                          Dirección de Entrega
-                        </label>
-                        <input
-                          type="text"
-                          value={customer.address || ''}
-                          onChange={(e) => setCustomerInfo({ address: e.target.value })}
-                          placeholder="Calle, número, piso, dpto..."
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
-                        />
-                      </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
+                              Dirección de Entrega
+                            </label>
+                            <input
+                              type="text"
+                              value={customer.address || ''}
+                              onChange={(e) => setCustomerInfo({ address: e.target.value })}
+                              placeholder="Calle, número, piso, dpto..."
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
+                            />
+                          </div>
 
-                      <div>
-                        <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
-                          Observaciones / Expreso preferido
-                        </label>
-                        <input
-                          type="text"
-                          value={customer.notes || ''}
-                          onChange={(e) => setCustomerInfo({ notes: e.target.value })}
-                          placeholder="Ej. Despachar por Vía Cargo / Andreani / Horario de entrega"
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
-                        />
-                      </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
+                              Observaciones / Expreso preferido
+                            </label>
+                            <input
+                              type="text"
+                              value={customer.notes || ''}
+                              onChange={(e) => setCustomerInfo({ notes: e.target.value })}
+                              placeholder="Ej. Despachar por Vía Cargo / Andreani / Horario de entrega"
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="p-3 rounded-lg border border-border bg-muted/20 text-xs space-y-1">
+                            <div className="flex items-start gap-1.5 font-bold text-foreground">
+                              <span className="text-[#E63946]">📍</span>
+                              <div>
+                                <span>Punto de Retiro: </span>
+                                <span className="font-normal text-muted-foreground">{storeAddress || 'Av. Corrientes 1234, CABA'}</span>
+                              </div>
+                            </div>
+                            {storeSchedule && (
+                              <p className="text-[11px] text-[#6C757D] pl-4">
+                                🕒 Horarios: {storeSchedule}
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-[#6C757D] mb-1">
+                              Observaciones / Quién retira (Opcional)
+                            </label>
+                            <input
+                              type="text"
+                              value={customer.notes || ''}
+                              onChange={(e) => setCustomerInfo({ notes: e.target.value })}
+                              placeholder="Ej. Retiro yo mismo / Retira comisionista / Retira Juan Pérez"
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

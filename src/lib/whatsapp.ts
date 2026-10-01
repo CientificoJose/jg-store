@@ -120,7 +120,7 @@ export function generateWhatsAppOrderMessage(
     `• Nombre / Razón Social: *${customer.name.trim() || 'No especificado'}*`,
     `• Teléfono / WhatsApp: *${customer.phone.trim() || 'No especificado'}*`,
     `• Facturación: *${customer.invoice_type === 'A' ? 'Factura A (Responsable Inscripto)' : 'Factura B (Consumidor Final / Monotributo)'}*`,
-    `• Modalidad de Entrega: *${customer.delivery_type === 'shipping' ? '🚚 Envío a Domicilio / Expreso' : '🏬 Retiro en Depósito / Sucursal'}*`
+    `• Modalidad de Entrega: *${customer.delivery_type === 'shipping' ? '🚚 Envío' : '🤝 Retiro en Persona'}*`
   );
 
   if (customer.postal_code) {

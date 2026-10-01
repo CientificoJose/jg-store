@@ -466,7 +466,7 @@ function getShippingMethodLabel(method: string) {
     case 'expreso_interior':
       return 'Expreso de Carga al Interior';
     case 'pickup':
-      return 'Retiro en Depósito Central';
+      return 'Retiro en Persona';
     default:
       return method;
   }

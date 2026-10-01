@@ -21,5 +21,5 @@ export const SHIPPING_METHOD_OPTIONS = [
   { value: 'andreani', label: 'Andreani' },
   { value: 'correo_argentino', label: 'Correo Argentino' },
   { value: 'expreso_interior', label: 'Expreso al Interior' },
-  { value: 'pickup', label: 'Retiro en Depósito' }
+  { value: 'pickup', label: 'Retiro en Persona' }
 ];
