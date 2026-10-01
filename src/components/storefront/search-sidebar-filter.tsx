@@ -16,8 +16,6 @@ export interface SearchSidebarFilterProps {
   onToggleInStock: () => void;
   wholesaleOnly: boolean;
   onToggleWholesaleOnly: () => void;
-  officialOnly?: boolean;
-  onToggleOfficialOnly?: () => void;
   minPrice: number | null;
   maxPrice: number | null;
   onPriceChange: (min: number | null, max: number | null) => void;
@@ -37,8 +35,6 @@ export function SearchSidebarFilter({
   onToggleInStock,
   wholesaleOnly,
   onToggleWholesaleOnly,
-  officialOnly = false,
-  onToggleOfficialOnly,
   minPrice,
   maxPrice,
   onPriceChange,
@@ -99,7 +95,6 @@ export function SearchSidebarFilter({
     selectedBrand !== '' ||
     onlyInStock ||
     wholesaleOnly ||
-    officialOnly ||
     minPrice !== null ||
     maxPrice !== null;
 
@@ -178,19 +173,6 @@ export function SearchSidebarFilter({
                 <button
                   onClick={onToggleWholesaleOnly}
                   className="hover:text-[#E63946] cursor-pointer"
-                >
-                  <Icons.close className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-
-            {officialOnly && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/25">
-                <span>Tienda Oficial</span>
-                <button
-                  onClick={onToggleOfficialOnly}
-                  className="hover:text-[#E63946] cursor-pointer"
-                  title="Quitar filtro de tienda oficial"
                 >
                   <Icons.close className="w-3 h-3" />
                 </button>
@@ -279,35 +261,6 @@ export function SearchSidebarFilter({
           />
         </button>
       </div>
-
-      {/* Switch 3: Tiendas Oficiales (Mercado Libre) */}
-      {onToggleOfficialOnly && (
-        <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-xs font-bold text-foreground block">
-              Tienda Oficial JG
-            </span>
-            <span className="text-[10px] text-[#6C757D]">
-              Artículos garantizados JG Store
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onToggleOfficialOnly}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              officialOnly ? 'bg-[#E63946]' : 'bg-muted'
-            }`}
-            role="switch"
-            aria-checked={officialOnly}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                officialOnly ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </button>
-        </div>
-      )}
 
       {/* SECCIÓN: Categorías / Departamentos Relacionados */}
       {categoryCounts.length > 0 && (

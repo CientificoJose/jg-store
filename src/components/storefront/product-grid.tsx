@@ -47,7 +47,6 @@ export function ProductGrid({
   const [facetMinPrice, setFacetMinPrice] = useState<number | null>(null);
   const [facetMaxPrice, setFacetMaxPrice] = useState<number | null>(null);
   const [facetWholesaleOnly, setFacetWholesaleOnly] = useState<boolean>(false);
-  const [facetOfficialOnly, setFacetOfficialOnly] = useState<boolean>(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
 
   // Reiniciar filtros por facetas cada vez que se busca un término nuevo
@@ -57,7 +56,6 @@ export function ProductGrid({
     setFacetMinPrice(null);
     setFacetMaxPrice(null);
     setFacetWholesaleOnly(false);
-    setFacetOfficialOnly(false);
     setIsMobileFilterOpen(false);
   }, [searchQuery]);
 
@@ -67,7 +65,6 @@ export function ProductGrid({
     setFacetMinPrice(null);
     setFacetMaxPrice(null);
     setFacetWholesaleOnly(false);
-    setFacetOfficialOnly(false);
   };
 
   // Filtrado de productos basado en las facetas seleccionadas en la barra lateral
@@ -96,10 +93,6 @@ export function ProductGrid({
         const discount = (p.retail_price - p.wholesale_price) / p.retail_price;
         if (discount < 0.2) return false;
       }
-      // Solo tienda oficial JG (destacados / certificados)
-      if (facetOfficialOnly && !p.featured) {
-        return false;
-      }
       return true;
     });
   }, [
@@ -109,8 +102,7 @@ export function ProductGrid({
     facetBrand,
     facetMinPrice,
     facetMaxPrice,
-    facetWholesaleOnly,
-    facetOfficialOnly
+    facetWholesaleOnly
   ]);
 
   const activeFiltersCount = useMemo(() => {
@@ -119,10 +111,9 @@ export function ProductGrid({
       facetBrand !== '',
       onlyInStock,
       facetWholesaleOnly,
-      facetOfficialOnly,
       facetMinPrice !== null || facetMaxPrice !== null
     ].filter(Boolean).length;
-  }, [facetCategory, facetBrand, onlyInStock, facetWholesaleOnly, facetOfficialOnly, facetMinPrice, facetMaxPrice]);
+  }, [facetCategory, facetBrand, onlyInStock, facetWholesaleOnly, facetMinPrice, facetMaxPrice]);
 
   return (
     <section className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-gotham ${isSearchEmpty ? 'py-3 sm:py-5' : 'py-6 sm:py-10'}`}>
@@ -213,8 +204,6 @@ export function ProductGrid({
               onToggleInStock={onToggleInStock}
               wholesaleOnly={facetWholesaleOnly}
               onToggleWholesaleOnly={() => setFacetWholesaleOnly((v) => !v)}
-              officialOnly={facetOfficialOnly}
-              onToggleOfficialOnly={() => setFacetOfficialOnly((v) => !v)}
               minPrice={facetMinPrice}
               maxPrice={facetMaxPrice}
               onPriceChange={(min, max) => {
@@ -241,8 +230,6 @@ export function ProductGrid({
                   onToggleInStock={onToggleInStock}
                   wholesaleOnly={facetWholesaleOnly}
                   onToggleWholesaleOnly={() => setFacetWholesaleOnly((v) => !v)}
-                  officialOnly={facetOfficialOnly}
-                  onToggleOfficialOnly={() => setFacetOfficialOnly((v) => !v)}
                   minPrice={facetMinPrice}
                   maxPrice={facetMaxPrice}
                   onPriceChange={(min, max) => {
