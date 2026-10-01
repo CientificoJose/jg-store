@@ -54,7 +54,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Banner inteligente en `ProductGrid`: informa con precisión cuando los productos mostrados son por relación temática (*"No encontramos productos llamados X, pero encontramos artículos relacionados en Y"*) o corrección ortográfica (*"Mostrando resultados para Z"*).
   - Alerta ultra-compacta en banner horizontal cuando no hay coincidencias exactas ni afines, dejando espacio visible para los productos sugeridos y más vendidos.
   - Acciones rápidas de "Limpiar búsqueda" y "Ver todo el catálogo".
-- [x] **Integración WhatsApp:** Generación de mensajes estructurados con desglose de SKUs, ahorros y datos en `src/lib/whatsapp.ts`.
+- [x] **Integración WhatsApp:** Generación de mensajes estructurados con desglose de SKUs, ahorros y datos en `src/lib/whatsapp.ts`. Uso de endpoint universal directo `https://api.whatsapp.com/send/` y depuración de selectores de variación (`\uFE0F`) para garantizar que todos los emojis (🛍️, 📅, 📋, 🏷️, 🛒, 🎉, 💰, 💳, 👤, 🚚, 🤝) se muestren de forma nítida y sin símbolos rotos (diamantes ) en WhatsApp Web, Desktop y móviles.
 - [x] **Branding & Logos Oficiales:**
   - Favicon e Isotipo oficial para pestañas (`src/app/icon.png`, `public/brand/logo-icon.png`, etc.) con escalado multiformato.
   - Logo oficial institucional JG-STORE POLIRUBRO (`public/brand/logo-full.png`, `public/brand/logo-full-dark.png`) con cambio automático por modo nocturno/diurno en `src/components/brand/logo.tsx`.
