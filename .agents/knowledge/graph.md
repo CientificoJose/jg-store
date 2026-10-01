@@ -94,7 +94,7 @@ graph TD
 * **Estado:** Completado.
 * **Detalles:**
   - 24 departamentos oficiales, Hero Banner con propuesta de valor, filtro interactivo de favoritos.
-  - Carrito deslizable con cálculo dinámico de ahorro mayorista y checkout por WhatsApp estructurado.
+  - Carrito deslizable de gran formato (hasta 5XL) con distribución de 2 columnas en desktop, cálculo dinámico de ahorro mayorista, validación explicativa con banner de campos faltantes y checkout por WhatsApp estructurado.
   - **Buscador con disparador en Enter y Barra Lateral Estilo Mercado Libre (`SearchSidebarFilter`):**
     - La búsqueda no se ejecuta automáticamente al teclear sino que espera a que el usuario presione **Enter** o haga clic en el botón de búsqueda.
     - Al buscar, el catálogo se reestructura en 2 columnas estilo Mercado Libre:

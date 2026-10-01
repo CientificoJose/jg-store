@@ -33,7 +33,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - `ProductCard`: Semáforo de stock (En stock / Últimas unidades / Agotado), doble precio dinámico, selector de cantidad con tope de stock e indicador de ahorro mayorista.
   - `ProductGrid`: Cuadrícula responsiva con filtros por stock, categoría, búsqueda y ordenamiento.
   - `ProductQuickView`: Modal de detalle con escala de precios y especificaciones.
-  - `CartDrawer`: Panel lateral deslizable con cálculo de ahorro mayorista, formulario de cliente y checkout automatizado vía WhatsApp.
+  - `CartDrawer`: Modal/drawer expandido de alta resolución (hasta 5XL) con layout de 2 columnas en desktop (izq: artículos y barra de progreso mayorista; der: datos de contacto, opciones de entrega y resumen de pago), validación inteligente con banner explicativo en rojo de campos faltantes y auto-enfoque/scroll al campo requerido para cotizar por WhatsApp.
   - `StoreFooter`: Pie de página departamental y condiciones comerciales.
 - [x] **Experiencia de Búsqueda Inteligente y Sugerencias de Catálogo:**
   - **Disparador en Enter Exclusivo:** El buscador ahora espera a que el usuario presione la tecla **Enter** (o haga clic en el botón de búsqueda) para ejecutar la consulta, evitando búsquedas instantáneas por tecla mientras se escribe.
