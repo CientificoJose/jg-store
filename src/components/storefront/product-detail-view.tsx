@@ -75,7 +75,8 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
     if (isOutOfStock) return;
     const directMessage = `¡Hola JG Store! Quiero comprar ahora este producto:\n\n📦 *${product.name}*\n🔢 SKU: ${product.sku}\n📊 Cantidad: ${quantity} ${product.unit}(s)\n💰 Precio unitario: ${formatPrice(activeUnitPrice)} (${qualifiesForWholesale ? 'Mayorista' : 'Detal'})\n💵 Total estimado: ${formatPrice(subtotal)}${savings > 0 ? `\n🎉 Ahorro Mayorista: ${formatPrice(savings)}` : ''}\n\n¿Tienen disponibilidad para coordinar el pago y envío?`;
     const cleanPhone = (whatsappNumber || JG_STORE_WHATSAPP_NUMBER).replace(/[^0-9]/g, '');
-    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(directMessage)}`;
+    const cleanMessage = directMessage.replace(/\uFE0F/g, '');
+    const url = `https://api.whatsapp.com/send/?phone=${cleanPhone}&text=${encodeURIComponent(cleanMessage)}`;
     window.open(url, '_blank');
   };
 

@@ -39,7 +39,7 @@ export function CellAction({ data }: CellActionProps) {
   });
 
   const cleanPhone = data.customer_phone.replace(/\D/g, '');
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+  const whatsappUrl = `https://api.whatsapp.com/send/?phone=${cleanPhone}&text=${encodeURIComponent(
     `Hola ${data.customer_name}! Te contactamos de JG Store por tu pedido *#${data.order_number}* ($ ${formatPrice(data.total_amount)}).`
   )}`;
 

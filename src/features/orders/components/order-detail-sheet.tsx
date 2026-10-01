@@ -71,7 +71,7 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
   };
 
   const cleanPhone = order.customer_phone.replace(/\D/g, '');
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+  const whatsappUrl = `https://api.whatsapp.com/send/?phone=${cleanPhone}&text=${encodeURIComponent(
     `Hola ${order.customer_name}! Te escribimos del equipo de JG Store respecto a tu pedido *#${order.order_number}* por un total de *${formatPrice(order.total_amount)}*.`
   )}`;
 

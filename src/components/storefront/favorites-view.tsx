@@ -92,7 +92,8 @@ export function FavoritesView() {
     msg += `\n¿Me confirman disponibilidad y tiempos de entrega? ¡Gracias!`;
 
     const cleanPhone = (whatsappNumber || JG_STORE_WHATSAPP_NUMBER).replace(/[^0-9]/g, '');
-    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    const cleanMsg = msg.replace(/\uFE0F/g, '');
+    const url = `https://api.whatsapp.com/send/?phone=${cleanPhone}&text=${encodeURIComponent(cleanMsg)}`;
     window.open(url, '_blank');
   };
 

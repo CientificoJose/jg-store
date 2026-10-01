@@ -49,12 +49,14 @@ export function calculateCartSummary(items: CartItem[]): CartSummary {
 }
 
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('es-AR', {
+  const formatted = new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
     minimumFractionDigits: price % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2
   }).format(price);
+  // Reemplazar espacios no divisibles por espacios estándar para evitar caracteres extraños en WhatsApp
+  return formatted.replace(/[\u00A0\u202F]/g, ' ');
 }
 
 export function generateWhatsAppOrderMessage(
@@ -144,7 +146,8 @@ export function generateWhatsAppOrderMessage(
     `¿Me podrían confirmar disponibilidad y datos bancarios (CBU / Alias / Mercado Pago) para abonar? ¡Muchas gracias!`
   );
 
-  return lines.join('\n');
+  // Limpiar selectores de variación invisibles (\uFE0F) que en algunos sistemas se renderizan como diamantes o signos de interrogación
+  return lines.join('\n').replace(/\uFE0F/g, '');
 }
 
 export function buildWhatsAppUrl(
@@ -155,5 +158,6 @@ export function buildWhatsAppUrl(
   const message = generateWhatsAppOrderMessage(items, customer);
   // Limpiar número (remover signos y espacios)
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
-  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+  // Usar endpoint directo api.whatsapp.com para evitar la redirección 302 de wa.me que rompe los caracteres UTF-8/emojis
+  return `https://api.whatsapp.com/send/?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
 }
