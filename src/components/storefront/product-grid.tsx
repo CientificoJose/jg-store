@@ -6,6 +6,7 @@ import { ProductCard } from './product-card';
 import { Icons } from '@/components/icons';
 import { SearchMatchMetadata } from '@/lib/search-engine';
 import { SearchSidebarFilter } from './search-sidebar-filter';
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 
 interface ProductGridProps {
   products: StoreProduct[];
@@ -41,12 +42,15 @@ export function ProductGrid({
   const isSearchMode = Boolean(searchQuery?.trim());
   const isSearchEmpty = isSearchMode && products.length === 0;
 
+  const showOfficialStoreFilter = useStoreConfigStore((s) => s.landing.showOfficialStoreFilter);
+
   // Estados locales de filtrado lateral estilo Mercado Libre
   const [facetCategory, setFacetCategory] = useState<string>('all');
   const [facetBrand, setFacetBrand] = useState<string>('');
   const [facetMinPrice, setFacetMinPrice] = useState<number | null>(null);
   const [facetMaxPrice, setFacetMaxPrice] = useState<number | null>(null);
   const [facetWholesaleOnly, setFacetWholesaleOnly] = useState<boolean>(false);
+  const [facetOfficialOnly, setFacetOfficialOnly] = useState<boolean>(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
 
   // Reiniciar filtros por facetas cada vez que se busca un término nuevo
@@ -56,6 +60,7 @@ export function ProductGrid({
     setFacetMinPrice(null);
     setFacetMaxPrice(null);
     setFacetWholesaleOnly(false);
+    setFacetOfficialOnly(false);
     setIsMobileFilterOpen(false);
   }, [searchQuery]);
 
@@ -65,6 +70,7 @@ export function ProductGrid({
     setFacetMinPrice(null);
     setFacetMaxPrice(null);
     setFacetWholesaleOnly(false);
+    setFacetOfficialOnly(false);
   };
 
   // Filtrado de productos basado en las facetas seleccionadas en la barra lateral
@@ -93,6 +99,10 @@ export function ProductGrid({
         const discount = (p.retail_price - p.wholesale_price) / p.retail_price;
         if (discount < 0.2) return false;
       }
+      // Filtro de tienda oficial (solo si está activado en configuración de la tienda)
+      if (showOfficialStoreFilter && facetOfficialOnly && !p.featured) {
+        return false;
+      }
       return true;
     });
   }, [
@@ -102,7 +112,9 @@ export function ProductGrid({
     facetBrand,
     facetMinPrice,
     facetMaxPrice,
-    facetWholesaleOnly
+    facetWholesaleOnly,
+    showOfficialStoreFilter,
+    facetOfficialOnly
   ]);
 
   const activeFiltersCount = useMemo(() => {
@@ -111,9 +123,10 @@ export function ProductGrid({
       facetBrand !== '',
       onlyInStock,
       facetWholesaleOnly,
+      showOfficialStoreFilter && facetOfficialOnly,
       facetMinPrice !== null || facetMaxPrice !== null
     ].filter(Boolean).length;
-  }, [facetCategory, facetBrand, onlyInStock, facetWholesaleOnly, facetMinPrice, facetMaxPrice]);
+  }, [facetCategory, facetBrand, onlyInStock, facetWholesaleOnly, showOfficialStoreFilter, facetOfficialOnly, facetMinPrice, facetMaxPrice]);
 
   return (
     <section className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-gotham ${isSearchEmpty ? 'py-3 sm:py-5' : 'py-6 sm:py-10'}`}>
@@ -204,6 +217,9 @@ export function ProductGrid({
               onToggleInStock={onToggleInStock}
               wholesaleOnly={facetWholesaleOnly}
               onToggleWholesaleOnly={() => setFacetWholesaleOnly((v) => !v)}
+              showOfficialStoreFilter={showOfficialStoreFilter}
+              officialOnly={facetOfficialOnly}
+              onToggleOfficialOnly={() => setFacetOfficialOnly((v) => !v)}
               minPrice={facetMinPrice}
               maxPrice={facetMaxPrice}
               onPriceChange={(min, max) => {
@@ -230,6 +246,9 @@ export function ProductGrid({
                   onToggleInStock={onToggleInStock}
                   wholesaleOnly={facetWholesaleOnly}
                   onToggleWholesaleOnly={() => setFacetWholesaleOnly((v) => !v)}
+                  showOfficialStoreFilter={showOfficialStoreFilter}
+                  officialOnly={facetOfficialOnly}
+                  onToggleOfficialOnly={() => setFacetOfficialOnly((v) => !v)}
                   minPrice={facetMinPrice}
                   maxPrice={facetMaxPrice}
                   onPriceChange={(min, max) => {

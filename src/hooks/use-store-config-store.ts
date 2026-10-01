@@ -27,10 +27,12 @@ export interface GeneralStoreConfig {
 
 export interface LandingStoreConfig {
   showCategoryCards: boolean;
+  showCategoryPillsBar: boolean;
   categoryStyle: 'photos' | 'pills';
   announcementText: string;
   showAnnouncement: boolean;
   showTrustBadges: boolean;
+  showOfficialStoreFilter: boolean;
   productRows: ProductRowConfig[];
 }
 
@@ -113,11 +115,13 @@ const DEFAULT_CONFIG: {
   },
   landing: {
     showCategoryCards: true,
+    showCategoryPillsBar: false,
     categoryStyle: 'photos', // Fotos estilo SHOPLUXE
     announcementText:
       '⚡ COMPRA MAYORISTA DESDE $50.000 — 10% OFF EXTRA EN TRANSFERENCIA CBU / ALIAS 🇦🇷',
     showAnnouncement: true,
-    showTrustBadges: true,
+    showTrustBadges: false, // Ocultado por solicitud (activable desde panel de config)
+    showOfficialStoreFilter: false, // Ocultado por solicitud (activable desde panel de config)
     productRows: DEFAULT_ROWS
   },
   theme: {

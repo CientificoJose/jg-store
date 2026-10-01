@@ -247,6 +247,7 @@ export const Icons = {
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
   moreHorizontal: IconDots,
+  bell: IconBell,
 
   // E-commerce & Storefront
   cart: IconShoppingCart,

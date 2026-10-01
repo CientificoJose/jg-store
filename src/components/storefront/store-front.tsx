@@ -170,8 +170,8 @@ export function StoreFront() {
         />
       )}
 
-      {/* Barra de Categorías Pegajosa (Solo visible si no se usan las tarjetas circulares con fotos) */}
-      {!isSearching && !showOnlyFavorites && !landing.showCategoryCards && (
+      {/* Barra de 24 Categorías Pegajosa (Texto plano / Pills - Controlada desde Configuración) */}
+      {!isSearching && !showOnlyFavorites && landing.showCategoryPillsBar && (
         <CategoryBar
           selectedCategory={selectedCategory}
           onSelectCategory={(cat) => {

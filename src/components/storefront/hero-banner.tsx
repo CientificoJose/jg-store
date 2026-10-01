@@ -3,6 +3,7 @@
 import React from 'react';
 import { Icons } from '@/components/icons';
 import { PromoCarousel } from './promo-carousel';
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 
 interface HeroBannerProps {
   onExploreCatalog: () => void;
@@ -10,6 +11,8 @@ interface HeroBannerProps {
 }
 
 export function HeroBanner({ onExploreCatalog, onSelectCategory }: HeroBannerProps) {
+  const showTrustBadges = useStoreConfigStore((s) => s.landing.showTrustBadges);
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-[#E63946]/5 via-background to-background pt-4 pb-6 sm:pb-8 transition-colors duration-200">
       {/* Elementos ambientales de fondo */}
@@ -25,8 +28,9 @@ export function HeroBanner({ onExploreCatalog, onSelectCategory }: HeroBannerPro
           onSelectCategory={onSelectCategory}
         />
 
-        {/* 2. Los 4 Pilares de Confianza JG Store Argentina */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-left font-gotham">
+        {/* 2. Los 4 Pilares de Confianza JG Store Argentina (Configurables) */}
+        {showTrustBadges && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-left font-gotham animate-in fade-in duration-200">
           {/* Pilar 1: Mayorista */}
           <div className="p-3.5 rounded-xl bg-card border border-border/70 flex items-start gap-3 shadow-xs hover:border-[#D4A017]/40 transition-colors">
             <div className="w-8 h-8 rounded-lg bg-[#D4A017]/15 text-[#D4A017] flex items-center justify-center shrink-0">
@@ -79,6 +83,7 @@ export function HeroBanner({ onExploreCatalog, onSelectCategory }: HeroBannerPro
             </div>
           </div>
         </div>
+      )}
       </div>
     </div>
   );

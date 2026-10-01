@@ -31,6 +31,42 @@ export default function LandingConfigPage() {
     );
   };
 
+  const handleToggleTrustBadges = () => {
+    updateLanding({ showTrustBadges: !landing.showTrustBadges });
+    toast.success(
+      landing.showTrustBadges
+        ? 'Pilares de confianza ocultados del Hero Banner.'
+        : 'Pilares de confianza activados en el Hero Banner.'
+    );
+  };
+
+  const handleToggleCategoryPillsBar = () => {
+    updateLanding({ showCategoryPillsBar: !landing.showCategoryPillsBar });
+    toast.success(
+      landing.showCategoryPillsBar
+        ? 'Barra de categorías en botones de texto ocultada.'
+        : 'Barra de categorías en botones de texto activada.'
+    );
+  };
+
+  const handleToggleOfficialStoreFilter = () => {
+    updateLanding({ showOfficialStoreFilter: !landing.showOfficialStoreFilter });
+    toast.success(
+      landing.showOfficialStoreFilter
+        ? 'Filtro "Tienda Oficial JG" ocultado de la búsqueda.'
+        : 'Filtro "Tienda Oficial JG" activado en la búsqueda.'
+    );
+  };
+
+  const handleToggleAnnouncement = () => {
+    updateLanding({ showAnnouncement: !landing.showAnnouncement });
+    toast.success(
+      landing.showAnnouncement
+        ? 'Cintillo de anuncios superior ocultado.'
+        : 'Cintillo de anuncios superior activado.'
+    );
+  };
+
   const handleStyleChange = (style: 'photos' | 'pills') => {
     updateLanding({ categoryStyle: style });
     toast.success(
@@ -191,7 +227,180 @@ export default function LandingConfigPage() {
         )}
       </div>
 
-      {/* SECCIÓN 2: Carruseles Horizontales de Costado (Sub-segmentos de Categorías) */}
+      {/* SECCIÓN 2: Visibilidad de Bloques & Filtros Opcionales */}
+      <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 space-y-5 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#E63946]" />
+            <h2 className="text-lg font-bebas tracking-wide text-foreground">
+              Visibilidad de Bloques &amp; Filtros Opcionales
+            </h2>
+          </div>
+          <p className="text-xs text-[#6C757D] mt-0.5">
+            Activa o desactiva elementos visuales y filtros especiales en la tienda según la estrategia comercial.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Tarjeta 1: Pilares de Confianza */}
+          <div
+            className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+              landing.showTrustBadges
+                ? 'border-border bg-card shadow-xs'
+                : 'border-dashed border-border/80 bg-muted/20 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#D4A017]/15 text-[#D4A017] flex items-center justify-center shrink-0">
+                  <Icons.shieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Pilares de Confianza en Hero Banner
+                  </h3>
+                  <span className="text-[10px] text-[#6C757D]">
+                    Tarifa Mayorista, Stock, Pagos y Envíos
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleTrustBadges}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  landing.showTrustBadges
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-muted text-[#6C757D] border border-border hover:bg-muted/80'
+                }`}
+              >
+                {landing.showTrustBadges ? '✓ Visible' : '✕ Oculto'}
+              </button>
+            </div>
+            <p className="text-[11px] text-[#6C757D] leading-relaxed">
+              Muestra las 4 tarjetas informativas (&quot;Tarifa Mayorista&quot;, &quot;Stock en Tiempo Real&quot;, &quot;Mercado Pago &amp; CBU&quot;, &quot;Envíos a Todo el País&quot;) debajo de los banners principales.
+            </p>
+          </div>
+
+          {/* Tarjeta 2: Barra de Categorías en Botones de Texto (Pills) */}
+          <div
+            className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+              landing.showCategoryPillsBar
+                ? 'border-border bg-card shadow-xs'
+                : 'border-dashed border-border/80 bg-muted/20 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#E63946]/10 text-[#E63946] flex items-center justify-center shrink-0">
+                  <Icons.tags className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Barra de Categorías en Texto (Pills)
+                  </h3>
+                  <span className="text-[10px] text-[#6C757D]">
+                    Barra de 24 departamentos en botones
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleCategoryPillsBar}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  landing.showCategoryPillsBar
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-muted text-[#6C757D] border border-border hover:bg-muted/80'
+                }`}
+              >
+                {landing.showCategoryPillsBar ? '✓ Visible' : '✕ Oculto'}
+              </button>
+            </div>
+            <p className="text-[11px] text-[#6C757D] leading-relaxed">
+              Barra fija deslizante con nombres de las 24 categorías en formato botón píldora. Ocultada por defecto para dar protagonismo a las fotos circulares.
+            </p>
+          </div>
+
+          {/* Tarjeta 3: Filtro "Tienda Oficial JG" en Búsqueda */}
+          <div
+            className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+              landing.showOfficialStoreFilter
+                ? 'border-border bg-card shadow-xs'
+                : 'border-dashed border-border/80 bg-muted/20 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Icons.store className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Filtro &quot;Tienda Oficial JG&quot;
+                  </h3>
+                  <span className="text-[10px] text-[#6C757D]">
+                    Barra lateral de búsqueda (Mercado Libre)
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleOfficialStoreFilter}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  landing.showOfficialStoreFilter
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-muted text-[#6C757D] border border-border hover:bg-muted/80'
+                }`}
+              >
+                {landing.showOfficialStoreFilter ? '✓ Visible' : '✕ Oculto'}
+              </button>
+            </div>
+            <p className="text-[11px] text-[#6C757D] leading-relaxed">
+              Añade un interruptor en el panel lateral de búsqueda para que el cliente filtre únicamente productos verificados con el sello de Tienda Oficial.
+            </p>
+          </div>
+
+          {/* Tarjeta 4: Cintillo de Aviso Promocional */}
+          <div
+            className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+              landing.showAnnouncement
+                ? 'border-border bg-card shadow-xs'
+                : 'border-dashed border-border/80 bg-muted/20 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Icons.bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Cintillo de Aviso Superior
+                  </h3>
+                  <span className="text-[10px] text-[#6C757D]">
+                    Barra superior de promociones y CBU
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleAnnouncement}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  landing.showAnnouncement
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-muted text-[#6C757D] border border-border hover:bg-muted/80'
+                }`}
+              >
+                {landing.showAnnouncement ? '✓ Visible' : '✕ Oculto'}
+              </button>
+            </div>
+            <p className="text-[11px] text-[#6C757D] leading-relaxed">
+              Cintillo rojo/dorado que aparece arriba de toda la página con el texto promocional mayorista y descuentos por transferencia.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN 3: Carruseles Horizontales de Costado (Sub-segmentos de Categorías) */}
       <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 space-y-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/80">
           <div>
