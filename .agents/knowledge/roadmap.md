@@ -132,7 +132,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Creación de grupo en la barra de navegación con tres submódulos interactivos y tienda en vivo:
     - **Submenú 2.1: Información General (`/dashboard/config/general`):** Edición del número oficial de WhatsApp (con sincronización dinámica e instantánea con todos los botones de compra del carrito, fichas y favoritos), descripción del pie de página, horarios de atención, dirección del depósito, CUIT, email y redes sociales.
     - **Submenú 2.2: Diseño de Landing (`/dashboard/config/landing`):**
-      - Vitrina de categorías estilo SHOPLUXE con fotos miniatura circulares de productos reales y navegación con flechas.
+      - Vitrina de categorías estilo SHOPLUXE con fotos miniatura circulares de productos reales y navegación con flechas (permanece activa y visible al seleccionar categoría).
+      - **Sección de Visibilidad de Bloques & Filtros Opcionales:** Switches interactivos para activar/desactivar:
+        - *Pilares de Confianza en Hero Banner* (4 tarjetas de Tarifa Mayorista, Stock en tiempo real, Mercado Pago/CBU y Envíos a todo el país). Ocultados por defecto a pedido del usuario.
+        - *Barra de Categorías en Botones de Texto (Pills)* (24 departamentos compactos; desactivada para no duplicar con las fotos circulares).
+        - *Filtro "Tienda Oficial JG"* en la barra lateral de búsqueda.
+        - *Cintillo de Aviso Superior* con texto promocional y descuento CBU.
       - Gestor dinámico de carruseles de productos horizontales (&quot;de costado&quot;): agregar, reordenar y alternar visibilidad de secciones por rubro (Bazar, Electro, Tendencias, Mayorista) con flechas `&lt; &gt;` y enlace &quot;Ver todo el departamento&quot;.
     - **Submenú 2.3: Temas y Apariencia (`/dashboard/config/theme`):**
       - Selector visual de las 11 paletas de colores del sistema (JG Store Oficial, Claude, Discord, Supabase, Vercel, Mono, Notebook, Light Green, Zen, Astro Vista, WhatsApp).
