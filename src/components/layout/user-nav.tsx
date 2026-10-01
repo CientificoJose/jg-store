@@ -53,4 +53,43 @@ export function UserNav() {
       </DropdownMenu>
     );
   }
+
+  // Fallback para sesión local / modo desarrollo cuando Clerk está en pausa
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={<Button variant='ghost' className='relative h-8 w-8 rounded-full' />}
+      >
+        <UserAvatarProfile
+          user={{
+            fullName: 'Administrador JG',
+            emailAddresses: [{ emailAddress: 'admin@jgstore.com.ar' }],
+            imageUrl: ''
+          }}
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className='w-56' align='end' sideOffset={10}>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className='font-normal'>
+            <div className='flex flex-col space-y-1'>
+              <p className='text-sm leading-none font-medium'>Administrador JG Store</p>
+              <p className='text-muted-foreground text-xs leading-none'>admin@jgstore.com.ar</p>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+            Perfil del Administrador
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/dashboard/config/general')}>
+            Configuración de Tienda
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/dashboard/overview')}>
+            Panel Principal
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }

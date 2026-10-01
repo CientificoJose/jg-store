@@ -123,7 +123,17 @@ export default function AppSidebar() {
                   />
                 }
               >
-                {user && <UserAvatarProfile className='h-8 w-8 rounded-lg' showInfo user={user} />}
+                <UserAvatarProfile
+                  className='h-8 w-8 rounded-lg'
+                  showInfo
+                  user={
+                    user || {
+                      fullName: 'Administrador JG',
+                      emailAddresses: [{ emailAddress: 'admin@jgstore.com.ar' }],
+                      imageUrl: ''
+                    }
+                  }
+                />
                 <Icons.chevronsDown className='ml-auto size-4' />
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -135,9 +145,17 @@ export default function AppSidebar() {
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className='p-0 font-normal'>
                     <div className='px-1 py-1.5'>
-                      {user && (
-                        <UserAvatarProfile className='h-8 w-8 rounded-lg' showInfo user={user} />
-                      )}
+                      <UserAvatarProfile
+                        className='h-8 w-8 rounded-lg'
+                        showInfo
+                        user={
+                          user || {
+                            fullName: 'Administrador JG',
+                            emailAddresses: [{ emailAddress: 'admin@jgstore.com.ar' }],
+                            imageUrl: ''
+                          }
+                        }
+                      />
                     </div>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
