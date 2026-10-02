@@ -135,6 +135,17 @@ export function StoreFront() {
   const isCategorySelected = selectedCategory && selectedCategory !== 'all';
   const isFilteredView = isSearching || isCategorySelected;
 
+  const handleResetHome = () => {
+    setSelectedCategory('all');
+    setSearchQuery('');
+    setShowOnlyFavorites(false);
+    setOnlyInStock(false);
+    setSortOption('popular');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleSelectCategory = (cat: string) => {
     setSelectedCategory(cat);
     setSearchQuery('');
@@ -161,6 +172,7 @@ export function StoreFront() {
           }
         }}
         onSelectCategory={handleSelectCategory}
+        onResetHome={handleResetHome}
       />
 
       {/* Hero Banner con Carrusel Promocional (se oculta al realizar una búsqueda o seleccionar una categoría para mostrar directamente el catálogo filtrado estilo Mercado Libre) */}
@@ -251,7 +263,10 @@ export function StoreFront() {
       <CartDrawer />
 
       {/* Pie de Página */}
-      <StoreFooter onSelectCategory={handleSelectCategory} />
+      <StoreFooter
+        onSelectCategory={handleSelectCategory}
+        onResetHome={handleResetHome}
+      />
     </div>
   );
 }

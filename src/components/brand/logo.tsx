@@ -7,9 +7,15 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'horizontal' | 'stacked';
   showSubtitle?: boolean;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
-export function Logo({ className = '', size = 'md', variant = 'horizontal' }: LogoProps) {
+export function Logo({
+  className = '',
+  size = 'md',
+  variant = 'horizontal',
+  onClick
+}: LogoProps) {
   // Alturas proporcionales para el formato horizontal (ideal para barra superior)
   const horizontalHeights = {
     sm: 'h-8',
@@ -30,6 +36,7 @@ export function Logo({ className = '', size = 'md', variant = 'horizontal' }: Lo
     return (
       <Link
         href='/'
+        onClick={onClick}
         className={`inline-flex items-center group cursor-pointer select-none ${className}`}
       >
         <div
@@ -62,6 +69,7 @@ export function Logo({ className = '', size = 'md', variant = 'horizontal' }: Lo
   return (
     <Link
       href='/'
+      onClick={onClick}
       className={`inline-flex items-center group cursor-pointer select-none ${className}`}
     >
       <div

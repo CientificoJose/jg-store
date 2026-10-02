@@ -16,13 +16,15 @@ interface StoreHeaderProps {
   onSearchChange: (val: string) => void;
   onSelectCategory: (slug: string) => void;
   selectedCategory?: string;
+  onResetHome?: () => void;
 }
 
 export function StoreHeader({
   searchQuery,
   onSearchChange,
   onSelectCategory,
-  selectedCategory = 'all'
+  selectedCategory = 'all',
+  onResetHome
 }: StoreHeaderProps) {
   const { setOpen, getSummary, wholesaleMode, toggleWholesaleMode } = useCartStore();
   const showWholesaleHeaderToggle = useStoreConfigStore(
@@ -60,6 +62,19 @@ export function StoreHeader({
     onSearchChange('');
   };
 
+  const handleLogoClick = () => {
+    setLocalSearch('');
+    if (onResetHome) {
+      onResetHome();
+    } else {
+      onSearchChange('');
+      onSelectCategory('all');
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full bg-background/90 backdrop-blur-md border-b border-border/80 transition-all font-gotham">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -67,7 +82,7 @@ export function StoreHeader({
           
           {/* Logo de la Marca */}
           <div className="shrink-0 flex items-center gap-3">
-            <Logo size="md" />
+            <Logo size="md" onClick={handleLogoClick} />
           </div>
 
           {/* Menú de Categorías (Dropdown) y Buscador */}

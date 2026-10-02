@@ -8,9 +8,10 @@ import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 
 interface StoreFooterProps {
   onSelectCategory: (slug: string) => void;
+  onResetHome?: () => void;
 }
 
-export function StoreFooter({ onSelectCategory }: StoreFooterProps) {
+export function StoreFooter({ onSelectCategory, onResetHome }: StoreFooterProps) {
   const general = useStoreConfigStore((s) => s.general);
   const cleanPhone = (general.whatsappNumber || '5491155550000').replace(/[^0-9]/g, '');
 
@@ -25,7 +26,7 @@ export function StoreFooter({ onSelectCategory }: StoreFooterProps) {
           
           {/* Columna 1: JG Store */}
           <div className="space-y-4">
-            <Logo size="lg" />
+            <Logo size="lg" onClick={onResetHome} />
             <p className="text-xs text-[#6C757D] leading-relaxed">
               {general.footerDescription ||
                 'Distribuidora y tienda departamental multirrubro. Ofrecemos catálogo mayorista para comerciantes y venta minorista al detal con precios altamente competitivos.'}
