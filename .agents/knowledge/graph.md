@@ -23,9 +23,12 @@ graph TD
         BR[🟢 Branding, Logo e Identidad Visual]
     end
 
+    subgraph Datos [Persistencia & Datos]
+        DB["🟢 PostgreSQL & Supabase Dokploy"]
+    end
+
     subgraph Pendientes [Tareas Pendientes Activas]
         CL["🟡 Conexión con Clerk (Autenticación)"]
-        DB["🟡 Backend & Base de Datos"]
     end
 
     JG --> CS
@@ -35,19 +38,19 @@ graph TD
     
     JG --> BM
     JG --> BR
+    JG --> DB
     JG -.-> CL
-    JG -.-> DB
     
     BM --> FE
     BR --> FE
-    CL --> BM
     DB --> BM
+    CL -.-> BM
 
     classDef completed fill:#22c55e,stroke:#15803d,color:#fff;
     classDef pending fill:#eab308,stroke:#a16207,color:#000;
     
-    class CS,BUN,FE,BR,BM completed;
-    class CL,DB pending;
+    class CS,BUN,FE,BR,BM,DB completed;
+    class CL pending;
 ```
 
 ---
@@ -109,9 +112,15 @@ graph TD
 * **Objetivo:** Conectar las claves API reales de Clerk, configurar URLs de redirección y vincular roles de usuario (administrador, cliente mayorista verificado, cliente minorista).
 * **Nota importante:** Se ha dejado intencionalmente como tarea pendiente según directiva del usuario.
 
-### 8. 🟡 Backend y Base de Datos (`backend-database`)
-* **Estado:** Pendiente de migración remota.
-* **Objetivo:** Conexión con PostgreSQL / Supabase Dokploy (`http://jg-store-bd.press-cloud.com`) ejecutando los scripts SQL preparados (`20260917_create_products_table.sql`, `20260925_create_users_and_favorites_tables.sql`, `20260926_create_orders_tables.sql`).
+### 8. 🟢 Backend y Base de Datos Remota Dokploy Supabase (`backend-database`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Migración y aprovisionamiento exitoso en la instancia PostgreSQL 17.6 / Supabase Dokploy en `http://jg-store-bd.press-cloud.com` vía el endpoint de superusuario `/pg/query`.
+  - Tablas instanciadas con RLS e índices B-Tree: `categories`, `subcategories`, `sub_subcategories`, `products`, `product_variants`, `users`, `favorites`, `orders`, `order_items`.
+  - Vistas desnormalizadas operativas: `vw_product_hierarchy`, `vw_products_with_hierarchy`, `vw_favoritos_detalle`.
+  - Seed taxonómico integral: 24 departamentos oficiales, 54 subcategorías comerciales y 90 líneas de producto específicas.
+  - Catálogo inicial de 28 productos poblado con precios duales B2B/B2C en `$ ARS` y mapeo jerárquico.
+  - 12 endpoints PostgREST probados y respondiendo HTTP 200 OK (`/rest/v1/*`).
 
 ### 9. 🟢 Panel de Gestión de Pedidos y Cotizaciones (`orders-management`)
 * **Estado:** Completado.

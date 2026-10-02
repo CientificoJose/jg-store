@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_products_featured ON public.products(featured);
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
 -- Política de lectura pública (cualquier cliente anónimo puede ver productos)
+DROP POLICY IF EXISTS "Permitir lectura pública de productos" ON public.products;
 CREATE POLICY "Permitir lectura pública de productos"
   ON public.products
   FOR SELECT
@@ -39,6 +40,7 @@ CREATE POLICY "Permitir lectura pública de productos"
   USING (true);
 
 -- Política de modificación para rol de servicio / autenticado
+DROP POLICY IF EXISTS "Permitir gestión de productos para administradores" ON public.products;
 CREATE POLICY "Permitir gestión de productos para administradores"
   ON public.products
   FOR ALL

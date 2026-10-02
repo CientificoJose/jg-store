@@ -161,7 +161,8 @@ export async function fetchStoreProducts(
 
 export async function fetchProductById(id: string): Promise<StoreProduct | null> {
   const all = await fetchStoreProducts();
-  return all.find((p) => p.id === id || p.sku === id) || null;
+  const mockMatch = INITIAL_PRODUCTS.find((p) => p.id === id);
+  return all.find((p) => p.id === id || p.sku === id || (mockMatch && p.sku === mockMatch.sku)) || null;
 }
 
 export async function updateProductStock(

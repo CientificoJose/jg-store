@@ -69,17 +69,22 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read access to orders" ON public.orders;
 CREATE POLICY "Allow public read access to orders"
     ON public.orders FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Allow public insert to orders" ON public.orders;
 CREATE POLICY "Allow public insert to orders"
     ON public.orders FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Allow public update to orders" ON public.orders;
 CREATE POLICY "Allow public update to orders"
     ON public.orders FOR UPDATE USING (true);
 
+DROP POLICY IF EXISTS "Allow public read access to order_items" ON public.order_items;
 CREATE POLICY "Allow public read access to order_items"
     ON public.order_items FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Allow public insert to order_items" ON public.order_items;
 CREATE POLICY "Allow public insert to order_items"
     ON public.order_items FOR INSERT WITH CHECK (true);

@@ -42,19 +42,23 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
 
 -- Políticas de Seguridad para Usuarios:
+DROP POLICY IF EXISTS "Permitir a usuarios ver su propio perfil" ON public.users;
 CREATE POLICY "Permitir a usuarios ver su propio perfil"
   ON public.users FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Permitir registro de nuevos usuarios" ON public.users;
 CREATE POLICY "Permitir registro de nuevos usuarios"
   ON public.users FOR INSERT
   WITH CHECK (true);
 
 -- Políticas de Seguridad para Favoritos:
+DROP POLICY IF EXISTS "Permitir lectura de favoritos" ON public.favorites;
 CREATE POLICY "Permitir lectura de favoritos"
   ON public.favorites FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Permitir a usuarios agregar o eliminar sus favoritos" ON public.favorites;
 CREATE POLICY "Permitir a usuarios agregar o eliminar sus favoritos"
   ON public.favorites FOR ALL
   USING (true);

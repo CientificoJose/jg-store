@@ -118,7 +118,20 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
       - Selector de cambio de estado operativo y botón para imprimir Remito Oficial de Despacho.
   - Migración SQL en `supabase/migrations/20260926_create_orders_tables.sql` con tablas `orders` y `order_items` con RLS e índices.
 - [ ] **Carga Masiva de Productos (Bulk Import & Upsert Excel/CSV):** *(En pausa estratégica)* — Propuesta estructurada en ADR 005 para definir formato final (Excel vs CSV vs integración) y flujo operativo con el usuario.
-- [ ] Ejecutar migración SQL en la base de datos PostgreSQL de Dokploy (`http://jg-store-bd.press-cloud.com`) para persistir productos en BD remota.
+- [x] **Ejecución de Migraciones en la Base de Datos Remota (PostgreSQL / Supabase Dokploy en `http://jg-store-bd.press-cloud.com`):**
+  - Conexión e interactividad directa con el motor PostgreSQL 17.6 vía el endpoint oficial `/pg/query` autenticado con `SUPABASE_SERVICE_ROLE_KEY`.
+  - Creación y verificación de todas las tablas e índices de la arquitectura comercial:
+    - `public.categories` (24 departamentos oficiales de Nivel 1).
+    - `public.subcategories` (54 subcategorías comerciales de Nivel 2).
+    - `public.sub_subcategories` (90 líneas de producto específicas de Nivel 3).
+    - `public.products` (Catálogo general con columnas de jerarquía Nivel 2/3, marca, precios B2B/B2C, stock y atributos físicos).
+    - `public.product_variants` (Variantes por color, medida, precio ajustado y stock).
+    - `public.users` (Roles comerciales `cliente_detal`, `mayorista_b2b`, `admin`).
+    - `public.favorites` (Wishlist por usuario y producto con restricciones únicas).
+    - `public.orders` y `public.order_items` (Logística nacional AFIP, Andreani, Factura A/B y finanzas en $ ARS).
+  - Vistas SQL activas: `vw_product_hierarchy`, `vw_products_with_hierarchy` y `vw_favoritos_detalle`.
+  - Carga completa del catálogo inicial (28 productos) con mapeo jerárquico y precios en pesos argentinos.
+  - Recarga de schema cache (`NOTIFY pgrst, 'reload schema'`) y verificación en vivo de los 12 endpoints REST de PostgREST (`/rest/v1/*` retornando HTTP 200 OK).
 - [ ] Subida de imágenes a Supabase Storage Bucket (`products`).
 
 ---

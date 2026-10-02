@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS public.sub_subcategories (
 
 -- 4. Modificar la Tabla Principal de Productos para vincular Nivel 2 y Nivel 3
 ALTER TABLE public.products
+  ADD COLUMN IF NOT EXISTS category_id VARCHAR(80) REFERENCES public.categories(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS brand VARCHAR(100),
   ADD COLUMN IF NOT EXISTS subcategory_id VARCHAR(100) REFERENCES public.subcategories(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS subcategory_slug VARCHAR(100),
   ADD COLUMN IF NOT EXISTS subcategory_name VARCHAR(150),
@@ -111,12 +113,18 @@ ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subcategories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sub_subcategories ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Lectura pública de categorías" ON public.categories;
 CREATE POLICY "Lectura pública de categorías" ON public.categories FOR SELECT TO public USING (true);
+DROP POLICY IF EXISTS "Lectura pública de subcategorías" ON public.subcategories;
 CREATE POLICY "Lectura pública de subcategorías" ON public.subcategories FOR SELECT TO public USING (true);
+DROP POLICY IF EXISTS "Lectura pública de sub_subcategorías" ON public.sub_subcategories;
 CREATE POLICY "Lectura pública de sub_subcategorías" ON public.sub_subcategories FOR SELECT TO public USING (true);
 
+DROP POLICY IF EXISTS "Gestión admin categorías" ON public.categories;
 CREATE POLICY "Gestión admin categorías" ON public.categories FOR ALL TO service_role USING (true);
+DROP POLICY IF EXISTS "Gestión admin subcategorías" ON public.subcategories;
 CREATE POLICY "Gestión admin subcategorías" ON public.subcategories FOR ALL TO service_role USING (true);
+DROP POLICY IF EXISTS "Gestión admin sub_subcategorías" ON public.sub_subcategories;
 CREATE POLICY "Gestión admin sub_subcategorías" ON public.sub_subcategories FOR ALL TO service_role USING (true);
 
 -- ==============================================================================
