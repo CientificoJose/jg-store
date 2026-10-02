@@ -16,7 +16,7 @@
     "format": "oxfmt --write . '!**/*.md' '!**/*.mdc' '!**/*.mdx' '!**/*.yml' '!**/*.yaml'",
     "format:check": "oxfmt --check . '!**/*.md' '!**/*.mdc' '!**/*.mdx' '!**/*.yml' '!**/*.yaml'",
     "prepare": "husky",
-    "push:main": "git add . && git commit --no-verify -m \"feat: sync changes to main\" && git push origin main"
+    "push:main": "git add . && git commit --no-verify -m \"feat: sync changes to main\" && git push --no-verify origin main"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.47",
