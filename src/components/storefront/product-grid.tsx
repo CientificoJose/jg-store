@@ -12,6 +12,7 @@ interface ProductGridProps {
   products: StoreProduct[];
   categoryTitle: string;
   categorySlug: string;
+  onSelectCategory?: (slug: string) => void;
   sortOption: ProductSortOption;
   onSortChange: (sort: ProductSortOption) => void;
   onlyInStock: boolean;
@@ -28,6 +29,7 @@ export function ProductGrid({
   products,
   categoryTitle,
   categorySlug,
+  onSelectCategory,
   sortOption,
   onSortChange,
   onlyInStock,
@@ -40,12 +42,15 @@ export function ProductGrid({
   searchMetadata
 }: ProductGridProps) {
   const isSearchMode = Boolean(searchQuery?.trim());
-  const isSearchEmpty = isSearchMode && products.length === 0;
+  const isCategoryMode = Boolean(categorySlug) && categorySlug !== 'all';
+  const isFilterMode = isSearchMode || isCategoryMode;
+  const isFilterEmpty = isFilterMode && products.length === 0;
 
   const showOfficialStoreFilter = useStoreConfigStore((s) => s.landing.showOfficialStoreFilter);
 
   // Estados locales de filtrado lateral estilo Mercado Libre
   const [facetCategory, setFacetCategory] = useState<string>('all');
+  const [facetSubcategory, setFacetSubcategory] = useState<string>('');
   const [facetBrand, setFacetBrand] = useState<string>('');
   const [facetMinPrice, setFacetMinPrice] = useState<number | null>(null);
   const [facetMaxPrice, setFacetMaxPrice] = useState<number | null>(null);
@@ -53,19 +58,21 @@ export function ProductGrid({
   const [facetOfficialOnly, setFacetOfficialOnly] = useState<boolean>(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
 
-  // Reiniciar filtros por facetas cada vez que se busca un término nuevo
+  // Reiniciar filtros por facetas cada vez que se busca un término nuevo o cambia la categoría principal
   useEffect(() => {
     setFacetCategory('all');
+    setFacetSubcategory('');
     setFacetBrand('');
     setFacetMinPrice(null);
     setFacetMaxPrice(null);
     setFacetWholesaleOnly(false);
     setFacetOfficialOnly(false);
     setIsMobileFilterOpen(false);
-  }, [searchQuery]);
+  }, [searchQuery, categorySlug]);
 
   const handleResetFacets = () => {
     setFacetCategory('all');
+    setFacetSubcategory('');
     setFacetBrand('');
     setFacetMinPrice(null);
     setFacetMaxPrice(null);
@@ -75,10 +82,14 @@ export function ProductGrid({
 
   // Filtrado de productos basado en las facetas seleccionadas en la barra lateral
   const displayedProducts = useMemo(() => {
-    if (!isSearchMode) return products;
+    if (!isFilterMode) return products;
 
     return products.filter((p) => {
-      // Filtro por categoría lateral
+      // Filtro por subcategoría lateral
+      if (facetSubcategory && p.subcategory_slug !== facetSubcategory) {
+        return false;
+      }
+      // Filtro por categoría lateral (si en modo búsqueda global se pulsa una categoría)
       if (facetCategory !== 'all' && p.category_slug !== facetCategory) {
         return false;
       }
@@ -107,7 +118,8 @@ export function ProductGrid({
     });
   }, [
     products,
-    isSearchMode,
+    isFilterMode,
+    facetSubcategory,
     facetCategory,
     facetBrand,
     facetMinPrice,
@@ -120,19 +132,40 @@ export function ProductGrid({
   const activeFiltersCount = useMemo(() => {
     return [
       facetCategory !== 'all',
+      facetSubcategory !== '',
       facetBrand !== '',
       onlyInStock,
       facetWholesaleOnly,
       showOfficialStoreFilter && facetOfficialOnly,
       facetMinPrice !== null || facetMaxPrice !== null
     ].filter(Boolean).length;
-  }, [facetCategory, facetBrand, onlyInStock, facetWholesaleOnly, showOfficialStoreFilter, facetOfficialOnly, facetMinPrice, facetMaxPrice]);
+  }, [
+    facetCategory,
+    facetSubcategory,
+    facetBrand,
+    onlyInStock,
+    facetWholesaleOnly,
+    showOfficialStoreFilter,
+    facetOfficialOnly,
+    facetMinPrice,
+    facetMaxPrice
+  ]);
+
+  // Nombre de la subcategoría activa para breadcrumbs
+  const activeSubcategoryName = useMemo(() => {
+    if (!facetSubcategory) return '';
+    const match = products.find((p) => p.subcategory_slug === facetSubcategory);
+    return match?.subcategory_name || facetSubcategory;
+  }, [products, facetSubcategory]);
 
   return (
-    <section className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-gotham ${isSearchEmpty ? 'py-3 sm:py-5' : 'py-6 sm:py-10'}`}>
-      
-      {/* Caso 1: Búsqueda sin coincidencias desde el inicio */}
-      {isSearchEmpty && (
+    <section
+      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-gotham ${
+        isFilterEmpty ? 'py-3 sm:py-5' : 'py-6 sm:py-10'
+      }`}
+    >
+      {/* Caso 1: Búsqueda o Categoría sin coincidencias */}
+      {isFilterEmpty && (
         <div className="py-2 font-gotham space-y-5">
           <div className="p-3 sm:p-3.5 rounded-xl bg-card border border-border/70 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -141,7 +174,15 @@ export function ProductGrid({
               </div>
               <div>
                 <h3 className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
-                  No encontramos resultados para <span className="text-[#E63946]">"{searchQuery}"</span>
+                  {isSearchMode ? (
+                    <>
+                      No encontramos resultados para <span className="text-[#E63946]">"{searchQuery}"</span>
+                    </>
+                  ) : (
+                    <>
+                      No encontramos productos en el rubro <span className="text-[#E63946]">"{categoryTitle}"</span>
+                    </>
+                  )}
                 </h3>
                 <p className="text-[11px] text-[#6C757D] leading-tight">
                   Revisá la ortografía o mirá los productos destacados que te sugerimos abajo:
@@ -149,8 +190,8 @@ export function ProductGrid({
               </div>
             </div>
 
-            {onClearSearch && (
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              {onClearSearch && isSearchMode && (
                 <button
                   onClick={onClearSearch}
                   className="h-8 px-3 rounded-lg bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
@@ -158,14 +199,17 @@ export function ProductGrid({
                   <Icons.close className="w-3 h-3" />
                   <span>Limpiar búsqueda</span>
                 </button>
-                <button
-                  onClick={onResetFilters}
-                  className="h-8 px-3 rounded-lg border border-border bg-muted/30 hover:bg-muted text-foreground font-semibold text-xs transition-all cursor-pointer"
-                >
-                  Ver todo
-                </button>
-              </div>
-            )}
+              )}
+              <button
+                onClick={() => {
+                  onResetFilters();
+                  if (onSelectCategory) onSelectCategory('all');
+                }}
+                className="h-8 px-3 rounded-lg border border-border bg-muted/30 hover:bg-muted text-foreground font-semibold text-xs transition-all cursor-pointer"
+              >
+                Ver todo el catálogo
+              </button>
+            </div>
           </div>
 
           {/* Recomendaciones / Sugeridos */}
@@ -199,18 +243,27 @@ export function ProductGrid({
         </div>
       )}
 
-      {/* Caso 2: Modo Búsqueda con Productos -> Layout 2 Columnas Estilo Mercado Libre */}
-      {isSearchMode && !isSearchEmpty && (
+      {/* Caso 2: Modo Búsqueda o Modo Categoría con Productos -> Layout 2 Columnas Estilo Mercado Libre */}
+      {isFilterMode && !isFilterEmpty && (
         <div className="flex flex-col md:flex-row items-start gap-6 lg:gap-8">
-          
           {/* Columna Izquierda: Barra Lateral de Filtros (Desktop) */}
           <div className="hidden md:block w-64 lg:w-72 shrink-0 sticky top-20">
             <SearchSidebarFilter
               searchQuery={searchQuery || ''}
+              categoryTitle={categoryTitle}
+              categorySlug={categorySlug}
               totalResults={displayedProducts.length}
               matchedProducts={products}
-              selectedCategory={facetCategory}
-              onSelectCategory={setFacetCategory}
+              selectedCategory={categorySlug !== 'all' ? categorySlug : facetCategory}
+              onSelectCategory={(slug) => {
+                if (onSelectCategory) {
+                  onSelectCategory(slug);
+                } else {
+                  setFacetCategory(slug);
+                }
+              }}
+              selectedSubcategory={facetSubcategory}
+              onSelectSubcategory={setFacetSubcategory}
               selectedBrand={facetBrand}
               onSelectBrand={setFacetBrand}
               onlyInStock={onlyInStock}
@@ -236,10 +289,20 @@ export function ProductGrid({
               <div className="w-[85%] max-w-sm h-full bg-background p-5 overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-200">
                 <SearchSidebarFilter
                   searchQuery={searchQuery || ''}
+                  categoryTitle={categoryTitle}
+                  categorySlug={categorySlug}
                   totalResults={displayedProducts.length}
                   matchedProducts={products}
-                  selectedCategory={facetCategory}
-                  onSelectCategory={setFacetCategory}
+                  selectedCategory={categorySlug !== 'all' ? categorySlug : facetCategory}
+                  onSelectCategory={(slug) => {
+                    if (onSelectCategory) {
+                      onSelectCategory(slug);
+                    } else {
+                      setFacetCategory(slug);
+                    }
+                  }}
+                  selectedSubcategory={facetSubcategory}
+                  onSelectSubcategory={setFacetSubcategory}
                   selectedBrand={facetBrand}
                   onSelectBrand={setFacetBrand}
                   onlyInStock={onlyInStock}
@@ -272,7 +335,37 @@ export function ProductGrid({
 
           {/* Columna Derecha: Barra Superior y Cuadrícula de Resultados */}
           <div className="flex-1 min-w-0 w-full space-y-5">
-            
+            {/* Breadcrumb de Navegación estilo Mercado Libre */}
+            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[#6C757D] font-gotham">
+              <button
+                onClick={() => {
+                  if (onSelectCategory) onSelectCategory('all');
+                  if (onClearSearch) onClearSearch();
+                }}
+                className="hover:text-[#E63946] hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Icons.home className="w-3.5 h-3.5" />
+                <span>Inicio</span>
+              </button>
+              <Icons.chevronRight className="w-3 h-3 text-[#6C757D]/50" />
+              {isSearchMode ? (
+                <span className="text-foreground font-semibold">Búsqueda: &ldquo;{searchQuery}&rdquo;</span>
+              ) : (
+                <button
+                  onClick={() => setFacetSubcategory('')}
+                  className={`cursor-pointer ${facetSubcategory ? 'hover:text-[#E63946] hover:underline' : 'text-foreground font-semibold'}`}
+                >
+                  {categoryTitle}
+                </button>
+              )}
+              {facetSubcategory && (
+                <>
+                  <Icons.chevronRight className="w-3 h-3 text-[#6C757D]/50" />
+                  <span className="text-[#E63946] font-semibold">{activeSubcategoryName}</span>
+                </>
+              )}
+            </nav>
+
             {/* Barra de Ordenamiento y Acciones */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/80">
               <div>
@@ -282,7 +375,11 @@ export function ProductGrid({
                       ? `Artículos Relacionados con "${searchQuery}"`
                       : searchMetadata?.matchType === 'typo'
                       ? `Resultados para "${searchMetadata.correctedWord}"`
-                      : `Resultados para "${searchQuery}"`}
+                      : isSearchMode
+                      ? `Resultados para "${searchQuery}"`
+                      : facetSubcategory
+                      ? `${activeSubcategoryName} en ${categoryTitle}`
+                      : categoryTitle}
                   </span>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20 font-gotham">
                     {displayedProducts.length}
@@ -327,7 +424,7 @@ export function ProductGrid({
               </div>
             </div>
 
-            {/* Banners de Corrección Inteligente */}
+            {/* Banners de Corrección Inteligente (solo si aplica en búsqueda) */}
             {searchMetadata?.matchType === 'related' && (
               <div className="p-3 sm:p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-2.5">
@@ -402,7 +499,7 @@ export function ProductGrid({
                   No hay productos con los filtros aplicados
                 </h3>
                 <p className="text-xs text-[#6C757D] mt-1 max-w-sm mx-auto">
-                  Prueba cambiando la marca seleccionada, deseleccionando la categoría o ajustando el rango de precio.
+                  Prueba cambiando la subcategoría, la marca seleccionada o ajustando el rango de precio.
                 </p>
                 <button
                   onClick={handleResetFacets}
@@ -416,8 +513,8 @@ export function ProductGrid({
         </div>
       )}
 
-      {/* Caso 3: Navegación General del Catálogo (Sin Búsqueda Activa) */}
-      {!isSearchMode && (
+      {/* Caso 3: Navegación General del Catálogo en la Home (Todos los Departamentos, Sin Búsqueda Activa) */}
+      {!isFilterMode && (
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/80">
             <div>

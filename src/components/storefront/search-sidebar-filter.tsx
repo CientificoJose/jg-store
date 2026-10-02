@@ -3,13 +3,18 @@
 import React, { useState } from 'react';
 import { StoreProduct } from '@/types/store';
 import { Icons } from '@/components/icons';
+import { PRODUCT_CATEGORIES } from '@/constants/categories';
 
 export interface SearchSidebarFilterProps {
   searchQuery: string;
+  categoryTitle?: string;
+  categorySlug?: string;
   totalResults: number;
   matchedProducts: StoreProduct[];
   selectedCategory: string;
   onSelectCategory: (categorySlug: string) => void;
+  selectedSubcategory?: string;
+  onSelectSubcategory?: (subcategorySlug: string) => void;
   selectedBrand: string;
   onSelectBrand: (brand: string) => void;
   onlyInStock: boolean;
@@ -28,10 +33,14 @@ export interface SearchSidebarFilterProps {
 
 export function SearchSidebarFilter({
   searchQuery,
+  categoryTitle,
+  categorySlug,
   totalResults,
   matchedProducts,
   selectedCategory,
   onSelectCategory,
+  selectedSubcategory = '',
+  onSelectSubcategory,
   selectedBrand,
   onSelectBrand,
   onlyInStock,
@@ -51,6 +60,7 @@ export function SearchSidebarFilter({
   const [localMax, setLocalMax] = useState<string>(maxPrice ? String(maxPrice) : '');
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllBrands, setShowAllBrands] = useState(false);
+  const [showOtherCategories, setShowOtherCategories] = useState(false);
 
   React.useEffect(() => {
     setLocalMin(minPrice !== null && minPrice !== undefined ? String(minPrice) : '');
@@ -59,6 +69,13 @@ export function SearchSidebarFilter({
   React.useEffect(() => {
     setLocalMax(maxPrice !== null && maxPrice !== undefined ? String(maxPrice) : '');
   }, [maxPrice]);
+
+  const currentCategoryObj = React.useMemo(() => {
+    return PRODUCT_CATEGORIES.find((c) => c.slug === selectedCategory);
+  }, [selectedCategory]);
+
+  const displayHeading =
+    searchQuery.trim() || categoryTitle || currentCategoryObj?.name || 'Catálogo de Productos';
 
   // Extraer categorías presentes en los resultados con conteo
   const categoryCounts = React.useMemo(() => {
@@ -75,6 +92,27 @@ export function SearchSidebarFilter({
     });
     return Object.values(counts).sort((a, b) => b.count - a.count);
   }, [matchedProducts]);
+
+  // Extraer subcategorías de la categoría seleccionada presentes en los resultados
+  const subcategoryCounts = React.useMemo(() => {
+    if (selectedCategory === 'all') return [];
+    const counts: Record<string, { slug: string; name: string; count: number }> = {};
+
+    matchedProducts.forEach((p) => {
+      if (p.subcategory_slug && p.subcategory_name) {
+        if (!counts[p.subcategory_slug]) {
+          counts[p.subcategory_slug] = {
+            slug: p.subcategory_slug,
+            name: p.subcategory_name,
+            count: 0
+          };
+        }
+        counts[p.subcategory_slug].count += 1;
+      }
+    });
+
+    return Object.values(counts).sort((a, b) => b.count - a.count);
+  }, [matchedProducts, selectedCategory]);
 
   // Extraer marcas presentes en los resultados con conteo
   const brandCounts = React.useMemo(() => {
@@ -97,7 +135,8 @@ export function SearchSidebarFilter({
   };
 
   const hasActiveFilters =
-    selectedCategory !== 'all' ||
+    (selectedCategory !== 'all' && Boolean(searchQuery.trim())) ||
+    selectedSubcategory !== '' ||
     selectedBrand !== '' ||
     onlyInStock ||
     wholesaleOnly ||
@@ -113,7 +152,7 @@ export function SearchSidebarFilter({
       {/* Encabezado móvil para cerrar drawer */}
       {onCloseMobile && (
         <div className="flex md:hidden items-center justify-between pb-3 border-b border-border">
-          <span className="text-sm font-bold text-foreground">Filtros de Búsqueda</span>
+          <span className="text-sm font-bold text-foreground">Filtros de Catálogo</span>
           <button
             onClick={onCloseMobile}
             className="p-1 rounded-lg text-[#6C757D] hover:text-foreground cursor-pointer"
@@ -124,10 +163,27 @@ export function SearchSidebarFilter({
         </div>
       )}
 
-      {/* Título de la Búsqueda y Conteo (Estilo Mercado Libre) */}
+      {/* Botón rápido Volver a Todos los Departamentos si estamos en una categoría */}
+      {selectedCategory !== 'all' && (
+        <button
+          onClick={() => {
+            onSelectCategory('all');
+            if (onSelectSubcategory) onSelectSubcategory('');
+          }}
+          className="w-full py-2 px-3 rounded-xl border border-border/80 bg-card hover:bg-muted/70 text-xs font-semibold text-[#E63946] flex items-center justify-between group transition-colors cursor-pointer shadow-2xs"
+        >
+          <span className="flex items-center gap-1.5">
+            <Icons.chevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Todos los Departamentos</span>
+          </span>
+          <Icons.home className="w-3.5 h-3.5 text-[#6C757D]" />
+        </button>
+      )}
+
+      {/* Título de la Búsqueda o Departamento y Conteo (Estilo Mercado Libre) */}
       <div className="border-b border-border/80 pb-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground capitalize tracking-tight">
-          {searchQuery}
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground capitalize tracking-tight leading-tight">
+          {displayHeading}
         </h1>
         <p className="text-xs text-[#6C757D] mt-0.5">
           {totalResults.toLocaleString('es-AR')} {totalResults === 1 ? 'resultado' : 'resultados'}
@@ -136,13 +192,28 @@ export function SearchSidebarFilter({
         {/* Chips de Filtros Activos con 'X' */}
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border/60">
-            {selectedCategory !== 'all' && (
+            {selectedCategory !== 'all' && searchQuery.trim() && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-muted text-foreground border border-border">
-                <span>{categoryCounts.find((c) => c.slug === selectedCategory)?.name || selectedCategory}</span>
+                <span>{currentCategoryObj?.name || selectedCategory}</span>
                 <button
                   onClick={() => onSelectCategory('all')}
                   className="hover:text-[#E63946] cursor-pointer"
                   title="Quitar filtro de categoría"
+                >
+                  <Icons.close className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedSubcategory && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20 font-semibold">
+                <span>
+                  {subcategoryCounts.find((s) => s.slug === selectedSubcategory)?.name || selectedSubcategory}
+                </span>
+                <button
+                  onClick={() => onSelectSubcategory && onSelectSubcategory('')}
+                  className="hover:text-red-700 cursor-pointer"
+                  title="Quitar filtro de subcategoría"
                 >
                   <Icons.close className="w-3 h-3" />
                 </button>
@@ -202,8 +273,8 @@ export function SearchSidebarFilter({
             {(minPrice !== null || maxPrice !== null) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-muted text-foreground border border-border">
                 <span>
-                  {minPrice ? `$${minPrice.toLocaleString()}` : '$0'} -{' '}
-                  {maxPrice ? `$${maxPrice.toLocaleString()}` : 'Max'}
+                  {minPrice ? `$${minPrice.toLocaleString('es-AR')}` : '$0'} -{' '}
+                  {maxPrice ? `$${maxPrice.toLocaleString('es-AR')}` : 'Max'}
                 </span>
                 <button
                   onClick={() => {
@@ -229,7 +300,7 @@ export function SearchSidebarFilter({
       </div>
 
       {/* Switch 1: En Stock Inmediato (Estilo Toggle Switch Mercado Libre) */}
-      <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-xs">
+      <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
         <div>
           <span className="text-xs font-bold text-foreground block">
             En stock inmediato
@@ -256,7 +327,7 @@ export function SearchSidebarFilter({
       </div>
 
       {/* Switch 2: Tarifa Mayorista VIP */}
-      <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-xs">
+      <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
         <div>
           <span className="text-xs font-bold text-foreground block">
             Tarifa Mayorista B2B
@@ -284,7 +355,7 @@ export function SearchSidebarFilter({
 
       {/* Switch 3: Tienda Oficial JG (Opcional, configurable desde el panel de control) */}
       {showOfficialStoreFilter && onToggleOfficialOnly && (
-        <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-xs">
+        <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
           <div>
             <span className="text-xs font-bold text-foreground block">
               Tienda Oficial JG
@@ -311,30 +382,63 @@ export function SearchSidebarFilter({
         </div>
       )}
 
-      {/* SECCIÓN: Categorías / Departamentos Relacionados */}
-      {categoryCounts.length > 0 && (
+      {/* SECCIÓN 1: Subcategorías (Si estamos dentro de un departamento específico) */}
+      {selectedCategory !== 'all' && subcategoryCounts.length > 0 && (
         <div className="space-y-2.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-            Categorías
-          </h2>
-          <ul className="space-y-1.5 text-xs">
-            {selectedCategory !== 'all' && (
-              <li>
-                <button
-                  onClick={() => onSelectCategory('all')}
-                  className="text-xs text-[#E63946] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <Icons.chevronLeft className="w-3.5 h-3.5" />
-                  <span>Todas las categorías</span>
-                </button>
-              </li>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              Subcategorías
+            </h2>
+            {selectedSubcategory && (
+              <button
+                onClick={() => onSelectSubcategory && onSelectSubcategory('')}
+                className="text-[10px] text-[#E63946] hover:underline cursor-pointer"
+              >
+                Ver todas
+              </button>
             )}
+          </div>
+          <ul className="space-y-1 text-xs">
+            {subcategoryCounts.map((sub) => {
+              const isSelected = selectedSubcategory === sub.slug;
+              return (
+                <li key={sub.slug}>
+                  <button
+                    onClick={() => onSelectSubcategory && onSelectSubcategory(isSelected ? '' : sub.slug)}
+                    className={`w-full text-left flex items-center justify-between py-1 transition-colors cursor-pointer group ${
+                      isSelected
+                        ? 'font-bold text-[#E63946]'
+                        : 'text-[#6C757D] hover:text-foreground'
+                    }`}
+                  >
+                    <span className="truncate pr-2">{sub.name}</span>
+                    <span className="text-[11px] text-[#6C757D]/70 group-hover:text-foreground">
+                      ({sub.count})
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* SECCIÓN 2: Categorías / Departamentos Relacionados (En búsqueda general o conmutador de rubros) */}
+      {(selectedCategory === 'all' || categoryCounts.length > 1) && (
+        <div className="space-y-2.5 border-t border-border/80 pt-4">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
+            {selectedCategory === 'all' ? 'Departamentos' : 'Otros Departamentos'}
+          </h2>
+          <ul className="space-y-1 text-xs">
             {visibleCategories.map((cat) => {
               const isSelected = selectedCategory === cat.slug;
               return (
                 <li key={cat.slug}>
                   <button
-                    onClick={() => onSelectCategory(isSelected ? 'all' : cat.slug)}
+                    onClick={() => {
+                      onSelectCategory(isSelected ? 'all' : cat.slug);
+                      if (onSelectSubcategory) onSelectSubcategory('');
+                    }}
                     className={`w-full text-left flex items-center justify-between py-1 transition-colors cursor-pointer group ${
                       isSelected
                         ? 'font-bold text-[#E63946]'
@@ -362,13 +466,13 @@ export function SearchSidebarFilter({
         </div>
       )}
 
-      {/* SECCIÓN: Marcas (Brands) */}
+      {/* SECCIÓN 3: Marcas (Brands) */}
       {brandCounts.length > 0 && (
         <div className="space-y-2.5 border-t border-border/80 pt-4">
           <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
             Marcas
           </h2>
-          <ul className="space-y-1.5 text-xs">
+          <ul className="space-y-1 text-xs">
             {selectedBrand && (
               <li>
                 <button
@@ -413,7 +517,7 @@ export function SearchSidebarFilter({
         </div>
       )}
 
-      {/* SECCIÓN: Rango de Precio */}
+      {/* SECCIÓN 4: Rango de Precio */}
       <div className="space-y-3 border-t border-border/80 pt-4">
         <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
           Precio
@@ -469,7 +573,7 @@ export function SearchSidebarFilter({
         </form>
       </div>
 
-      {/* SECCIÓN: Condición (Estilo Mercado Libre) */}
+      {/* SECCIÓN 5: Condición (Estilo Mercado Libre) */}
       <div className="space-y-2 border-t border-border/80 pt-4">
         <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
           Condición
@@ -482,7 +586,7 @@ export function SearchSidebarFilter({
         </div>
       </div>
 
-      {/* SECCIÓN: Envíos y Logística (Estilo Mercado Libre) */}
+      {/* SECCIÓN 6: Envíos y Logística (Estilo Mercado Libre) */}
       <div className="space-y-2 border-t border-border/80 pt-4">
         <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
           Envíos y Despacho

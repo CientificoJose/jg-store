@@ -132,57 +132,64 @@ export function StoreFront() {
   };
 
   const isSearching = searchQuery.trim().length > 0;
+  const isCategorySelected = selectedCategory && selectedCategory !== 'all';
+  const isFilteredView = isSearching || isCategorySelected;
+
+  const handleSelectCategory = (cat: string) => {
+    setSelectedCategory(cat);
+    setSearchQuery('');
+    if (cat !== 'all') {
+      setTimeout(() => {
+        const gridEl = document.getElementById('catalogo-productos');
+        if (gridEl) {
+          gridEl.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 50);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-[#E63946] selection:text-white font-gotham transition-colors duration-200">
       {/* Header Fijo */}
       <StoreHeader
         searchQuery={searchQuery}
+        selectedCategory={selectedCategory}
         onSearchChange={(q) => {
           setSearchQuery(q);
           if (q.trim()) {
             setSelectedCategory('all');
           }
         }}
-        onSelectCategory={(cat) => {
-          setSelectedCategory(cat);
-          setSearchQuery('');
-        }}
+        onSelectCategory={handleSelectCategory}
       />
 
-      {/* Hero Banner con Carrusel Promocional (se oculta al realizar una búsqueda para enfocar los resultados) */}
-      {!isSearching && (
+      {/* Hero Banner con Carrusel Promocional (se oculta al realizar una búsqueda o seleccionar una categoría para mostrar directamente el catálogo filtrado estilo Mercado Libre) */}
+      {!isFilteredView && (
         <HeroBanner
           onExploreCatalog={handleExploreCatalog}
-          onSelectCategory={setSelectedCategory}
+          onSelectCategory={handleSelectCategory}
         />
       )}
 
       {/* Vitrina de Categorías con Fotos Miniatura (Inspiración SHOPLUXE) */}
-      {!isSearching && !showOnlyFavorites && landing.showCategoryCards && (
+      {!isFilteredView && !showOnlyFavorites && landing.showCategoryCards && (
         <CategoryShowcase
           selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => {
-            setSelectedCategory(cat);
-            setSearchQuery('');
-          }}
+          onSelectCategory={handleSelectCategory}
           style={landing.categoryStyle}
         />
       )}
 
       {/* Barra de 24 Categorías Pegajosa (Texto plano / Pills - Controlada desde Configuración) */}
-      {!isSearching && !showOnlyFavorites && landing.showCategoryPillsBar && (
+      {!isFilteredView && !showOnlyFavorites && landing.showCategoryPillsBar && (
         <CategoryBar
           selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => {
-            setSelectedCategory(cat);
-            setSearchQuery('');
-          }}
+          onSelectCategory={handleSelectCategory}
         />
       )}
 
       {/* Filas de Productos Horizontales "de costado" configurables desde el panel de control */}
-      {!isSearching && selectedCategory === 'all' && !showOnlyFavorites && (
+      {!isFilteredView && selectedCategory === 'all' && !showOnlyFavorites && (
         <div>
           {landing.productRows
             .filter((row) => row.enabled)
@@ -197,7 +204,7 @@ export function StoreFront() {
                   subtitle={row.subtitle}
                   products={rowItems}
                   categorySlug={row.categorySlug}
-                  onSelectCategory={setSelectedCategory}
+                  onSelectCategory={handleSelectCategory}
                   onQuickView={setQuickViewProduct}
                 />
               );
@@ -219,6 +226,7 @@ export function StoreFront() {
             products={displayedProducts}
             categoryTitle={categoryTitle}
             categorySlug={selectedCategory}
+            onSelectCategory={handleSelectCategory}
             sortOption={sortOption}
             onSortChange={setSortOption}
             onlyInStock={onlyInStock}
@@ -243,7 +251,7 @@ export function StoreFront() {
       <CartDrawer />
 
       {/* Pie de Página */}
-      <StoreFooter onSelectCategory={setSelectedCategory} />
+      <StoreFooter onSelectCategory={handleSelectCategory} />
     </div>
   );
 }

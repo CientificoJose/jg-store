@@ -14,12 +14,14 @@ interface StoreHeaderProps {
   searchQuery: string;
   onSearchChange: (val: string) => void;
   onSelectCategory: (slug: string) => void;
+  selectedCategory?: string;
 }
 
 export function StoreHeader({
   searchQuery,
   onSearchChange,
-  onSelectCategory
+  onSelectCategory,
+  selectedCategory = 'all'
 }: StoreHeaderProps) {
   const { setOpen, getSummary, wholesaleMode, toggleWholesaleMode } = useCartStore();
   const { favoriteIds, showOnlyFavorites, toggleShowOnlyFavorites } = useFavoritesStore();
@@ -28,6 +30,8 @@ export function StoreHeader({
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
   const summary = getSummary();
+
+  const activeCategory = PRODUCT_CATEGORIES.find((c) => c.slug === selectedCategory);
 
   useEffect(() => {
     setMounted(true);
@@ -68,10 +72,14 @@ export function StoreHeader({
             <div className="relative">
               <button
                 onClick={() => setIsCategoryMenuOpen((v) => !v)}
-                className="h-10 px-3 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer text-foreground"
+                className={`h-10 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activeCategory
+                    ? 'border-[#E63946] bg-[#E63946]/10 text-[#E63946]'
+                    : 'border-border/80 bg-card hover:bg-muted text-foreground'
+                }`}
               >
                 <Icons.filter className="w-3.5 h-3.5 text-[#E63946]" />
-                <span>Rubros (24)</span>
+                <span className="max-w-[130px] truncate">{activeCategory ? activeCategory.name : 'Rubros (24)'}</span>
                 <Icons.chevronDown className="w-3.5 h-3.5 text-[#6C757D]" />
               </button>
 
@@ -88,7 +96,11 @@ export function StoreHeader({
                       onSelectCategory('all');
                       setIsCategoryMenuOpen(false);
                     }}
-                    className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold hover:bg-[#E63946]/10 hover:text-[#E63946] flex items-center justify-between transition-colors"
+                    className={`w-full text-left px-2.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
+                      !activeCategory
+                        ? 'bg-[#E63946] text-white font-bold'
+                        : 'hover:bg-[#E63946]/10 hover:text-[#E63946] text-foreground'
+                    }`}
                   >
                     <span>Todos los Departamentos</span>
                     <Icons.chevronRight className="w-3.5 h-3.5 opacity-60" />
@@ -98,6 +110,7 @@ export function StoreHeader({
 
                   {PRODUCT_CATEGORIES.map((cat) => {
                     const IconComponent = (Icons as any)[cat.icon] || Icons.product;
+                    const isCatSelected = selectedCategory === cat.slug;
                     return (
                       <button
                         key={cat.id}
@@ -105,14 +118,28 @@ export function StoreHeader({
                           onSelectCategory(cat.slug);
                           setIsCategoryMenuOpen(false);
                         }}
-                        className="w-full text-left px-2.5 py-2 rounded-xl text-xs hover:bg-muted flex items-center justify-between transition-colors text-foreground"
+                        className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                          isCatSelected
+                            ? 'bg-[#E63946] text-white font-bold'
+                            : 'hover:bg-muted text-foreground'
+                        }`}
                       >
                         <span className="flex items-center gap-2 truncate">
-                          <IconComponent className="w-3.5 h-3.5 text-[#E63946] shrink-0" />
+                          <IconComponent
+                            className={`w-3.5 h-3.5 shrink-0 ${
+                              isCatSelected ? 'text-white' : 'text-[#E63946]'
+                            }`}
+                          />
                           <span className="truncate">{cat.name}</span>
                         </span>
                         {cat.isSeasonal && (
-                          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-[#D4A017]/20 text-[#D4A017] font-bold shrink-0">
+                          <span
+                            className={`text-[9px] uppercase px-1.5 py-0.5 rounded-full font-bold shrink-0 ${
+                              isCatSelected
+                                ? 'bg-white/20 text-white'
+                                : 'bg-[#D4A017]/20 text-[#D4A017]'
+                            }`}
+                          >
                             Estacional
                           </span>
                         )}
@@ -136,7 +163,11 @@ export function StoreHeader({
                 type="text"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
-                placeholder="Buscar por producto, marca, SKU o palabra clave (Enter para buscar)..."
+                placeholder={
+                  activeCategory
+                    ? `Buscar en ${activeCategory.name}... (Enter para buscar)`
+                    : 'Buscar por producto, marca, SKU o palabra clave (Enter para buscar)...'
+                }
                 className="w-full h-10 pl-9 pr-8 rounded-xl border border-border/80 bg-card focus:bg-background text-xs sm:text-sm text-foreground focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] transition-all outline-none"
               />
               {localSearch && (
@@ -251,7 +282,11 @@ export function StoreHeader({
               type="text"
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              placeholder="Buscar entre 24 categorías (Enter para buscar)..."
+              placeholder={
+                activeCategory
+                  ? `Buscar en ${activeCategory.name}...`
+                  : 'Buscar entre 24 categorías (Enter para buscar)...'
+              }
               className="w-full h-9 pl-9 pr-8 rounded-xl border border-border bg-card text-xs text-foreground focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none"
             />
             {localSearch && (

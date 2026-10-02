@@ -49,7 +49,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
       - Sección de **Rango de Precio**: accesos directos (*Hasta $10.000*, *$10.000 a $25.000*, *Más de $25.000*) y formulario de precios mínimos y máximos con botón de aplicación `>`.
       - Secciones de **Condición** (*Nuevo en caja*) y **Envíos y Despacho** nacional.
       - **Drawer Responsivo Móvil:** Botón flotante superior *"Filtros (N)"* con badge de filtros activos que abre un panel deslizable en pantallas pequeñas con botón *"Ver N resultados"*.
-  - Ocultamiento dinámico del carrusel / hero banner al realizar una búsqueda para enfocar los resultados de productos.
+  - **Navegación Unificada por Categorías en Layout de Búsqueda:**
+    - Al pulsar cualquiera de las 24 categorías oficiales (desde el dropdown del header *"Rubros (24)"*, barra de rubros, footer o showcase), el storefront adopta instantáneamente la vista filtrada en 2 columnas estilo Mercado Libre.
+    - Se ocultan el hero banner, carrusel y filas decorativas para enfocar 100% el catálogo de la categoría seleccionada.
+    - La barra lateral izquierda muestra el nombre del departamento activo, subcategorías con conteos, botón *"Volver a Todos los Departamentos"*, filtros facetados de marca/precio/stock/condición y acceso directo a otros departamentos.
+    - Se muestra miga de pan (`Inicio > Departamento > Subcategoría`), título dinámico y scroll suave directo al contenedor del catálogo (`#catalogo-productos`).
+  - Ocultamiento dinámico del carrusel / hero banner al realizar una búsqueda o seleccionar una categoría para enfocar los resultados de productos.
   - **Motor Híbrido Nativo (`src/lib/search-engine.ts`):** Búsqueda exacta y por tokens (nombre, descripción, marca, categoría, tags y SKU), búsqueda difusa (Fuzzy Levenshtein) para corrección automática de errores tipográficos (ej. *"cuaderbo"* ➔ *"cuaderno"*, *"sansung"* ➔ *"samsung"*) y matriz de conceptos/sinónimos polirrubro (ej. *"telefono"* ➔ *"Tecnología, Celulares y Gadgets"* mostrando accesorios Samsung, auriculares Xiaomi, lámparas con carga Qi, etc.).
   - Banner inteligente en `ProductGrid`: informa con precisión cuando los productos mostrados son por relación temática (*"No encontramos productos llamados X, pero encontramos artículos relacionados en Y"*) o corrección ortográfica (*"Mostrando resultados para Z"*).
   - Alerta ultra-compacta en banner horizontal cuando no hay coincidencias exactas ni afines, dejando espacio visible para los productos sugeridos y más vendidos.
