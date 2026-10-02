@@ -58,6 +58,33 @@ export default function LandingConfigPage() {
     );
   };
 
+  const handleToggleWholesaleHeaderToggle = () => {
+    updateLanding({ showWholesaleHeaderToggle: !landing.showWholesaleHeaderToggle });
+    toast.success(
+      landing.showWholesaleHeaderToggle
+        ? 'Botón selector Detal/Mayorista en cabecera ocultado.'
+        : 'Botón selector Detal/Mayorista en cabecera activado.'
+    );
+  };
+
+  const handleToggleInStockSidebarFilter = () => {
+    updateLanding({ showInStockSidebarFilter: !landing.showInStockSidebarFilter });
+    toast.success(
+      landing.showInStockSidebarFilter
+        ? 'Filtro "En stock inmediato" ocultado de la búsqueda.'
+        : 'Filtro "En stock inmediato" activado en la búsqueda.'
+    );
+  };
+
+  const handleToggleWholesaleSidebarFilter = () => {
+    updateLanding({ showWholesaleSidebarFilter: !landing.showWholesaleSidebarFilter });
+    toast.success(
+      landing.showWholesaleSidebarFilter
+        ? 'Filtro "Tarifa Mayorista B2B" ocultado de la búsqueda.'
+        : 'Filtro "Tarifa Mayorista B2B" activado en la búsqueda.'
+    );
+  };
+
   const handleToggleAnnouncement = () => {
     updateLanding({ showAnnouncement: !landing.showAnnouncement });
     toast.success(
@@ -356,6 +383,123 @@ export default function LandingConfigPage() {
             </div>
             <p className="text-[11px] text-[#6C757D] leading-relaxed">
               Añade un interruptor en el panel lateral de búsqueda para que el cliente filtre únicamente productos verificados con el sello de Tienda Oficial.
+            </p>
+          </div>
+
+          {/* Tarjeta: Selector Detal / Mayorista en Cabecera */}
+          <div
+            className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+              landing.showWholesaleHeaderToggle
+                ? 'border-border bg-card shadow-xs'
+                : 'border-dashed border-border/80 bg-muted/20 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-red-500/10 text-[#E63946] flex items-center justify-center shrink-0">
+                  <Icons.tags className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Botón &quot;Detal / Mayorista&quot; en Cabecera
+                  </h3>
+                  <span className="text-[10px] text-[#6C757D]">
+                    Cabecera principal de la tienda
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleWholesaleHeaderToggle}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  landing.showWholesaleHeaderToggle
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-muted text-[#6C757D] border border-border hover:bg-muted/80'
+                }`}
+              >
+                {landing.showWholesaleHeaderToggle ? '✓ Visible' : '✕ Oculto'}
+              </button>
+            </div>
+            <p className="text-[11px] text-[#6C757D] leading-relaxed">
+              Muestra el botón con etiqueta &quot;Detal&quot; / &quot;Mayorista&quot; en la barra superior junto al buscador y carrito.
+            </p>
+          </div>
+
+          {/* Tarjeta: Filtro "En stock inmediato" en Búsqueda */}
+          <div
+            className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+              landing.showInStockSidebarFilter
+                ? 'border-border bg-card shadow-xs'
+                : 'border-dashed border-border/80 bg-muted/20 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Icons.check className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Interruptor &quot;En stock inmediato&quot;
+                  </h3>
+                  <span className="text-[10px] text-[#6C757D]">
+                    Barra lateral de búsqueda y categorías
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleInStockSidebarFilter}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  landing.showInStockSidebarFilter
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-muted text-[#6C757D] border border-border hover:bg-muted/80'
+                }`}
+              >
+                {landing.showInStockSidebarFilter ? '✓ Visible' : '✕ Oculto'}
+              </button>
+            </div>
+            <p className="text-[11px] text-[#6C757D] leading-relaxed">
+              Muestra el interruptor &quot;En stock inmediato (Disponibles en depósito)&quot; en el panel lateral de filtros.
+            </p>
+          </div>
+
+          {/* Tarjeta: Filtro "Tarifa Mayorista B2B" en Búsqueda */}
+          <div
+            className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+              landing.showWholesaleSidebarFilter
+                ? 'border-border bg-card shadow-xs'
+                : 'border-dashed border-border/80 bg-muted/20 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-[#D4A017] flex items-center justify-center shrink-0">
+                  <Icons.tags className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Interruptor &quot;Tarifa Mayorista B2B&quot;
+                  </h3>
+                  <span className="text-[10px] text-[#6C757D]">
+                    Barra lateral de búsqueda y categorías
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleWholesaleSidebarFilter}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  landing.showWholesaleSidebarFilter
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-muted text-[#6C757D] border border-border hover:bg-muted/80'
+                }`}
+              >
+                {landing.showWholesaleSidebarFilter ? '✓ Visible' : '✕ Oculto'}
+              </button>
+            </div>
+            <p className="text-[11px] text-[#6C757D] leading-relaxed">
+              Muestra el interruptor &quot;Tarifa Mayorista B2B (Descuento especial por volumen)&quot; en el panel lateral de filtros.
             </p>
           </div>
 

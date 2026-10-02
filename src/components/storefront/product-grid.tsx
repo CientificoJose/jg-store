@@ -46,7 +46,9 @@ export function ProductGrid({
   const isFilterMode = isSearchMode || isCategoryMode;
   const isFilterEmpty = isFilterMode && products.length === 0;
 
-  const showOfficialStoreFilter = useStoreConfigStore((s) => s.landing.showOfficialStoreFilter);
+  const showOfficialStoreFilter = useStoreConfigStore((s) => s.landing?.showOfficialStoreFilter ?? false);
+  const showInStockSidebarFilter = useStoreConfigStore((s) => s.landing?.showInStockSidebarFilter ?? false);
+  const showWholesaleSidebarFilter = useStoreConfigStore((s) => s.landing?.showWholesaleSidebarFilter ?? false);
 
   // Estados locales de filtrado lateral estilo Mercado Libre
   const [facetCategory, setFacetCategory] = useState<string>('all');
@@ -106,7 +108,7 @@ export function ProductGrid({
         return false;
       }
       // Solo ofertas con descuento mayorista alto (>= 20%)
-      if (facetWholesaleOnly) {
+      if (showWholesaleSidebarFilter && facetWholesaleOnly) {
         const discount = (p.retail_price - p.wholesale_price) / p.retail_price;
         if (discount < 0.2) return false;
       }
@@ -124,6 +126,7 @@ export function ProductGrid({
     facetBrand,
     facetMinPrice,
     facetMaxPrice,
+    showWholesaleSidebarFilter,
     facetWholesaleOnly,
     showOfficialStoreFilter,
     facetOfficialOnly
@@ -134,8 +137,8 @@ export function ProductGrid({
       facetCategory !== 'all',
       facetSubcategory !== '',
       facetBrand !== '',
-      onlyInStock,
-      facetWholesaleOnly,
+      showInStockSidebarFilter && onlyInStock,
+      showWholesaleSidebarFilter && facetWholesaleOnly,
       showOfficialStoreFilter && facetOfficialOnly,
       facetMinPrice !== null || facetMaxPrice !== null
     ].filter(Boolean).length;
@@ -143,7 +146,9 @@ export function ProductGrid({
     facetCategory,
     facetSubcategory,
     facetBrand,
+    showInStockSidebarFilter,
     onlyInStock,
+    showWholesaleSidebarFilter,
     facetWholesaleOnly,
     showOfficialStoreFilter,
     facetOfficialOnly,
@@ -266,8 +271,10 @@ export function ProductGrid({
               onSelectSubcategory={setFacetSubcategory}
               selectedBrand={facetBrand}
               onSelectBrand={setFacetBrand}
+              showInStockFilter={showInStockSidebarFilter}
               onlyInStock={onlyInStock}
               onToggleInStock={onToggleInStock}
+              showWholesaleFilter={showWholesaleSidebarFilter}
               wholesaleOnly={facetWholesaleOnly}
               onToggleWholesaleOnly={() => setFacetWholesaleOnly((v) => !v)}
               showOfficialStoreFilter={showOfficialStoreFilter}
@@ -305,8 +312,10 @@ export function ProductGrid({
                   onSelectSubcategory={setFacetSubcategory}
                   selectedBrand={facetBrand}
                   onSelectBrand={setFacetBrand}
+                  showInStockFilter={showInStockSidebarFilter}
                   onlyInStock={onlyInStock}
                   onToggleInStock={onToggleInStock}
+                  showWholesaleFilter={showWholesaleSidebarFilter}
                   wholesaleOnly={facetWholesaleOnly}
                   onToggleWholesaleOnly={() => setFacetWholesaleOnly((v) => !v)}
                   showOfficialStoreFilter={showOfficialStoreFilter}

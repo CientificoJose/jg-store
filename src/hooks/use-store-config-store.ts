@@ -33,6 +33,9 @@ export interface LandingStoreConfig {
   showAnnouncement: boolean;
   showTrustBadges: boolean;
   showOfficialStoreFilter: boolean;
+  showWholesaleHeaderToggle?: boolean;
+  showInStockSidebarFilter?: boolean;
+  showWholesaleSidebarFilter?: boolean;
   productRows: ProductRowConfig[];
 }
 
@@ -122,6 +125,9 @@ const DEFAULT_CONFIG: {
     showAnnouncement: true,
     showTrustBadges: false, // Ocultado por solicitud (activable desde panel de config)
     showOfficialStoreFilter: false, // Ocultado por solicitud (activable desde panel de config)
+    showWholesaleHeaderToggle: false, // Ocultado por solicitud (activable desde panel de config)
+    showInStockSidebarFilter: false, // Ocultado por solicitud (activable desde panel de config)
+    showWholesaleSidebarFilter: false, // Ocultado por solicitud (activable desde panel de config)
     productRows: DEFAULT_ROWS
   },
   theme: {

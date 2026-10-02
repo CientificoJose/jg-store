@@ -41,9 +41,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Al realizar una búsqueda, el storefront transforma el catálogo en un layout de 2 columnas inspirado exactamente en Mercado Libre:
       - Encabezado con el término buscado y contador de resultados (ej. *"teléfono" • 3 resultados*).
       - Chips de filtros activos con botón individual de remoción `x` y acción de *"Limpiar todos los filtros"*.
-      - Switch interactivo *"En stock inmediato"* (filtra productos disponibles en depósito).
-      - Switch interactivo *"Tarifa Mayorista B2B"* (filtra ofertas con alto ahorro por volumen).
-      - Switch interactivo *"Tienda Oficial JG"* (artículos destacados garantizados).
+      - Conmutadores configurables desde el panel de control: *"En stock inmediato"*, *"Tarifa Mayorista B2B"* y *"Tienda Oficial JG"* (ocultados de la interfaz pública por solicitud, reactivables desde `/dashboard/config/landing`).
       - Sección de **Categorías** presentes en los resultados con conteo individual de productos y botón *"Mostrar más / menos"*.
       - Sección de **Marcas** del producto buscado (ej. Samsung, Xiaomi, Stanley, Acrilex) con conteo individual y filtro interactivo.
       - Sección de **Rango de Precio**: accesos directos (*Hasta $10.000*, *$10.000 a $25.000*, *Más de $25.000*) y formulario de precios mínimos y máximos con botón de aplicación `>`.
@@ -54,6 +52,7 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Se ocultan el hero banner, carrusel y filas decorativas para enfocar 100% el catálogo de la categoría seleccionada.
     - La barra lateral izquierda muestra el nombre del departamento activo, subcategorías con conteos, botón *"Volver a Todos los Departamentos"*, filtros facetados de marca/precio/stock/condición y acceso directo a otros departamentos.
     - Se muestra miga de pan (`Inicio > Departamento > Subcategoría`), título dinámico y scroll suave directo al contenedor del catálogo (`#catalogo-productos`).
+    - Botón selector *"Detal / Mayorista"* en la cabecera y switches de stock/mayorista en la barra lateral ocultados por directiva del usuario (gestionables desde el panel de control).
   - Ocultamiento dinámico del carrusel / hero banner al realizar una búsqueda o seleccionar una categoría para enfocar los resultados de productos.
   - **Motor Híbrido Nativo (`src/lib/search-engine.ts`):** Búsqueda exacta y por tokens (nombre, descripción, marca, categoría, tags y SKU), búsqueda difusa (Fuzzy Levenshtein) para corrección automática de errores tipográficos (ej. *"cuaderbo"* ➔ *"cuaderno"*, *"sansung"* ➔ *"samsung"*) y matriz de conceptos/sinónimos polirrubro (ej. *"telefono"* ➔ *"Tecnología, Celulares y Gadgets"* mostrando accesorios Samsung, auriculares Xiaomi, lámparas con carga Qi, etc.).
   - Banner inteligente en `ProductGrid`: informa con precisión cuando los productos mostrados son por relación temática (*"No encontramos productos llamados X, pero encontramos artículos relacionados en Y"*) o corrección ortográfica (*"Mostrando resultados para Z"*).

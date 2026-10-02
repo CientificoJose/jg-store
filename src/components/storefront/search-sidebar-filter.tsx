@@ -17,8 +17,10 @@ export interface SearchSidebarFilterProps {
   onSelectSubcategory?: (subcategorySlug: string) => void;
   selectedBrand: string;
   onSelectBrand: (brand: string) => void;
+  showInStockFilter?: boolean;
   onlyInStock: boolean;
   onToggleInStock: () => void;
+  showWholesaleFilter?: boolean;
   wholesaleOnly: boolean;
   onToggleWholesaleOnly: () => void;
   showOfficialStoreFilter?: boolean;
@@ -43,8 +45,10 @@ export function SearchSidebarFilter({
   onSelectSubcategory,
   selectedBrand,
   onSelectBrand,
+  showInStockFilter = false,
   onlyInStock,
   onToggleInStock,
+  showWholesaleFilter = false,
   wholesaleOnly,
   onToggleWholesaleOnly,
   showOfficialStoreFilter = false,
@@ -138,8 +142,8 @@ export function SearchSidebarFilter({
     (selectedCategory !== 'all' && Boolean(searchQuery.trim())) ||
     selectedSubcategory !== '' ||
     selectedBrand !== '' ||
-    onlyInStock ||
-    wholesaleOnly ||
+    (Boolean(showInStockFilter) && onlyInStock) ||
+    (Boolean(showWholesaleFilter) && wholesaleOnly) ||
     (Boolean(showOfficialStoreFilter) && Boolean(officialOnly)) ||
     minPrice !== null ||
     maxPrice !== null;
@@ -233,7 +237,7 @@ export function SearchSidebarFilter({
               </span>
             )}
 
-            {onlyInStock && (
+            {showInStockFilter && onlyInStock && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
                 <span>En stock</span>
                 <button
@@ -245,7 +249,7 @@ export function SearchSidebarFilter({
               </span>
             )}
 
-            {wholesaleOnly && (
+            {showWholesaleFilter && wholesaleOnly && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-[#D4A017]/15 text-[#D4A017] border border-[#D4A017]/30">
                 <span>Mayorista</span>
                 <button
@@ -300,58 +304,62 @@ export function SearchSidebarFilter({
       </div>
 
       {/* Switch 1: En Stock Inmediato (Estilo Toggle Switch Mercado Libre) */}
-      <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
-        <div>
-          <span className="text-xs font-bold text-foreground block">
-            En stock inmediato
-          </span>
-          <span className="text-[10px] text-[#6C757D]">
-            Disponibles en depósito
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={onToggleInStock}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            onlyInStock ? 'bg-[#E63946]' : 'bg-muted'
-          }`}
-          role="switch"
-          aria-checked={onlyInStock}
-        >
-          <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-              onlyInStock ? 'translate-x-5' : 'translate-x-0'
+      {showInStockFilter && (
+        <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
+          <div>
+            <span className="text-xs font-bold text-foreground block">
+              En stock inmediato
+            </span>
+            <span className="text-[10px] text-[#6C757D]">
+              Disponibles en depósito
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleInStock}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              onlyInStock ? 'bg-[#E63946]' : 'bg-muted'
             }`}
-          />
-        </button>
-      </div>
+            role="switch"
+            aria-checked={onlyInStock}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                onlyInStock ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      )}
 
       {/* Switch 2: Tarifa Mayorista VIP */}
-      <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
-        <div>
-          <span className="text-xs font-bold text-foreground block">
-            Tarifa Mayorista B2B
-          </span>
-          <span className="text-[10px] text-[#6C757D]">
-            Descuento especial por volumen
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={onToggleWholesaleOnly}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            wholesaleOnly ? 'bg-[#D4A017]' : 'bg-muted'
-          }`}
-          role="switch"
-          aria-checked={wholesaleOnly}
-        >
-          <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-              wholesaleOnly ? 'translate-x-5' : 'translate-x-0'
+      {showWholesaleFilter && (
+        <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
+          <div>
+            <span className="text-xs font-bold text-foreground block">
+              Tarifa Mayorista B2B
+            </span>
+            <span className="text-[10px] text-[#6C757D]">
+              Descuento especial por volumen
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleWholesaleOnly}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              wholesaleOnly ? 'bg-[#D4A017]' : 'bg-muted'
             }`}
-          />
-        </button>
-      </div>
+            role="switch"
+            aria-checked={wholesaleOnly}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                wholesaleOnly ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      )}
 
       {/* Switch 3: Tienda Oficial JG (Opcional, configurable desde el panel de control) */}
       {showOfficialStoreFilter && onToggleOfficialOnly && (

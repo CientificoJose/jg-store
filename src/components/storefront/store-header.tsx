@@ -9,6 +9,7 @@ import { useCartStore } from '@/hooks/use-cart-store';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { formatPrice } from '@/lib/whatsapp';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
+import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 
 interface StoreHeaderProps {
   searchQuery: string;
@@ -24,6 +25,9 @@ export function StoreHeader({
   selectedCategory = 'all'
 }: StoreHeaderProps) {
   const { setOpen, getSummary, wholesaleMode, toggleWholesaleMode } = useCartStore();
+  const showWholesaleHeaderToggle = useStoreConfigStore(
+    (s) => s.landing?.showWholesaleHeaderToggle ?? false
+  );
   const { favoriteIds, showOnlyFavorites, toggleShowOnlyFavorites } = useFavoritesStore();
   const favoriteCount = favoriteIds.length;
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
@@ -206,18 +210,20 @@ export function StoreHeader({
             </button>
 
             {/* Toggle Modo Mayorista */}
-            <button
-              onClick={toggleWholesaleMode}
-              title="Alternar vista de precios al mayor"
-              className={`hidden sm:flex items-center gap-1.5 h-10 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                wholesaleMode
-                  ? 'bg-[#D4A017]/15 border-[#D4A017]/40 text-[#D4A017] shadow-sm shadow-[#D4A017]/20'
-                  : 'bg-card hover:bg-muted border-border text-[#6C757D] hover:text-foreground'
-              }`}
-            >
-              <Icons.tags className="w-3.5 h-3.5" />
-              <span>{wholesaleMode ? 'Mayorista' : 'Detal'}</span>
-            </button>
+            {showWholesaleHeaderToggle && (
+              <button
+                onClick={toggleWholesaleMode}
+                title="Alternar vista de precios al mayor"
+                className={`hidden sm:flex items-center gap-1.5 h-10 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                  wholesaleMode
+                    ? 'bg-[#D4A017]/15 border-[#D4A017]/40 text-[#D4A017] shadow-sm shadow-[#D4A017]/20'
+                    : 'bg-card hover:bg-muted border-border text-[#6C757D] hover:text-foreground'
+                }`}
+              >
+                <Icons.tags className="w-3.5 h-3.5" />
+                <span>{wholesaleMode ? 'Mayorista' : 'Detal'}</span>
+              </button>
+            )}
 
             {/* Botón Mis Favoritos */}
             <Link
