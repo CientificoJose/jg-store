@@ -143,9 +143,16 @@ graph TD
   - **Indexación y Búsqueda (`src/lib/search-engine.ts` y `src/lib/store-service.ts`):** Coincidencia de tokens, typos fuzzy y puntuación de sinónimos polirrubro sobre nombres y slugs de subcategorías y sub-subcategorías, además de soporte para filtrado directo.
   - **Ficha de Producto Storefront (`src/components/storefront/product-detail-view.tsx`):** Migas de pan de 3 niveles completas (`Inicio > Categoría > Subcategoría > Línea > Producto`).
 
-### 13. 🟡 Testing & Calidad (`system-testing`)
-* **Estado:** Pendiente prioritaria.
-* **Objetivo:** Suite de pruebas funcionales para storefront, buscador, carrito, pedidos WhatsApp y panel de administración.
+### 13. 🟢 Testing Integral & Aseguramiento de Calidad E2E (`system-testing`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Suite de 33 pruebas automatizadas ejecutadas con `bun test` (0 fallos, 552 aserciones):
+    - `src/tests/categories-hierarchy.test.ts`: Integridad de 24 departamentos, subcategorías Nivel 2, líneas Nivel 3 y helpers de breadcrumbs.
+    - `src/tests/search-engine.test.ts`: Búsqueda exacta, typos fuzzy (Levenshtein), sinónimos polirrubro y coincidencia de 3 niveles.
+    - `src/tests/whatsapp-orders.test.ts`: Formato `$ ARS`, precios detal/mayorista, umbral global $ 50.000 ARS, Factura A/B y sanitización de emojis sin `\uFE0F`.
+    - `src/tests/store-service.test.ts`: Consultas con filtros de categoría, ordenamiento, stock y ciclo de vida CRUD.
+    - `src/tests/e2e-http-routes.test.ts`: Validación de respuesta HTTP 200 en storefront, detalle de producto, dashboard y configuración.
+  - Script `"test": "bun test"` registrado en `package.json` para ejecución instantánea.
 
 ### 14. 🟡 Interfaz de Configuración de Cuenta de Cliente No Administrador (`customer-account-settings`)
 * **Estado:** Pendiente prioritaria solicitada por el usuario.

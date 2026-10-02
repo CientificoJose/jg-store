@@ -174,8 +174,13 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Subcategorías y sub-subcategorías incorporadas en los tokens de coincidencia exacta, corrección ortográfica fuzzy (Levenshtein) y puntuación de sinónimos polirrubro.
   - **Migas de Pan en Ficha de Producto (`src/components/storefront/product-detail-view.tsx`):**
     - Navegación visual y semántica completa de 3 niveles estilo Mercado Libre (`Inicio > Categoría > Subcategoría > Línea > Producto`).
-- [ ] **5. Testing & Aseguramiento de Calidad:**
-  - Suite de pruebas de flujos críticos del sistema: navegación storefront, motor de búsqueda difusa y sinónimos, cálculo de precios y umbrales mayoristas ($ 50.000 ARS y por bulto), generación de pedidos WhatsApp, y CRUD de productos y órdenes en dashboard.
+- [x] **5. Testing Integral & Aseguramiento de Calidad E2E (`bun test`):**
+  - **Suite de Pruebas Automatizada con Bun Test (`bun test`):** 33 pruebas unitarias y de integración pasando con 100% de éxito (0 fallos, 552 aserciones):
+    - **Jerarquía y Categorías (`src/tests/categories-hierarchy.test.ts`):** Verificación de integridad de los 24 departamentos oficiales, presencia de subcategorías Nivel 2 y líneas Nivel 3, generadores de breadcrumbs y helpers de opciones dinámicas en cascada.
+    - **Motor de Búsqueda Inteligente (`src/tests/search-engine.test.ts`):** Normalización de caracteres/acentos, distancia Levenshtein, búsqueda exacta por nombre/marca/SKU, indexación de subcategorías y líneas de producto (3 niveles), corrección ortográfica fuzzy ("cuaderbo" ➔ "cuaderno") y matriz de sinónimos polirrubro ("telefono" ➔ electro/gadgets).
+    - **Reglas Comerciales y WhatsApp (`src/tests/whatsapp-orders.test.ts`):** Formateo de moneda nacional `$ ARS`, escala dual B2B/B2C, umbral global mayorista ($ 50.000 ARS), sanitización de caracteres invisibles `\uFE0F` (prevención de diamantes rotos en WhatsApp), modalidades de Envío vs Retiro, Factura A vs Factura B y endpoint directo `api.whatsapp.com`.
+    - **Servicio de Catálogo y Persistencia (`src/tests/store-service.test.ts`):** Consultas de catálogo con filtros de categoría, ordenamiento por precio/descuento, filtro por stock disponible, y ciclo de vida CRUD completo (crear, buscar, modificar y eliminar productos).
+    - **Integración E2E de Rutas HTTP (`src/tests/e2e-http-routes.test.ts`):** Validación de respuesta HTTP 200 y renderizado de Storefront (`/`), Ficha de producto con breadcrumbs (`/producto/prod-001`), Catálogo de administración (`/dashboard/product`), Configuración general (`/dashboard/config/general`), Diseño de landing (`/dashboard/config/landing`), Temas (`/dashboard/config/theme`) y Favoritos (`/favoritos`).
 
 ---
 

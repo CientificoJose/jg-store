@@ -8,6 +8,7 @@
     "build": "bun ./node_modules/next/dist/bin/next build",
     "start": "bun ./node_modules/next/dist/bin/next start",
     "cleanup": "node scripts/cleanup.js",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --ignore-pattern .agents",
     "lint:fix": "oxlint --ignore-pattern .agents --fix && bun format",
