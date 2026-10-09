@@ -75,6 +75,14 @@ export const navGroups: NavGroup[] = [
         shortcut: ['o', 'o'],
         isActive: false,
         items: []
+      },
+      {
+        title: 'Scraper Coronel',
+        url: '/dashboard/coronel',
+        icon: 'terminal',
+        shortcut: ['s', 'c'],
+        isActive: false,
+        items: []
       }
     ]
   },

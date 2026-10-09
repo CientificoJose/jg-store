@@ -172,4 +172,15 @@ graph TD
   - **Historial de Pedidos:** Registro y seguimiento de cotizaciones y pedidos enviados por WhatsApp con remitos y estados.
   - **Seguridad y Nivel de Cuenta:** Gestión de contraseña y condición comercial (Cliente Detal B2C / Mayorista B2B VIP Verificado).
 
+### 15. 🟢 Módulo Scraper Coronel Mayorista & Terminal en Vivo (`coronel-scraper`)
+* **Estado:** Completado (Paso 1).
+* **Detalles:**
+  - Código base clonado y adaptado en `scraping-coronel/` con entorno virtual Python (`.venv`) y Selenium para navegación interactiva con Google Chrome.
+  - Sustitución de Tkinter por señal en archivo `.scraper_continue` emitible desde el panel web.
+  - Capturas periódicas en `preview.png` para visualización remota del estado del navegador.
+  - Orquestador de procesos singleton en `src/lib/scraper-process.ts` y endpoints en `src/app/api/scraper/` (stream SSE, control, vista previa y catálogo SQLite).
+  - Interfaz de panel en `/dashboard/coronel` con terminal en vivo, preview en tiempo real, control de flujo y visor de `productos.db`.
+  - Paso 2 (Sincronización remota) pausado deliberadamente por indicación comercial del usuario.
+
+
 

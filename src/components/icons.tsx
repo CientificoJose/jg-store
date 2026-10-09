@@ -112,13 +112,20 @@ import {
   IconLayout,
   IconTruck,
   IconBuildingStore,
-  IconShieldCheck
+  IconShieldCheck,
+  IconTerminal2,
+  IconRefresh,
+  IconCopy
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
 
 export const Icons = {
   // General
+  terminal: IconTerminal2,
+  refresh: IconRefresh,
+  copy: IconCopy,
+  box: IconBox,
   alertCircle: IconAlertCircle,
   warning: IconAlertTriangle,
   arrowRight: IconArrowRight,

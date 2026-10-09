@@ -1,0 +1,33 @@
+# Directorios a excluir
+/img-scraping/
+/deepseek_logs/
+/openai_logs/
+/logs/
+/__pycache__/
+
+
+# Archivos sensibles
+*.ENV
+*.env
+
+# Archivos de base de datos
+*.db
+
+# Python cache
+*.py[cod]
+*$py.class
+
+
+# Archivos de Excel
+*.xlsx
+
+# Imagenes
+*.jpg
+*.png
+*.jpeg
+
+# Accesos directos locales
+*.lnk
+
+# Archivo de saldo local de OpenAI
+openai_saldo.json

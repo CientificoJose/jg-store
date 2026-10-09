@@ -201,8 +201,39 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 
 ---
 
-### ⚪ Fase 5: Expansión & Despliegue en Producción (Pospuesto intencionalmente)
+---
+
+### 🟢 Fase 6: Módulo de Scraping Coronel Mayorista (Local-First & Terminal en Vivo) (Completado Paso 1)
+- [x] **Integración de Repositorio Scraping-Coronel:**
+  - Clonado y estructurado en subcarpeta aislada `scraping-coronel/` con entorno virtual Python dedicado (`.venv`).
+  - Dependencias instaladas vía `pip` en el entorno virtual (`selenium`, `pandas`, `openpyxl`, `colorama`, `requests`, `urllib3`).
+  - `.gitignore` actualizado para ignorar `.venv/`, `__pycache__/`, `preview.png` y `.scraper_continue`.
+- [x] **Adaptaciones del Scraper Python (`scraping-coronel/`):**
+  - **Reemplazo de Tkinter en Linux:** Manejo de excepciones en `app/login.py` para entornos sin GUI Tkinter nativa y escucha pasiva del archivo de señal `.scraper_continue` emitido desde el dashboard web.
+  - **Live Preview Screenshots:** Guardado de capturas periódicas automáticas en `scraping-coronel/preview.png` tanto durante la espera de categoría como en cada página scraping de productos.
+  - **Tags Estructurados de Estado:** Emisión de marcadores en stdout (`[SCRAPER_STATUS:WAITING_USER_SELECTION]`, `[SCRAPER_STATUS:SCRAPING]`, `[SCRAPER_STATUS:COMPLETED]`, `[SCRAPER_STATUS:FAILED]`).
+  - **Extracción de Métricas de Base de Datos:** Script auxiliar `scraping-coronel/get_db_stats.py` para devolver métricas y últimos registros de `productos.db` en formato JSON.
+- [x] **Arquitectura Backend y APIs en Next.js:**
+  - `src/lib/scraper-process.ts`: Orquestador de procesos `ScraperProcessManager` (singleton) para spawn del proceso Python, gestión del buffer de logs (últimas 800 líneas), control de ciclo de vida, despacho de señales e hilos SSE.
+  - `src/app/api/scraper/stream/route.ts`: Endpoint SSE (`GET`) con transmisión en tiempo real de logs y estados, y endpoint `POST` para lanzar el proceso.
+  - `src/app/api/scraper/continue/route.ts`: Endpoint `POST` para escribir `.scraper_continue` y continuar el flujo de extracción tras la selección de categoría.
+  - `src/app/api/scraper/stop/route.ts`: Endpoint `POST` para abortar limpiamente el proceso de Chrome.
+  - `src/app/api/scraper/preview/route.ts`: Endpoint `GET` para servir la imagen actual `preview.png` o SVG dinámico de espera.
+  - `src/app/api/scraper/products/route.ts`: Endpoint `GET` para consultar los productos y estadísticas de la base local SQLite.
+- [x] **Interfaz de Usuario y Dashboard (`src/app/dashboard/coronel/page.tsx`):**
+  - Panel de control con inputs de ganancia, toggle de descarga de imágenes y botones de acción ("Iniciar Scraping", "Continuar Scraping", "Detener", "Limpiar").
+  - Terminal interactiva en vivo con auto-scroll y visualización de logs con emojis y códigos de consola.
+  - Ventana interactiva de "Vista Previa de Google Chrome" sincronizada con la sesión real.
+  - Botón de acción pulsante en verde cuando el proceso solicita confirmación del usuario ("CONTINUAR SCRAPING").
+  - Tabla de productos en SQLite con vista previa de SKUs, descripciones, categorías y precios mayoristas.
+  - Acceso directo integrado en la navegación lateral (`src/config/nav-config.ts` -> "Scraper Coronel").
+- [ ] **Paso 2: Sincronización Remota de Catálogo (Pausado / Achantado por indicación del usuario):** La sincronización automática hacia Tiendanube o endpoints remotos se mantiene pausada para priorizar la ejecución y validación local de productos.
+
+---
+
+### ⚪ Fase 7: Expansión & Despliegue en Producción (Pospuesto intencionalmente)
 - [x] **Optimización de Build en Docker para Dokploy:** Fijación de Bun a `1.3.13` y remoción de `--frozen-lockfile` en `Dockerfile` y `Dockerfile.bun` para evitar fallos de parseo en cosmiconfig.
 - [ ] Conexión de producción con Clerk cuando el usuario proporcione credenciales activas.
 - [ ] Pasarela de pago complementaria a WhatsApp (opcional).
 - [ ] Despliegue en producción con SSL/Traefik en Dokploy.
+

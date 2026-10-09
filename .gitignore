@@ -49,3 +49,13 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Python / Scraper Coronel
+scraping-coronel/.venv/
+scraping-coronel/__pycache__/
+scraping-coronel/*/__pycache__/
+scraping-coronel/.scraper_continue
+scraping-coronel/preview.png
+scraping-coronel/img-scraping/
+scraping-coronel/productos_coronel/
+scraping-coronel/app/api_cache/
