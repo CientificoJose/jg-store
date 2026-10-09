@@ -141,6 +141,8 @@ def login(driver, show_button=True):
         driver: WebDriver instance
         show_button: bool, opcional. Si es True muestra el botón flotante para continuar, si es False omite este paso
     """
+    global button_clicked
+    button_clicked = False
     try:
         print(Fore.YELLOW + "\nIniciando proceso de login..." + Fore.RESET)
         
