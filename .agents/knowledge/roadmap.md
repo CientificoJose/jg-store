@@ -240,6 +240,16 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
       - Implementación de `scrollIntoView({block: 'center'})` y click nativo con fallback a JS para disparar limpiamente el evento `ngSubmit` del formulario reactivo de Angular.
       - Declaración de `global button_clicked` en `login()` para evitar `UnboundLocalError`.
       - Adición de endpoint `/api/preview` en FastAPI para servir capturas en vivo `preview.png`.
+  - **Visor Escalable a Pantalla Completa con Zoom y Rediseño de Layout:**
+    - Visor ampliado a ancho total (`w-full`, hasta 1600px) en el cuerpo del módulo `/dashboard/coronel`.
+    - Barra de herramientas con presets de resolución (`50%`, `75% (Ideal)`, `100%`, `125%`, `Fit`).
+    - Controles de zoom fino (+/- 10%) con indicador numérico de porcentaje y botón de pantalla completa.
+    - Terminal interactiva en vivo reubicada debajo del visor en sección colapsable con auto-scroll y contador de líneas.
+  - **Blindaje de Seguridad y Control de Acceso (`coronel.press-cloud.com`):**
+    - Servidor VNC (`x11vnc`) protegido con contraseña obligatoria (`-passwd jgstore_vnc_2026`).
+    - Nginx configurado para redirigir la raíz `/` a la tienda principal protegida (`https://jg-store.press-cloud.com`), y `/vnc/` restringido mediante token de seguridad `$arg_token`.
+    - API FastAPI (`api_server.py`) protegida con middleware HTTP que exige `SCRAPER_AUTH_TOKEN` (`Bearer`, header `X-Scraper-Token`, o query param).
+    - Endpoints de Next.js (`stream`, `continue`, `stop`, `preview`, `products`) transmiten de forma transparente el token en cada llamada.
   - **Ejecución Asíncrona Desatendida:** El usuario puede ingresar al panel `/dashboard/coronel`, interactuar con el ratón directamente sobre la página de Coronel Mayorista para seleccionar la categoría deseada, dar clic en "CONTINUAR SCRAPING", y apagar su computadora mientras el servidor continúa procesando en la nube 24/7.
 - [ ] **Paso 2: Sincronización Remota de Catálogo (Pausado / Achantado por indicación del usuario):** La sincronización automática hacia Tiendanube o endpoints remotos se mantiene pausada para priorizar la ejecución y validación local de productos.
 
