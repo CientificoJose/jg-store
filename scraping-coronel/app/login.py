@@ -89,25 +89,38 @@ def descargar_lista_precios(driver, download_dir):
         except Exception:
             driver.execute_script("arguments[0].click();", excel_option)
         
-        time.sleep(5)  # Dar tiempo para que se complete la descarga
-        
-        # 4. Esperar a que se descargue el archivo
-        
-        # 5. Buscar el archivo descargado en la carpeta de destino o en Downloads de usuario como fallback
-        files = [f for f in os.listdir(download_dir) if "Lista de Precios" in f]
+        # 4. Esperar activamente a que se complete la descarga (hasta 15s)
+        def es_archivo_lista(nombre):
+            n = nombre.lower().replace("-", " ").replace("_", " ")
+            return ("lista" in n and "precios" in n) and (n.endswith(".xlsx") or n.endswith(".xls"))
+
+        downloads_folder = os.path.join(os.path.expanduser("~"), "Downloads")
         latest_file = None
-        
-        if files:
-            latest_file = max([os.path.join(download_dir, f) for f in files], key=os.path.getctime)
-        else:
-            # Fallback: buscar en la carpeta de descargas del usuario por si Chrome ignoró la preferencia
-            downloads_folder = os.path.join(os.path.expanduser("~"), "Downloads")
-            try:
-                files_fallback = [f for f in os.listdir(downloads_folder) if "Lista de Precios" in f]
+
+        for _ in range(15):
+            # Si hay una descarga temporal activa (.crdownload), esperar
+            crdownloads = []
+            if os.path.exists(download_dir):
+                crdownloads = [f for f in os.listdir(download_dir) if f.endswith(".crdownload")]
+            if crdownloads:
+                time.sleep(1)
+                continue
+
+            # Buscar en el directorio de descargas de Coronel
+            if os.path.exists(download_dir):
+                files = [f for f in os.listdir(download_dir) if es_archivo_lista(f)]
+                if files:
+                    latest_file = max([os.path.join(download_dir, f) for f in files], key=os.path.getctime)
+                    break
+
+            # Fallback en Downloads del usuario
+            if os.path.exists(downloads_folder):
+                files_fallback = [f for f in os.listdir(downloads_folder) if es_archivo_lista(f)]
                 if files_fallback:
                     latest_file = max([os.path.join(downloads_folder, f) for f in files_fallback], key=os.path.getctime)
-            except Exception:
-                pass
+                    break
+
+            time.sleep(1)
                 
         if latest_file:
             # Crear nombre de archivo con timestamp
@@ -120,6 +133,7 @@ def descargar_lista_precios(driver, download_dir):
                 os.rename(latest_file, new_path)
             else:
                 shutil.move(latest_file, new_path)
+            print(Fore.GREEN + f"✔ Archivo detectado y guardado: {new_filename}" + Fore.RESET)
             return True
         else:
             print(Fore.RED + "✖ No se encontró el archivo descargado" + Fore.RESET)

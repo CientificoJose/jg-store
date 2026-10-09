@@ -33,4 +33,14 @@ def get_chrome_driver(download_dir=None):
     })
     
     driver = webdriver.Chrome(options=chrome_options)
+
+    # Asegurar que Chrome permita descargas automáticas en Linux / Docker
+    try:
+        driver.execute_cdp_cmd("Page.setDownloadBehavior", {
+            "behavior": "allow",
+            "downloadPath": os.path.normpath(download_dir)
+        })
+    except Exception:
+        pass
+
     return driver

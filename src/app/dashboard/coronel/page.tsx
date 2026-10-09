@@ -243,33 +243,39 @@ export default function CoronelScraperPage() {
     setIsFit(true);
   };
 
-  // URLs con autenticación de tokens
+  // URLs con autenticación de tokens y auto-escalado nativo
   const vncIframeUrl = `${vncHost.replace(
     /\/$/,
     ''
-  )}/vnc/vnc_lite.html?path=websockify&autoconnect=true&resize=scale&token=${encodeURIComponent(
+  )}/vnc/vnc_lite.html?path=websockify&autoconnect=true&scale=true&resize=scale&token=${encodeURIComponent(
     vncToken
   )}&reconnect=true`;
 
   const vncExternalUrl = `${vncHost.replace(
     /\/$/,
     ''
-  )}/vnc/vnc.html?path=websockify&autoconnect=true&resize=scale&token=${encodeURIComponent(
+  )}/vnc/vnc.html?path=websockify&autoconnect=true&scale=true&resize=scale&token=${encodeURIComponent(
     vncToken
   )}&reconnect=true`;
 
-  // Estilos de dimensionamiento para el visor escalable (base 1280x800)
+  // Estilos de dimensionamiento para el visor escalable (base 1280x800, proporción 16:10)
   const getViewportStyle = () => {
     if (isFit) {
-      return { width: '100%', height: '100%' };
+      return {
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+        maxHeight: '100%'
+      };
     }
     const width = Math.round(1280 * (zoomLevel / 100));
     const height = Math.round(800 * (zoomLevel / 100));
     return {
       width: `${width}px`,
       height: `${height}px`,
-      maxWidth: 'none',
-      maxHeight: 'none',
+      maxWidth: '100%',
+      maxHeight: '100%',
+      aspectRatio: '16 / 10',
       transition: 'width 0.15s ease, height 0.15s ease'
     };
   };
@@ -710,8 +716,8 @@ export default function CoronelScraperPage() {
             </div>
           </div>
 
-          {/* Área de Visualización con Desplazamiento y Escalado */}
-          <div className='relative flex-1 w-full bg-[#05070d] flex items-center justify-center overflow-auto p-2'>
+          {/* Área de Visualización con Escalado Proporcional (Cero Scroll) */}
+          <div className='relative flex-1 w-full bg-[#05070d] flex items-center justify-center overflow-hidden p-2'>
             {viewMode === 'vnc' ? (
               <div
                 style={getViewportStyle()}
@@ -720,7 +726,8 @@ export default function CoronelScraperPage() {
                 <iframe
                   key={vncKey}
                   src={vncIframeUrl}
-                  className='w-full h-full border-0 bg-black block'
+                  scrolling='no'
+                  className='w-full h-full border-0 bg-black block overflow-hidden'
                   allow='fullscreen; clipboard-read; clipboard-write; autoplay'
                   allowFullScreen={true}
                   title='Navegador Remoto Chrome noVNC'
