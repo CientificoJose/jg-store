@@ -64,8 +64,16 @@ export default function CoronelScraperPage() {
   const fetchDbStats = async () => {
     setLoadingDb(true);
     try {
-      const res = await fetch('/api/scraper/products');
-      if (res.ok) {
+      let res: Response | null = null;
+      if (vncHost && !vncHost.includes('localhost:3000')) {
+        try {
+          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/products`);
+        } catch {}
+      }
+      if (!res || !res.ok) {
+        res = await fetch('/api/scraper/products');
+      }
+      if (res && res.ok) {
         const data = await res.json();
         setDbStats(data);
       }
@@ -78,11 +86,16 @@ export default function CoronelScraperPage() {
 
   useEffect(() => {
     fetchDbStats();
-  }, []);
+  }, [vncHost]);
 
   // Conectar a Server-Sent Events (SSE) para logs en vivo
   useEffect(() => {
-    const sse = new EventSource('/api/scraper/stream');
+    const sseUrl =
+      vncHost && !vncHost.includes('localhost:3000')
+        ? `${vncHost.replace(/\/$/, '')}/api/stream`
+        : '/api/scraper/stream';
+
+    const sse = new EventSource(sseUrl);
     eventSourceRef.current = sse;
 
     sse.addEventListener('status', (e) => {
@@ -123,7 +136,7 @@ export default function CoronelScraperPage() {
     return () => {
       sse.close();
     };
-  }, []);
+  }, [vncHost]);
 
   // Refrescar periódicamente la vista previa mientras esté activo
   useEffect(() => {
@@ -139,18 +152,33 @@ export default function CoronelScraperPage() {
   // Iniciar Scraping
   const handleStartScraper = async () => {
     try {
-      const res = await fetch('/api/scraper/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ganancia, downloadImages })
-      });
+      let res: Response | null = null;
+      // Si estamos apuntando al host cloud en Dokploy, llamar directamente a su API
+      if (vncHost && !vncHost.includes('localhost:3000')) {
+        try {
+          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ganancia, download_images: downloadImages })
+          });
+        } catch {}
+      }
+
+      // Si no hay respuesta o falló, intentar a través de la ruta local / proxy
+      if (!res || !res.ok) {
+        res = await fetch('/api/scraper/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ganancia, downloadImages })
+        });
+      }
 
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Error iniciando scraper');
       }
 
-      toast.success('Proceso de scraping iniciado');
+      toast.success('Proceso de scraping iniciado en el servidor');
       setIsRunning(true);
       setStatus('STARTING');
     } catch (err: any) {
@@ -161,7 +189,17 @@ export default function CoronelScraperPage() {
   // Continuar Scraping (Señal al usuario)
   const handleContinue = async () => {
     try {
-      const res = await fetch('/api/scraper/continue', { method: 'POST' });
+      let res: Response | null = null;
+      if (vncHost && !vncHost.includes('localhost:3000')) {
+        try {
+          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/continue`, { method: 'POST' });
+        } catch {}
+      }
+
+      if (!res || !res.ok) {
+        res = await fetch('/api/scraper/continue', { method: 'POST' });
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al enviar señal');
 
@@ -176,8 +214,18 @@ export default function CoronelScraperPage() {
   // Detener proceso
   const handleStop = async () => {
     try {
-      const res = await fetch('/api/scraper/stop', { method: 'POST' });
-      if (res.ok) {
+      let res: Response | null = null;
+      if (vncHost && !vncHost.includes('localhost:3000')) {
+        try {
+          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/stop`, { method: 'POST' });
+        } catch {}
+      }
+
+      if (!res || !res.ok) {
+        res = await fetch('/api/scraper/stop', { method: 'POST' });
+      }
+
+      if (res && res.ok) {
         toast.info('Se solicitó detener el scraper');
         setIsRunning(false);
         setWaitingUser(false);
@@ -472,9 +520,10 @@ export default function CoronelScraperPage() {
               {viewMode === 'vnc' ? (
                 <iframe
                   key={vncKey}
-                  src={`${vncHost.replace(/\/$/, '')}/vnc/vnc.html?autoconnect=true&resize=scale&reconnect=true`}
+                  src={`${vncHost.replace(/\/$/, '')}/vnc/vnc_lite.html?autoconnect=true&resize=scale&reconnect=true`}
                   className='w-full h-full border-0 bg-black min-h-[380px]'
-                  allow='clipboard-read; clipboard-write; autoplay'
+                  allow='fullscreen; clipboard-read; clipboard-write; autoplay'
+                  allowFullScreen={true}
                   title='Navegador Remoto Chrome noVNC'
                 />
               ) : (
