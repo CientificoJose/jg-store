@@ -42,6 +42,12 @@ export default function CoronelScraperPage() {
   const [previewTimestamp, setPreviewTimestamp] = useState<number>(Date.now());
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // Modo de visualización remota (noVNC interactivo vs Captura)
+  const [viewMode, setViewMode] = useState<'vnc' | 'image'>('vnc');
+  const [vncHost, setVncHost] = useState<string>('https://coronel.press-cloud.com');
+  const [vncKey, setVncKey] = useState<number>(Date.now());
+  const [showVncConfig, setShowVncConfig] = useState(false);
+
   // Estadísticas de SQLite
   const [dbStats, setDbStats] = useState<DbStats | null>(null);
   const [loadingDb, setLoadingDb] = useState(false);
@@ -321,21 +327,118 @@ export default function CoronelScraperPage() {
 
       {/* Grid Principal: 2 Columnas (Vista Previa vs Terminal) */}
       <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
-        {/* Columna Izquierda: Vista Previa del Navegador (5 columnas) */}
+        {/* Columna Izquierda: Vista Previa del Navegador / noVNC (5 columnas) */}
         <div className='lg:col-span-5 flex flex-col space-y-3'>
           <div className='flex items-center justify-between'>
-            <h2 className='text-base font-bold text-foreground flex items-center gap-2'>
-              <Icons.laptop className='w-4 h-4 text-[#E63946]' />
-              <span>Vista Previa del Navegador</span>
-            </h2>
-            <button
-              onClick={() => setPreviewTimestamp(Date.now())}
-              className='text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors'
-            >
-              <Icons.refresh className='w-3.5 h-3.5' />
-              <span>Actualizar</span>
-            </button>
+            <div className='flex items-center gap-2'>
+              <h2 className='text-base font-bold text-foreground flex items-center gap-2'>
+                <Icons.laptop className='w-4 h-4 text-[#E63946]' />
+                <span>Navegador Remoto</span>
+              </h2>
+              {/* Selector de Modo */}
+              <div className='flex items-center bg-muted/60 p-0.5 rounded-lg border border-border text-[11px] font-medium'>
+                <button
+                  onClick={() => setViewMode('vnc')}
+                  className={`px-2 py-0.5 rounded-md transition-all ${
+                    viewMode === 'vnc'
+                      ? 'bg-background text-foreground shadow-xs font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  noVNC Interactivo
+                </button>
+                <button
+                  onClick={() => setViewMode('image')}
+                  className={`px-2 py-0.5 rounded-md transition-all ${
+                    viewMode === 'image'
+                      ? 'bg-background text-foreground shadow-xs font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Captura
+                </button>
+              </div>
+            </div>
+
+            <div className='flex items-center gap-1.5'>
+              {viewMode === 'vnc' && (
+                <>
+                  <button
+                    onClick={() => setVncKey(Date.now())}
+                    title='Reconectar noVNC'
+                    className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+                  >
+                    <Icons.refresh className='w-3.5 h-3.5' />
+                  </button>
+                  <a
+                    href={`${vncHost.replace(/\/$/, '')}/vnc/vnc.html?autoconnect=true&resize=scale&reconnect=true`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    title='Abrir en ventana completa'
+                    className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+                  >
+                    <Icons.externalLink className='w-3.5 h-3.5' />
+                  </a>
+                </>
+              )}
+              {viewMode === 'image' && (
+                <button
+                  onClick={() => setPreviewTimestamp(Date.now())}
+                  className='text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors'
+                >
+                  <Icons.refresh className='w-3.5 h-3.5' />
+                  <span>Actualizar</span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowVncConfig(!showVncConfig)}
+                title='Configurar URL del Scraper'
+                className={`p-1.5 rounded-lg transition-colors ${
+                  showVncConfig
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <Icons.settings className='w-3.5 h-3.5' />
+              </button>
+            </div>
           </div>
+
+          {/* Configuración desplegable de URL del Scraper Cloud */}
+          {showVncConfig && (
+            <div className='p-3 bg-card border border-border rounded-xl text-xs space-y-2 animate-fadeIn'>
+              <div className='flex items-center justify-between'>
+                <span className='font-bold text-foreground'>
+                  Host del Servicio Scraper (Dokploy):
+                </span>
+                <span className='text-[10px] text-muted-foreground font-mono'>vnc / api</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <input
+                  type='text'
+                  value={vncHost}
+                  onChange={(e) => {
+                    setVncHost(e.target.value);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('jg_scraper_vnc_host', e.target.value);
+                    }
+                  }}
+                  placeholder='https://coronel.press-cloud.com'
+                  className='flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
+                />
+                <button
+                  onClick={() => setVncKey(Date.now())}
+                  className='px-3 py-1.5 bg-[#E63946] text-white rounded-lg font-bold text-xs hover:bg-[#c92a37]'
+                >
+                  Conectar
+                </button>
+              </div>
+              <p className='text-[11px] text-muted-foreground leading-tight'>
+                Apunta a la URL pública asignada en Dokploy para ver la pantalla virtual interactiva
+                de Chrome y transmitir clics remotos.
+              </p>
+            </div>
+          )}
 
           <div className='relative rounded-2xl overflow-hidden border border-border bg-[#090d16] shadow-sm flex flex-col'>
             {/* Barra de Ventana del Navegador */}
@@ -345,9 +448,9 @@ export default function CoronelScraperPage() {
                 <span className='w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block' />
                 <span className='w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block' />
               </div>
-              <div className='flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-black/40 text-slate-400 font-mono text-[11px] truncate max-w-[200px]'>
+              <div className='flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-black/40 text-slate-400 font-mono text-[11px] truncate max-w-[220px]'>
                 <Icons.lock className='w-3 h-3 text-emerald-500 shrink-0' />
-                <span>coronelmayorista.com</span>
+                <span>{viewMode === 'vnc' ? 'noVNC Virtual Desktop' : 'coronelmayorista.com'}</span>
               </div>
               <div className='flex items-center gap-1'>
                 {isRunning && (
@@ -356,47 +459,71 @@ export default function CoronelScraperPage() {
                     LIVE
                   </span>
                 )}
+                {viewMode === 'vnc' && (
+                  <span className='text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-medium'>
+                    DOM REMOTO
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Contenedor de Imagen de Screenshot */}
-            <div className='relative aspect-video w-full bg-[#070a12] flex items-center justify-center overflow-hidden'>
-              <img
-                key={previewTimestamp}
-                src={`/api/scraper/preview?t=${previewTimestamp}`}
-                alt='Vista previa de Chrome'
-                onLoad={() => setPreviewLoading(false)}
-                className='w-full h-full object-contain'
-              />
+            {/* Contenedor Principal: noVNC o Imagen */}
+            <div className='relative aspect-video w-full bg-[#070a12] flex items-center justify-center overflow-hidden min-h-[380px]'>
+              {viewMode === 'vnc' ? (
+                <iframe
+                  key={vncKey}
+                  src={`${vncHost.replace(/\/$/, '')}/vnc/vnc.html?autoconnect=true&resize=scale&reconnect=true`}
+                  className='w-full h-full border-0 bg-black min-h-[380px]'
+                  allow='clipboard-read; clipboard-write; autoplay'
+                  title='Navegador Remoto Chrome noVNC'
+                />
+              ) : (
+                <>
+                  <img
+                    key={previewTimestamp}
+                    src={`/api/scraper/preview?t=${previewTimestamp}`}
+                    alt='Vista previa de Chrome'
+                    onLoad={() => setPreviewLoading(false)}
+                    className='w-full h-full object-contain'
+                  />
 
-              {/* Overlay cuando el scraper está esperando interacción */}
-              {waitingUser && (
-                <div className='absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-fadeIn'>
-                  <div className='w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-pulse'>
-                    <Icons.laptop className='w-6 h-6' />
-                  </div>
-                  <h3 className='text-white font-bold text-base mb-1'>
-                    ¡Selecciona la Categoría en Chrome!
-                  </h3>
-                  <p className='text-slate-300 text-xs max-w-xs mb-4'>
-                    Navega en tu ventana de Google Chrome abierta a la categoría deseada y haz clic
-                    en el botón verde abajo.
-                  </p>
-                  <button
-                    onClick={handleContinue}
-                    className='px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all flex items-center gap-2'
-                  >
-                    <Icons.check className='w-4 h-4' />
-                    <span>Continuar Scraping Ahora</span>
-                  </button>
-                </div>
+                  {/* Overlay cuando el scraper está esperando interacción */}
+                  {waitingUser && (
+                    <div className='absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-fadeIn'>
+                      <div className='w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-pulse'>
+                        <Icons.laptop className='w-6 h-6' />
+                      </div>
+                      <h3 className='text-white font-bold text-base mb-1'>
+                        ¡Selecciona la Categoría en Chrome!
+                      </h3>
+                      <p className='text-slate-300 text-xs max-w-xs mb-4'>
+                        Navega en la ventana remota o cambia al modo noVNC para hacer clic
+                        directamente con tu ratón.
+                      </p>
+                      <button
+                        onClick={handleContinue}
+                        className='px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all flex items-center gap-2'
+                      >
+                        <Icons.check className='w-4 h-4' />
+                        <span>Continuar Scraping Ahora</span>
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             {/* Pie de la vista previa */}
             <div className='p-2.5 bg-[#121826] border-t border-border/50 flex items-center justify-between text-[11px] text-slate-400'>
-              <span>Resolución Selenium: 1920x1080</span>
-              <span>Refresco: {isRunning ? 'Automático (2s)' : 'Manual'}</span>
+              <span className='flex items-center gap-1.5'>
+                <span className='w-2 h-2 rounded-full bg-emerald-400' />
+                <span>
+                  {viewMode === 'vnc'
+                    ? 'Stream WebSockets Activo (ratón/teclado interactivo)'
+                    : 'Resolución Selenium: 1280x800'}
+                </span>
+              </span>
+              <span>Modo: {viewMode === 'vnc' ? 'noVNC HTML5' : 'Screenshot (2s)'}</span>
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ def get_chrome_driver(download_dir=None):
     chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
     chrome_options.add_argument("--disable-logging")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--no-sandbox")
     
     # Configurar directorio de descarga
     if not download_dir:
