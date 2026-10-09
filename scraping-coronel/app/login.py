@@ -69,7 +69,12 @@ def descargar_lista_precios(driver, download_dir):
         export_button = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//button[contains(@class, 'btn-exportar')]")
         ))
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", export_button)
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", export_button)
+        time.sleep(0.5)
+        try:
+            export_button.click()
+        except Exception:
+            driver.execute_script("arguments[0].click();", export_button)
         
         time.sleep(3)
         
@@ -77,7 +82,12 @@ def descargar_lista_precios(driver, download_dir):
         excel_option = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//button[@mat-menu-item]//span[contains(text(), 'Excel')]/..")
         ))
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", excel_option)
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", excel_option)
+        time.sleep(0.5)
+        try:
+            excel_option.click()
+        except Exception:
+            driver.execute_script("arguments[0].click();", excel_option)
         
         time.sleep(5)  # Dar tiempo para que se complete la descarga
         
@@ -155,11 +165,16 @@ def login(driver, show_button=True):
         password_field.clear()
         password_field.send_keys(CORONEL_PASSWORD)
         
-        # 4. Click en Ingresar con JavaScript para evitar ElementClickInterceptedException
+        # 4. Click en Ingresar (scrolling al centro y click nativo con fallback)
         login_button = wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, 'button.btnIngresar')
         ))
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", login_button)
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", login_button)
+        time.sleep(0.5)
+        try:
+            login_button.click()
+        except Exception:
+            driver.execute_script("arguments[0].click();", login_button)
         
         # 5. Verificación positiva de login exitoso
         wait.until(EC.url_contains('/#/home'))
