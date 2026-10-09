@@ -192,7 +192,7 @@ def wait_for_listing(driver, wait_time=WAIT_TIME, max_retries=MAX_RETRIES):
                     + f"⚠️ Reintentando página {current_page} con navegación directa (intento {attempt})..."
                     + Style.RESET_ALL
                 )
-                driver.get(f"https://www.coronelmayorista.com/#/articulos?page={current_page}&ORDER=ORD%3DASC&VIEW_TYPE=GRID_VI")
+                driver.get(f"https://coronelmayorista.com.ar/#/articulos?page={current_page}&ORDER=ORD%3DASC&VIEW_TYPE=GRID_VI")
                 time.sleep(5)
                 wait_for_page_ready(driver, timeout=15)
                 
@@ -204,7 +204,7 @@ def wait_for_listing(driver, wait_time=WAIT_TIME, max_retries=MAX_RETRIES):
                     + Style.RESET_ALL
                 )
                 current_page += 1
-                driver.get(f"https://www.coronelmayorista.com/#/articulos?page={current_page}&ORDER=ORD%3DASC&VIEW_TYPE=GRID_VI")
+                driver.get(f"https://coronelmayorista.com.ar/#/articulos?page={current_page}&ORDER=ORD%3DASC&VIEW_TYPE=GRID_VI")
                 time.sleep(6)
                 wait_for_page_ready(driver, timeout=15)
                 consecutive_failures = 0  # Reset para la nueva página
@@ -398,7 +398,7 @@ def scraping_all_product(driver):
         Lista de productos encontrados
     """
     print(Fore.YELLOW + "\nNavegando a la lista de precios..." + Fore.RESET)
-    driver.get("https://www.coronelmayorista.com/#/articulos?page=1&ORDER=ORD%3DASC&VIEW_TYPE=GRID_VI")
+    driver.get("https://coronelmayorista.com.ar/#/articulos?page=1&ORDER=ORD%3DASC&VIEW_TYPE=GRID_VI")
     time.sleep(2)
     
     all_products = []

@@ -3,7 +3,37 @@ import fs from 'fs';
 
 export const dynamic = 'force-dynamic';
 
+function getScraperHost() {
+  return (
+    process.env.SCRAPER_SERVICE_URL ||
+    (process.env.NODE_ENV === 'production' ? 'https://coronel.press-cloud.com' : undefined)
+  );
+}
+
 export async function GET() {
+  const scraperHost = getScraperHost();
+  if (scraperHost) {
+    try {
+      const remoteRes = await fetch(`${scraperHost.replace(/\/$/, '')}/api/preview`, {
+        cache: 'no-store'
+      });
+      if (remoteRes.ok) {
+        const contentType = remoteRes.headers.get('content-type') || 'image/png';
+        const buffer = await remoteRes.arrayBuffer();
+        return new Response(buffer, {
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0'
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error obteniendo preview remoto:', err);
+    }
+  }
+
   const previewPath = path.join(process.cwd(), 'scraping-coronel', 'preview.png');
 
   if (fs.existsSync(previewPath)) {

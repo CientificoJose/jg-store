@@ -63,32 +63,25 @@ def descargar_lista_precios(driver, download_dir):
         wait = WebDriverWait(driver, 15)
         
         # 1. Navegar a la página de lista de precios
-        #print(Fore.YELLOW + "\nNavegando a la lista de precios..." + Fore.RESET)
-        driver.get('https://www.coronelmayorista.com/#/usuario/listaPrecios')
+        driver.get('https://coronelmayorista.com.ar/#/usuario/listaPrecios')
 
-        
         # 2. Esperar y hacer click en el botón Exportar
-        #print(Fore.YELLOW + "Buscando botón de exportar..." + Fore.RESET)
         export_button = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//button[contains(@class, 'btn-exportar')]")
         ))
-        export_button.click()
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", export_button)
         
-        time.sleep(5)  # Dar tiempo para que se complete la descarga
+        time.sleep(3)
         
         # 3. Esperar y hacer click en la opción Excel
-        #print(Fore.YELLOW + "Seleccionando exportación a Excel..." + Fore.RESET)
         excel_option = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//button[@mat-menu-item]//span[contains(text(), 'Excel')]/..")
         ))
-        excel_option.click()
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", excel_option)
         
         time.sleep(5)  # Dar tiempo para que se complete la descarga
         
-        
         # 4. Esperar a que se descargue el archivo
-        #print(Fore.YELLOW + "Esperando la descarga del archivo..." + Fore.RESET)
-       
         
         # 5. Buscar el archivo descargado en la carpeta de destino o en Downloads de usuario como fallback
         files = [f for f in os.listdir(download_dir) if "Lista de Precios" in f]
@@ -98,7 +91,7 @@ def descargar_lista_precios(driver, download_dir):
             latest_file = max([os.path.join(download_dir, f) for f in files], key=os.path.getctime)
         else:
             # Fallback: buscar en la carpeta de descargas del usuario por si Chrome ignoró la preferencia
-            downloads_folder = os.path.expanduser("~\\Downloads")
+            downloads_folder = os.path.join(os.path.expanduser("~"), "Downloads")
             try:
                 files_fallback = [f for f in os.listdir(downloads_folder) if "Lista de Precios" in f]
                 if files_fallback:
@@ -142,9 +135,11 @@ def login(driver, show_button=True):
         print(Fore.YELLOW + "\nIniciando proceso de login..." + Fore.RESET)
         
         # 1. Navegar a página de login
-        driver.get('https://www.coronelmayorista.com/#/sign-in')
+        login_url = 'https://coronelmayorista.com.ar/#/sign-in'
+        print(f"Navegando a {login_url}...", flush=True)
+        driver.get(login_url)
         
-        wait = WebDriverWait(driver, 15)
+        wait = WebDriverWait(driver, 20)
         
         # 2. Ingresar CUIT
         cuit_field = wait.until(EC.element_to_be_clickable(
@@ -160,11 +155,11 @@ def login(driver, show_button=True):
         password_field.clear()
         password_field.send_keys(CORONEL_PASSWORD)
         
-        # 4. Click en Ingresar
-        login_button = wait.until(EC.element_to_be_clickable(
+        # 4. Click en Ingresar con JavaScript para evitar ElementClickInterceptedException
+        login_button = wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, 'button.btnIngresar')
         ))
-        login_button.click()
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", login_button)
         
         # 5. Verificación positiva de login exitoso
         wait.until(EC.url_contains('/#/home'))
@@ -188,7 +183,7 @@ def login(driver, show_button=True):
             
             # 7. Continuar con el proceso normal
             print("[SCRAPER_STATUS:READY_FOR_SELECTION]", flush=True)
-            driver.get('https://www.coronelmayorista.com/#/home')
+            driver.get('https://coronelmayorista.com.ar/#/home')
             
             # Directorios base para preview y señal
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -256,5 +251,10 @@ def login(driver, show_button=True):
         return True
         
     except Exception as e:
-        print(Fore.RED + f"❌ Error inesperado: {str(e)}" + Fore.RESET)
+        print(Fore.RED + f"❌ Error inesperado: {type(e).__name__} - {str(e)}" + Fore.RESET)
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            driver.save_screenshot(os.path.join(base_dir, "preview.png"))
+        except Exception:
+            pass
         return False

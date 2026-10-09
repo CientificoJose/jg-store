@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse, Response
 from pydantic import BaseModel
 
 app = FastAPI(title="Coronel Scraper Cloud API", version="1.0.0")
@@ -80,6 +80,32 @@ def get_status():
         "waitingUser": state.waiting_user,
         "logCount": len(state.logs)
     }
+
+@app.get("/api/preview")
+def get_preview():
+    preview_path = os.path.join(BASE_DIR, "preview.png")
+    if os.path.exists(preview_path):
+        return FileResponse(
+            preview_path,
+            media_type="image/png",
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+        )
+    svg_placeholder = """<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" fill="#0f172a">
+      <rect width="800" height="450" fill="#090d16" />
+      <circle cx="400" cy="190" r="50" fill="#1e293b" />
+      <path d="M385 175 L415 190 L385 205 Z" fill="#64748b" />
+      <text x="400" y="270" font-family="system-ui, sans-serif" font-size="18" fill="#94a3b8" text-anchor="middle" font-weight="600">
+        Navegador en Espera
+      </text>
+      <text x="400" y="298" font-family="system-ui, sans-serif" font-size="14" fill="#64748b" text-anchor="middle">
+        Inicia el scraper para ver la vista previa en vivo de Google Chrome
+      </text>
+    </svg>"""
+    return Response(
+        content=svg_placeholder,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
 
 def monitor_process(proc: subprocess.Popen):
     try:
