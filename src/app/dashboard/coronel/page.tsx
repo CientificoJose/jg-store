@@ -243,20 +243,20 @@ export default function CoronelScraperPage() {
     setIsFit(true);
   };
 
-  // URLs con autenticación de tokens y contraseña VNC
+  // URLs con autenticación de tokens
   const vncIframeUrl = `${vncHost.replace(
     /\/$/,
     ''
-  )}/vnc/vnc_lite.html?path=vnc/websockify&autoconnect=true&resize=scale&password=${encodeURIComponent(
-    vncPassword
-  )}&token=${encodeURIComponent(vncToken)}&reconnect=true`;
+  )}/vnc/vnc_lite.html?path=websockify&autoconnect=true&resize=scale&token=${encodeURIComponent(
+    vncToken
+  )}&reconnect=true`;
 
   const vncExternalUrl = `${vncHost.replace(
     /\/$/,
     ''
-  )}/vnc/vnc.html?autoconnect=true&resize=scale&password=${encodeURIComponent(
-    vncPassword
-  )}&token=${encodeURIComponent(vncToken)}&reconnect=true`;
+  )}/vnc/vnc.html?path=websockify&autoconnect=true&resize=scale&token=${encodeURIComponent(
+    vncToken
+  )}&reconnect=true`;
 
   // Estilos de dimensionamiento para el visor escalable (base 1280x800)
   const getViewportStyle = () => {
