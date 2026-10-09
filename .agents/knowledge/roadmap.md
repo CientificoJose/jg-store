@@ -227,6 +227,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Botón de acción pulsante en verde cuando el proceso solicita confirmación del usuario ("CONTINUAR SCRAPING").
   - Tabla de productos en SQLite con vista previa de SKUs, descripciones, categorías y precios mayoristas.
   - Acceso directo integrado en la navegación lateral (`src/config/nav-config.ts` -> "Scraper Coronel").
+- [x] **Arquitectura Cloud con noVNC e Interacción Remota en Dokploy (Opción A):**
+  - **Microservicio Dokploy `Coronel Scraper` (`uJJ_UD7QnPV9FrDO5fsKR`):** Creado en el proyecto `JG-STORE` (entorno `production`) vinculado al repositorio GitHub `CientificoJose/jg-store` con `Dockerfile.scraper`.
+  - **Pila en Contenedor Docker:** Python 3.11 + Google Chrome oficial con flags `--no-sandbox` y `--disable-dev-shm-usage` + pantalla virtual en RAM con `Xvfb` (:99 a 1280x800) + gestor `fluxbox` + servidor VNC `x11vnc` + proxy WebSockets HTML5 `websockify/noVNC` (puerto 6080) + API FastAPI (`api_server.py` en puerto 8000) + orquestador `supervisord` + proxy inverso `nginx` unificado en el puerto 80.
+  - **Enrutamiento y Dominio:** Dominio asignado en Dokploy: `coronel.press-cloud.com` en puerto 80 con soporte HTTPS Traefik (Let's Encrypt).
+  - **Integración en Next.js Dashboard:** `src/app/dashboard/coronel/page.tsx` actualizado con visor interactivo en tiempo real `<iframe>` de noVNC, selector de modo (noVNC interactivo vs Screenshot), botón de apertura en ventana completa, reconexión de WebSockets y conmutador de host remoto (`vncHost`).
+  - **Ejecución Asíncrona Desatendida:** El usuario puede ingresar a `coronel.press-cloud.com` desde su dashboard, interactuar con el ratón directamente sobre la página de Coronel Mayorista para seleccionar la categoría deseada, dar clic en "CONTINUAR SCRAPING", y apagar su computadora mientras el servidor continúa procesando en la nube 24/7.
 - [ ] **Paso 2: Sincronización Remota de Catálogo (Pausado / Achantado por indicación del usuario):** La sincronización automática hacia Tiendanube o endpoints remotos se mantiene pausada para priorizar la ejecución y validación local de productos.
 
 ---

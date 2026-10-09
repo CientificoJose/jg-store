@@ -173,14 +173,14 @@ graph TD
   - **Seguridad y Nivel de Cuenta:** Gestión de contraseña y condición comercial (Cliente Detal B2C / Mayorista B2B VIP Verificado).
 
 ### 15. 🟢 Módulo Scraper Coronel Mayorista & Terminal en Vivo (`coronel-scraper`)
-* **Estado:** Completado (Paso 1).
+* **Estado:** Completado (Paso 1 Local + Cloud Dokploy noVNC).
 * **Detalles:**
-  - Código base clonado y adaptado en `scraping-coronel/` con entorno virtual Python (`.venv`) y Selenium para navegación interactiva con Google Chrome.
+  - Código base clonado y adaptado en `scraping-coronel/` con entorno virtual Python y Selenium para navegación interactiva con Google Chrome.
   - Sustitución de Tkinter por señal en archivo `.scraper_continue` emitible desde el panel web.
-  - Capturas periódicas en `preview.png` para visualización remota del estado del navegador.
-  - Orquestador de procesos singleton en `src/lib/scraper-process.ts` y endpoints en `src/app/api/scraper/` (stream SSE, control, vista previa y catálogo SQLite).
-  - Interfaz de panel en `/dashboard/coronel` con terminal en vivo, preview en tiempo real, control de flujo y visor de `productos.db`.
-  - Paso 2 (Sincronización remota) pausado deliberadamente por indicación comercial del usuario.
+  - Capturas periódicas en `preview.png` y transmisión continua para visualización del navegador.
+  - **Despliegue Cloud en Dokploy (`uJJ_UD7QnPV9FrDO5fsKR`):** Microservicio Docker independiente en el proyecto `JG-STORE` corriendo Python 3.11, Google Chrome (`--no-sandbox`), `Xvfb` (pantalla virtual :99), `x11vnc`, `noVNC` y `FastAPI`, unificado bajo Nginx en el puerto 80 en el dominio `coronel.press-cloud.com`.
+  - **Visor Interactivo Remoto (Opción A):** Integrado en el panel `/dashboard/coronel` mediante `<iframe>` noVNC, permitiendo que el usuario mueva el ratón y haga clics sobre la página de Coronel Mayorista directamente desde la web, confirme la categoría, presione "CONTINUAR SCRAPING" y apague su PC mientras el proceso continúa en el servidor.
+  - Paso 2 (Sincronización remota a Tiendanube) pausado deliberadamente por indicación comercial del usuario.
 
 
 
