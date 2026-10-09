@@ -29,9 +29,8 @@ class ScraperProcessManager {
 
   constructor() {
     this.baseDir = path.join(process.cwd(), 'scraping-coronel');
-    // Usar el entorno virtual creado si existe, de lo contrario python3 del sistema
-    const venvPython = path.join(this.baseDir, '.venv', 'bin', 'python');
-    this.pythonPath = fs.existsSync(venvPython) ? venvPython : 'python3';
+    // Usar variable de entorno si se especifica, o python3 del sistema
+    this.pythonPath = process.env.PYTHON_BIN || 'python3';
   }
 
   public getStatus() {
