@@ -3,6 +3,9 @@ import { scraperManager } from '@/lib/scraper-process';
 
 export const dynamic = 'force-dynamic';
 
+const SCRAPER_AUTH_TOKEN =
+  process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
+
 function getScraperHost() {
   return (
     process.env.SCRAPER_SERVICE_URL ||
@@ -16,9 +19,12 @@ export async function GET(request: NextRequest) {
   // Si hay un servicio cloud configurado (o estamos en producción), proxy del SSE
   if (scraperHost) {
     try {
-      const remoteUrl = `${scraperHost.replace(/\/$/, '')}/api/stream`;
+      const remoteUrl = `${scraperHost.replace(/\/$/, '')}/api/stream?token=${SCRAPER_AUTH_TOKEN}`;
       const remoteRes = await fetch(remoteUrl, {
-        headers: { Accept: 'text/event-stream' },
+        headers: {
+          Accept: 'text/event-stream',
+          Authorization: `Bearer ${SCRAPER_AUTH_TOKEN}`
+        },
         cache: 'no-store',
         signal: request.signal
       });
@@ -105,7 +111,10 @@ export async function POST(request: NextRequest) {
         const remoteUrl = `${scraperHost.replace(/\/$/, '')}/api/start`;
         const remoteRes = await fetch(remoteUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SCRAPER_AUTH_TOKEN}`
+          },
           body: JSON.stringify({
             ganancia: Number(ganancia),
             download_images: Boolean(downloadImages)

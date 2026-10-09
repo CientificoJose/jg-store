@@ -4,13 +4,29 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-export const dynamic = 'force-dynamic';
+const SCRAPER_AUTH_TOKEN =
+  process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
+
+function getScraperHost() {
+  return (
+    process.env.SCRAPER_SERVICE_URL ||
+    (process.env.NODE_ENV === 'production' ? 'https://coronel.press-cloud.com' : undefined)
+  );
+}
 
 export async function GET() {
-  const scraperHost = process.env.SCRAPER_SERVICE_URL;
+  const scraperHost = getScraperHost();
   if (scraperHost) {
     try {
-      const res = await fetch(`${scraperHost.replace(/\/$/, '')}/api/products`);
+      const res = await fetch(
+        `${scraperHost.replace(/\/$/, '')}/api/products?token=${SCRAPER_AUTH_TOKEN}`,
+        {
+          headers: {
+            Authorization: `Bearer ${SCRAPER_AUTH_TOKEN}`
+          },
+          cache: 'no-store'
+        }
+      );
       if (res.ok) {
         return Response.json(await res.json());
       }

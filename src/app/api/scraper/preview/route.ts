@@ -3,6 +3,9 @@ import fs from 'fs';
 
 export const dynamic = 'force-dynamic';
 
+const SCRAPER_AUTH_TOKEN =
+  process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
+
 function getScraperHost() {
   return (
     process.env.SCRAPER_SERVICE_URL ||
@@ -14,9 +17,15 @@ export async function GET() {
   const scraperHost = getScraperHost();
   if (scraperHost) {
     try {
-      const remoteRes = await fetch(`${scraperHost.replace(/\/$/, '')}/api/preview`, {
-        cache: 'no-store'
-      });
+      const remoteRes = await fetch(
+        `${scraperHost.replace(/\/$/, '')}/api/preview?token=${SCRAPER_AUTH_TOKEN}`,
+        {
+          headers: {
+            Authorization: `Bearer ${SCRAPER_AUTH_TOKEN}`
+          },
+          cache: 'no-store'
+        }
+      );
       if (remoteRes.ok) {
         const contentType = remoteRes.headers.get('content-type') || 'image/png';
         const buffer = await remoteRes.arrayBuffer();

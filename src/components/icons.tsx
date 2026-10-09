@@ -115,7 +115,11 @@ import {
   IconShieldCheck,
   IconTerminal2,
   IconRefresh,
-  IconCopy
+  IconCopy,
+  IconZoomIn,
+  IconZoomOut,
+  IconMaximize,
+  IconMinimize
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -144,6 +148,10 @@ export const Icons = {
   search: IconSearch,
   settings: IconSettings,
   trash: IconTrash,
+  zoomIn: IconZoomIn,
+  zoomOut: IconZoomOut,
+  maximize: IconMaximize,
+  minimize: IconMinimize,
 
   // Navigation / Chevrons
   chevronDown: IconChevronDown,

@@ -6,12 +6,14 @@ import asyncio
 import subprocess
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse, Response
 from pydantic import BaseModel
 
 app = FastAPI(title="Coronel Scraper Cloud API", version="1.0.0")
+
+SCRAPER_AUTH_TOKEN = os.getenv("SCRAPER_AUTH_TOKEN", "jgstore_scraper_secure_token_2026")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,6 +22,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    # Permitir healthcheck y preflight OPTIONS sin token
+    if request.url.path == "/health" or request.method == "OPTIONS":
+        return await call_next(request)
+        
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+    if not token:
+        token = request.headers.get("X-Scraper-Token")
+    if not token:
+        token = request.query_params.get("token")
+        
+    if not token or token != SCRAPER_AUTH_TOKEN:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Unauthorized: Token de seguridad de Scraper requerido o inválido."}
+        )
+        
+    return await call_next(request)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "productos.db")

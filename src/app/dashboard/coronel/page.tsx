@@ -45,8 +45,19 @@ export default function CoronelScraperPage() {
   // Modo de visualización remota (noVNC interactivo vs Captura)
   const [viewMode, setViewMode] = useState<'vnc' | 'image'>('vnc');
   const [vncHost, setVncHost] = useState<string>('https://coronel.press-cloud.com');
+  const [vncPassword, setVncPassword] = useState<string>('jgstore_vnc_2026');
+  const [vncToken, setVncToken] = useState<string>('jgstore_scraper_secure_token_2026');
   const [vncKey, setVncKey] = useState<number>(Date.now());
   const [showVncConfig, setShowVncConfig] = useState(false);
+
+  // Controles de Zoom y Pantalla Completa
+  const [zoomLevel, setZoomLevel] = useState<number>(75); // 75% por defecto recomendado
+  const [isFit, setIsFit] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  // Terminal en Vivo
+  const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(true);
+  const [autoScroll, setAutoScroll] = useState<boolean>(true);
 
   // Estadísticas de SQLite
   const [dbStats, setDbStats] = useState<DbStats | null>(null);
@@ -57,23 +68,29 @@ export default function CoronelScraperPage() {
 
   // Auto-scroll en la terminal
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
+    if (autoScroll && isTerminalOpen) {
+      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, autoScroll, isTerminalOpen]);
+
+  // Cargar credenciales guardadas si existen
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedHost = localStorage.getItem('jg_scraper_vnc_host');
+      if (savedHost) setVncHost(savedHost);
+      const savedToken = localStorage.getItem('jg_scraper_token');
+      if (savedToken) setVncToken(savedToken);
+      const savedPass = localStorage.getItem('jg_scraper_vnc_password');
+      if (savedPass) setVncPassword(savedPass);
+    }
+  }, []);
 
   // Cargar estadísticas de la base de datos
   const fetchDbStats = async () => {
     setLoadingDb(true);
     try {
-      let res: Response | null = null;
-      if (vncHost && !vncHost.includes('localhost:3000')) {
-        try {
-          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/products`);
-        } catch {}
-      }
-      if (!res || !res.ok) {
-        res = await fetch('/api/scraper/products');
-      }
-      if (res && res.ok) {
+      const res = await fetch('/api/scraper/products');
+      if (res.ok) {
         const data = await res.json();
         setDbStats(data);
       }
@@ -86,16 +103,11 @@ export default function CoronelScraperPage() {
 
   useEffect(() => {
     fetchDbStats();
-  }, [vncHost]);
+  }, []);
 
   // Conectar a Server-Sent Events (SSE) para logs en vivo
   useEffect(() => {
-    const sseUrl =
-      vncHost && !vncHost.includes('localhost:3000')
-        ? `${vncHost.replace(/\/$/, '')}/api/stream`
-        : '/api/scraper/stream';
-
-    const sse = new EventSource(sseUrl);
+    const sse = new EventSource('/api/scraper/stream');
     eventSourceRef.current = sse;
 
     sse.addEventListener('status', (e) => {
@@ -104,7 +116,6 @@ export default function CoronelScraperPage() {
         setStatus(data.status);
         setIsRunning(data.isRunning);
         setWaitingUser(data.waitingUser);
-        // Si se completó, refrescar la BD
         if (data.status === 'COMPLETED') {
           fetchDbStats();
           toast.success('¡Scraping finalizado con éxito!');
@@ -119,7 +130,6 @@ export default function CoronelScraperPage() {
         const data = JSON.parse(e.data);
         if (data.text) {
           setLogs((prev) => [...prev, data.text]);
-          // Forzar refresco del preview si el log indica nueva página o espera
           if (data.text.includes('SCRAPER_STATUS') || data.text.includes('Procesando página')) {
             setPreviewTimestamp(Date.now());
           }
@@ -136,42 +146,27 @@ export default function CoronelScraperPage() {
     return () => {
       sse.close();
     };
-  }, [vncHost]);
+  }, []);
 
-  // Refrescar periódicamente la vista previa mientras esté activo
+  // Refrescar periódicamente la vista previa si está en modo imagen
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isRunning) {
+    if (isRunning && viewMode === 'image') {
       interval = setInterval(() => {
         setPreviewTimestamp(Date.now());
       }, 2000);
     }
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, [isRunning, viewMode]);
 
   // Iniciar Scraping
   const handleStartScraper = async () => {
     try {
-      let res: Response | null = null;
-      // Si estamos apuntando al host cloud en Dokploy, llamar directamente a su API
-      if (vncHost && !vncHost.includes('localhost:3000')) {
-        try {
-          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/start`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ganancia, download_images: downloadImages })
-          });
-        } catch {}
-      }
-
-      // Si no hay respuesta o falló, intentar a través de la ruta local / proxy
-      if (!res || !res.ok) {
-        res = await fetch('/api/scraper/stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ganancia, downloadImages })
-        });
-      }
+      const res = await fetch('/api/scraper/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ganancia, downloadImages })
+      });
 
       const data = await res.json();
       if (!res.ok) {
@@ -189,17 +184,7 @@ export default function CoronelScraperPage() {
   // Continuar Scraping (Señal al usuario)
   const handleContinue = async () => {
     try {
-      let res: Response | null = null;
-      if (vncHost && !vncHost.includes('localhost:3000')) {
-        try {
-          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/continue`, { method: 'POST' });
-        } catch {}
-      }
-
-      if (!res || !res.ok) {
-        res = await fetch('/api/scraper/continue', { method: 'POST' });
-      }
-
+      const res = await fetch('/api/scraper/continue', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al enviar señal');
 
@@ -214,18 +199,8 @@ export default function CoronelScraperPage() {
   // Detener proceso
   const handleStop = async () => {
     try {
-      let res: Response | null = null;
-      if (vncHost && !vncHost.includes('localhost:3000')) {
-        try {
-          res = await fetch(`${vncHost.replace(/\/$/, '')}/api/stop`, { method: 'POST' });
-        } catch {}
-      }
-
-      if (!res || !res.ok) {
-        res = await fetch('/api/scraper/stop', { method: 'POST' });
-      }
-
-      if (res && res.ok) {
+      const res = await fetch('/api/scraper/stop', { method: 'POST' });
+      if (res.ok) {
         toast.info('Se solicitó detener el scraper');
         setIsRunning(false);
         setWaitingUser(false);
@@ -248,8 +223,59 @@ export default function CoronelScraperPage() {
     toast.success('Logs copiados al portapapeles');
   };
 
+  // Controles de zoom
+  const handleZoomIn = () => {
+    setIsFit(false);
+    setZoomLevel((prev) => Math.min(150, prev + 10));
+  };
+
+  const handleZoomOut = () => {
+    setIsFit(false);
+    setZoomLevel((prev) => Math.max(40, prev - 10));
+  };
+
+  const handleSetZoom = (level: number) => {
+    setIsFit(false);
+    setZoomLevel(level);
+  };
+
+  const handleSetFit = () => {
+    setIsFit(true);
+  };
+
+  // URLs con autenticación de tokens y contraseña VNC
+  const vncIframeUrl = `${vncHost.replace(
+    /\/$/,
+    ''
+  )}/vnc/vnc_lite.html?path=vnc/websockify&autoconnect=true&resize=scale&password=${encodeURIComponent(
+    vncPassword
+  )}&token=${encodeURIComponent(vncToken)}&reconnect=true`;
+
+  const vncExternalUrl = `${vncHost.replace(
+    /\/$/,
+    ''
+  )}/vnc/vnc.html?autoconnect=true&resize=scale&password=${encodeURIComponent(
+    vncPassword
+  )}&token=${encodeURIComponent(vncToken)}&reconnect=true`;
+
+  // Estilos de dimensionamiento para el visor escalable (base 1280x800)
+  const getViewportStyle = () => {
+    if (isFit) {
+      return { width: '100%', height: '100%' };
+    }
+    const width = Math.round(1280 * (zoomLevel / 100));
+    const height = Math.round(800 * (zoomLevel / 100));
+    return {
+      width: `${width}px`,
+      height: `${height}px`,
+      maxWidth: 'none',
+      maxHeight: 'none',
+      transition: 'width 0.15s ease, height 0.15s ease'
+    };
+  };
+
   return (
-    <div className='flex-1 space-y-6 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto font-gotham'>
+    <div className='flex-1 space-y-6 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto font-gotham'>
       {/* Encabezado */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border'>
         <div>
@@ -265,8 +291,8 @@ export default function CoronelScraperPage() {
             EXTRACCIÓN & SCRAPING - CORONEL MAYORISTA
           </h1>
           <p className='text-sm text-muted-foreground mt-1'>
-            Control de automatización en tiempo real, vista previa del navegador y persistencia
-            local en SQLite.
+            Control de automatización remota, visor escalable a pantalla completa con zoom y
+            persistencia local en SQLite.
           </p>
         </div>
 
@@ -306,7 +332,7 @@ export default function CoronelScraperPage() {
         </div>
       </div>
 
-      {/* Barra de Controles y Parámetros */}
+      {/* Barra Superior de Parámetros y Acciones */}
       <div className='p-4 rounded-2xl bg-card border border-border shadow-xs flex flex-wrap items-center justify-between gap-4'>
         <div className='flex flex-wrap items-center gap-4'>
           <div className='flex items-center gap-2 text-sm text-muted-foreground'>
@@ -339,7 +365,7 @@ export default function CoronelScraperPage() {
 
         {/* Botonera de Acción */}
         <div className='flex items-center gap-3'>
-          {/* Botón Principal: CONTINUAR SCRAPING (Activado cuando espera selección) */}
+          {/* Botón Principal: CONTINUAR SCRAPING */}
           <button
             onClick={handleContinue}
             disabled={!waitingUser}
@@ -373,95 +399,215 @@ export default function CoronelScraperPage() {
         </div>
       </div>
 
-      {/* Grid Principal: 2 Columnas (Vista Previa vs Terminal) */}
-      <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
-        {/* Columna Izquierda: Vista Previa del Navegador / noVNC (5 columnas) */}
-        <div className='lg:col-span-5 flex flex-col space-y-3'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <h2 className='text-base font-bold text-foreground flex items-center gap-2'>
-                <Icons.laptop className='w-4 h-4 text-[#E63946]' />
-                <span>Navegador Remoto</span>
-              </h2>
-              {/* Selector de Modo */}
-              <div className='flex items-center bg-muted/60 p-0.5 rounded-lg border border-border text-[11px] font-medium'>
-                <button
-                  onClick={() => setViewMode('vnc')}
-                  className={`px-2 py-0.5 rounded-md transition-all ${
-                    viewMode === 'vnc'
-                      ? 'bg-background text-foreground shadow-xs font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  noVNC Interactivo
-                </button>
-                <button
-                  onClick={() => setViewMode('image')}
-                  className={`px-2 py-0.5 rounded-md transition-all ${
-                    viewMode === 'image'
-                      ? 'bg-background text-foreground shadow-xs font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Captura
-                </button>
-              </div>
+      {/* MODULO PRINCIPAL: VISOR REMOTO COMPLETO (ANCHO TOTAL DEL BODY) */}
+      <div
+        className={`w-full transition-all duration-200 ${
+          isFullscreen
+            ? 'fixed inset-0 z-50 bg-[#070a12]/98 p-4 sm:p-6 flex flex-col backdrop-blur-md overflow-hidden'
+            : 'space-y-3'
+        }`}
+      >
+        {/* Barra de Herramientas del Visor: Modo, Zoom, Escala y Acciones */}
+        <div className='flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-xl shadow-xs'>
+          {/* Izquierda: Selector de Modo noVNC / Captura */}
+          <div className='flex items-center gap-3'>
+            <div className='flex items-center gap-2 font-bold text-foreground text-sm'>
+              <Icons.laptop className='w-4 h-4 text-[#E63946]' />
+              <span className='hidden sm:inline'>Navegador Remoto Chrome</span>
             </div>
 
-            <div className='flex items-center gap-1.5'>
-              {viewMode === 'vnc' && (
-                <>
-                  <button
-                    onClick={() => setVncKey(Date.now())}
-                    title='Reconectar noVNC'
-                    className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
-                  >
-                    <Icons.refresh className='w-3.5 h-3.5' />
-                  </button>
-                  <a
-                    href={`${vncHost.replace(/\/$/, '')}/vnc/vnc.html?autoconnect=true&resize=scale&reconnect=true`}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    title='Abrir en ventana completa'
-                    className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
-                  >
-                    <Icons.externalLink className='w-3.5 h-3.5' />
-                  </a>
-                </>
-              )}
-              {viewMode === 'image' && (
-                <button
-                  onClick={() => setPreviewTimestamp(Date.now())}
-                  className='text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors'
-                >
-                  <Icons.refresh className='w-3.5 h-3.5' />
-                  <span>Actualizar</span>
-                </button>
-              )}
+            <div className='flex items-center bg-muted/60 p-0.5 rounded-lg border border-border text-xs font-medium'>
               <button
-                onClick={() => setShowVncConfig(!showVncConfig)}
-                title='Configurar URL del Scraper'
-                className={`p-1.5 rounded-lg transition-colors ${
-                  showVncConfig
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                onClick={() => setViewMode('vnc')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  viewMode === 'vnc'
+                    ? 'bg-background text-foreground shadow-xs font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Icons.settings className='w-3.5 h-3.5' />
+                noVNC Interactivo
+              </button>
+              <button
+                onClick={() => setViewMode('image')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  viewMode === 'image'
+                    ? 'bg-background text-foreground shadow-xs font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Captura
               </button>
             </div>
           </div>
 
-          {/* Configuración desplegable de URL del Scraper Cloud */}
-          {showVncConfig && (
-            <div className='p-3 bg-card border border-border rounded-xl text-xs space-y-2 animate-fadeIn'>
-              <div className='flex items-center justify-between'>
-                <span className='font-bold text-foreground'>
-                  Host del Servicio Scraper (Dokploy):
-                </span>
-                <span className='text-[10px] text-muted-foreground font-mono'>vnc / api</span>
-              </div>
+          {/* Centro: Controles de Zoom & Escala */}
+          <div className='flex items-center gap-2 bg-muted/40 px-2 py-1 rounded-lg border border-border'>
+            <span className='text-[11px] text-muted-foreground font-semibold hidden md:inline'>
+              Escala:
+            </span>
+
+            {/* Presets de Zoom */}
+            <div className='flex items-center gap-1 text-xs'>
+              <button
+                onClick={handleSetFit}
+                title='Ajustar automáticamente al contenedor'
+                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
+                  isFit
+                    ? 'bg-[#E63946] text-white shadow-xs'
+                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                }`}
+              >
+                Fit
+              </button>
+              <button
+                onClick={() => handleSetZoom(50)}
+                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
+                  !isFit && zoomLevel === 50
+                    ? 'bg-[#E63946] text-white shadow-xs'
+                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                }`}
+              >
+                50%
+              </button>
+              <button
+                onClick={() => handleSetZoom(75)}
+                title='Resolución recomendada para vista completa'
+                className={`px-2.5 py-0.5 rounded transition-all font-bold text-[11px] flex items-center gap-1 ${
+                  !isFit && zoomLevel === 75
+                    ? 'bg-[#E63946] text-white shadow-xs ring-1 ring-[#E63946]'
+                    : 'bg-background/80 text-foreground hover:text-white hover:bg-[#E63946]/80 border border-border/50'
+                }`}
+              >
+                <span>75%</span>
+                <span className='text-[9px] opacity-80'>(Ideal)</span>
+              </button>
+              <button
+                onClick={() => handleSetZoom(100)}
+                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
+                  !isFit && zoomLevel === 100
+                    ? 'bg-[#E63946] text-white shadow-xs'
+                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                }`}
+              >
+                100%
+              </button>
+              <button
+                onClick={() => handleSetZoom(125)}
+                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] hidden sm:inline ${
+                  !isFit && zoomLevel === 125
+                    ? 'bg-[#E63946] text-white shadow-xs'
+                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                }`}
+              >
+                125%
+              </button>
+            </div>
+
+            {/* Separador */}
+            <span className='w-px h-4 bg-border mx-0.5' />
+
+            {/* Botones +/- para zoom fino */}
+            <div className='flex items-center gap-1'>
+              <button
+                onClick={handleZoomOut}
+                title='Reducir zoom (-10%)'
+                className='p-1 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors'
+              >
+                <Icons.zoomOut className='w-3.5 h-3.5' />
+              </button>
+              <span className='text-[11px] font-mono font-bold text-foreground w-10 text-center'>
+                {isFit ? 'Fit' : `${zoomLevel}%`}
+              </span>
+              <button
+                onClick={handleZoomIn}
+                title='Aumentar zoom (+10%)'
+                className='p-1 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors'
+              >
+                <Icons.zoomIn className='w-3.5 h-3.5' />
+              </button>
+            </div>
+          </div>
+
+          {/* Derecha: Botones de Acción (Reconectar, Pantalla Completa, Popout, Config) */}
+          <div className='flex items-center gap-1.5'>
+            {viewMode === 'vnc' && (
+              <>
+                <button
+                  onClick={() => setVncKey(Date.now())}
+                  title='Reconectar noVNC'
+                  className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+                >
+                  <Icons.refresh className='w-4 h-4' />
+                </button>
+                <a
+                  href={vncExternalUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  title='Abrir noVNC en pestaña independiente'
+                  className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+                >
+                  <Icons.externalLink className='w-4 h-4' />
+                </a>
+              </>
+            )}
+
+            {viewMode === 'image' && (
+              <button
+                onClick={() => setPreviewTimestamp(Date.now())}
+                title='Refrescar captura'
+                className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+              >
+                <Icons.refresh className='w-4 h-4' />
+              </button>
+            )}
+
+            {/* Alternar Pantalla Completa */}
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+              className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+            >
+              {isFullscreen ? (
+                <Icons.minimize className='w-4 h-4 text-[#E63946]' />
+              ) : (
+                <Icons.maximize className='w-4 h-4' />
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowVncConfig(!showVncConfig)}
+              title='Seguridad y Configuración de Conexión'
+              className={`p-1.5 rounded-lg transition-colors ${
+                showVncConfig
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <Icons.settings className='w-4 h-4' />
+            </button>
+          </div>
+        </div>
+
+        {/* Panel de Configuración de Seguridad y Host (Desplegable) */}
+        {showVncConfig && (
+          <div className='p-4 bg-card border border-border rounded-xl text-xs space-y-3 animate-fadeIn shadow-sm'>
+            <div className='flex items-center justify-between border-b border-border pb-2'>
               <div className='flex items-center gap-2'>
+                <Icons.lock className='w-4 h-4 text-emerald-500' />
+                <span className='font-bold text-foreground'>
+                  Seguridad y Conexión del Scraper Remoto (Dokploy)
+                </span>
+              </div>
+              <span className='text-[10px] text-muted-foreground font-mono'>
+                Token & VNC Password Protegidos
+              </span>
+            </div>
+
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+              <div>
+                <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
+                  Host Dokploy:
+                </label>
                 <input
                   type='text'
                   value={vncHost}
@@ -472,190 +618,282 @@ export default function CoronelScraperPage() {
                     }
                   }}
                   placeholder='https://coronel.press-cloud.com'
-                  className='flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
+                  className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
                 />
-                <button
-                  onClick={() => setVncKey(Date.now())}
-                  className='px-3 py-1.5 bg-[#E63946] text-white rounded-lg font-bold text-xs hover:bg-[#c92a37]'
-                >
-                  Conectar
-                </button>
               </div>
-              <p className='text-[11px] text-muted-foreground leading-tight'>
-                Apunta a la URL pública asignada en Dokploy para ver la pantalla virtual interactiva
-                de Chrome y transmitir clics remotos.
+
+              <div>
+                <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
+                  Token de Sesión / Auth:
+                </label>
+                <input
+                  type='password'
+                  value={vncToken}
+                  onChange={(e) => {
+                    setVncToken(e.target.value);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('jg_scraper_token', e.target.value);
+                    }
+                  }}
+                  className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
+                />
+              </div>
+
+              <div>
+                <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
+                  Contraseña VNC (x11vnc):
+                </label>
+                <input
+                  type='password'
+                  value={vncPassword}
+                  onChange={(e) => {
+                    setVncPassword(e.target.value);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('jg_scraper_vnc_password', e.target.value);
+                    }
+                  }}
+                  className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
+                />
+              </div>
+            </div>
+
+            <div className='flex items-center justify-between pt-1'>
+              <p className='text-[11px] text-muted-foreground'>
+                Ruta protegida por Nginx y FastAPI con token bearer contra accesos públicos no
+                autorizados.
               </p>
+              <button
+                onClick={() => {
+                  setVncKey(Date.now());
+                  toast.success('Configuración aplicada y sesión VNC refrescada');
+                }}
+                className='px-3 py-1 bg-[#E63946] text-white rounded-lg font-bold text-xs hover:bg-[#c92a37] transition-colors'
+              >
+                Aplicar y Reconectar
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-          <div className='relative rounded-2xl overflow-hidden border border-border bg-[#090d16] shadow-sm flex flex-col'>
-            {/* Barra de Ventana del Navegador */}
-            <div className='flex items-center justify-between px-3.5 py-2 bg-[#121826] border-b border-border/50 text-xs'>
-              <div className='flex items-center gap-1.5'>
-                <span className='w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block' />
-                <span className='w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block' />
-                <span className='w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block' />
-              </div>
-              <div className='flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-black/40 text-slate-400 font-mono text-[11px] truncate max-w-[220px]'>
-                <Icons.lock className='w-3 h-3 text-emerald-500 shrink-0' />
-                <span>{viewMode === 'vnc' ? 'noVNC Virtual Desktop' : 'coronelmayorista.com'}</span>
-              </div>
-              <div className='flex items-center gap-1'>
-                {isRunning && (
-                  <span className='inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 font-bold tracking-wider'>
-                    <span className='w-1.5 h-1.5 rounded-full bg-red-500 animate-ping' />
-                    LIVE
-                  </span>
-                )}
-                {viewMode === 'vnc' && (
-                  <span className='text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-medium'>
-                    DOM REMOTO
-                  </span>
-                )}
+        {/* Marco de Pantalla del Navegador */}
+        <div
+          className={`relative rounded-2xl overflow-hidden border border-border bg-[#090d16] shadow-sm flex flex-col ${
+            isFullscreen ? 'flex-1 min-h-0' : 'min-h-[580px] h-[66vh]'
+          }`}
+        >
+          {/* Header tipo pestaña de navegador */}
+          <div className='flex items-center justify-between px-4 py-2.5 bg-[#121826] border-b border-border/50 text-xs shrink-0'>
+            <div className='flex items-center gap-2'>
+              <span className='w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block' />
+              <span className='w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block' />
+              <span className='w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block' />
+              <div className='flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-black/40 text-slate-300 font-mono text-[11px] ml-2'>
+                <Icons.lock className='w-3 h-3 text-emerald-400 shrink-0' />
+                <span>
+                  {viewMode === 'vnc'
+                    ? 'https://coronelmayorista.com (Sesión Interactiva Remota)'
+                    : 'Vista Previa Renderizada (Selenium Chrome)'}
+                </span>
               </div>
             </div>
 
-            {/* Contenedor Principal: noVNC o Imagen */}
-            <div className='relative aspect-video w-full bg-[#070a12] flex items-center justify-center overflow-hidden min-h-[380px]'>
-              {viewMode === 'vnc' ? (
+            <div className='flex items-center gap-2'>
+              {isRunning && (
+                <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 font-bold tracking-wider'>
+                  <span className='w-1.5 h-1.5 rounded-full bg-red-500 animate-ping' />
+                  PROCESO ACTIVO
+                </span>
+              )}
+              <span className='text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground font-mono'>
+                Zoom: {isFit ? 'Fit' : `${zoomLevel}%`}
+              </span>
+            </div>
+          </div>
+
+          {/* Área de Visualización con Desplazamiento y Escalado */}
+          <div className='relative flex-1 w-full bg-[#05070d] flex items-center justify-center overflow-auto p-2'>
+            {viewMode === 'vnc' ? (
+              <div
+                style={getViewportStyle()}
+                className='relative bg-black rounded-lg overflow-hidden shadow-2xl border border-border/30 flex items-center justify-center'
+              >
                 <iframe
                   key={vncKey}
-                  src={`${vncHost.replace(/\/$/, '')}/vnc/vnc_lite.html?autoconnect=true&resize=scale&reconnect=true`}
-                  className='w-full h-full border-0 bg-black min-h-[380px]'
+                  src={vncIframeUrl}
+                  className='w-full h-full border-0 bg-black block'
                   allow='fullscreen; clipboard-read; clipboard-write; autoplay'
                   allowFullScreen={true}
                   title='Navegador Remoto Chrome noVNC'
                 />
-              ) : (
-                <>
-                  <img
-                    key={previewTimestamp}
-                    src={`/api/scraper/preview?t=${previewTimestamp}`}
-                    alt='Vista previa de Chrome'
-                    onLoad={() => setPreviewLoading(false)}
-                    className='w-full h-full object-contain'
-                  />
-
-                  {/* Overlay cuando el scraper está esperando interacción */}
-                  {waitingUser && (
-                    <div className='absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-fadeIn'>
-                      <div className='w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-pulse'>
-                        <Icons.laptop className='w-6 h-6' />
-                      </div>
-                      <h3 className='text-white font-bold text-base mb-1'>
-                        ¡Selecciona la Categoría en Chrome!
-                      </h3>
-                      <p className='text-slate-300 text-xs max-w-xs mb-4'>
-                        Navega en la ventana remota o cambia al modo noVNC para hacer clic
-                        directamente con tu ratón.
-                      </p>
-                      <button
-                        onClick={handleContinue}
-                        className='px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all flex items-center gap-2'
-                      >
-                        <Icons.check className='w-4 h-4' />
-                        <span>Continuar Scraping Ahora</span>
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Pie de la vista previa */}
-            <div className='p-2.5 bg-[#121826] border-t border-border/50 flex items-center justify-between text-[11px] text-slate-400'>
-              <span className='flex items-center gap-1.5'>
-                <span className='w-2 h-2 rounded-full bg-emerald-400' />
-                <span>
-                  {viewMode === 'vnc'
-                    ? 'Stream WebSockets Activo (ratón/teclado interactivo)'
-                    : 'Resolución Selenium: 1280x800'}
-                </span>
-              </span>
-              <span>Modo: {viewMode === 'vnc' ? 'noVNC HTML5' : 'Screenshot (2s)'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Columna Derecha: Terminal Interactiva en Vivo (7 columnas) */}
-        <div className='lg:col-span-7 flex flex-col space-y-3'>
-          <div className='flex items-center justify-between'>
-            <h2 className='text-base font-bold text-foreground flex items-center gap-2'>
-              <Icons.terminal className='w-4 h-4 text-emerald-500' />
-              <span>Consola de Terminal en Vivo</span>
-            </h2>
-            <div className='flex items-center gap-2'>
-              <button
-                onClick={handleCopyLogs}
-                className='text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-muted'
-                title='Copiar logs'
-              >
-                <Icons.copy className='w-3.5 h-3.5' />
-                <span>Copiar</span>
-              </button>
-              <button
-                onClick={handleClearLogs}
-                className='text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-muted'
-                title='Limpiar consola'
-              >
-                <Icons.trash className='w-3.5 h-3.5' />
-                <span>Limpiar</span>
-              </button>
-            </div>
-          </div>
-
-          <div className='rounded-2xl overflow-hidden border border-border bg-[#0a0d14] shadow-sm flex flex-col h-[400px]'>
-            {/* Header de la Terminal */}
-            <div className='flex items-center justify-between px-4 py-2.5 bg-[#10141f] border-b border-slate-800 text-xs'>
-              <div className='flex items-center gap-2'>
-                <span className='w-2.5 h-2.5 rounded-full bg-rose-500 inline-block' />
-                <span className='w-2.5 h-2.5 rounded-full bg-amber-500 inline-block' />
-                <span className='w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block' />
-                <span className='text-slate-400 font-mono text-[11px] ml-2'>
-                  python scraping-coronel/main.py scrape
-                </span>
               </div>
-              <span className='text-slate-500 text-[10px] font-mono'>{logs.length} líneas</span>
-            </div>
+            ) : (
+              <div
+                style={getViewportStyle()}
+                className='relative bg-black rounded-lg overflow-hidden shadow-2xl border border-border/30 flex items-center justify-center'
+              >
+                <img
+                  key={previewTimestamp}
+                  src={`/api/scraper/preview?t=${previewTimestamp}`}
+                  alt='Vista previa de Chrome'
+                  onLoad={() => setPreviewLoading(false)}
+                  className='w-full h-full object-contain'
+                />
 
-            {/* Salida de Terminal */}
-            <div className='flex-1 p-4 font-mono text-[12px] leading-relaxed text-slate-200 overflow-y-auto space-y-1'>
-              {logs.length === 0 ? (
-                <div className='text-slate-500 italic py-8 text-center'>
-                  Consola lista. Haz clic en "Iniciar Scraping" para comenzar a recibir la salida
-                  del proceso en tiempo real.
-                </div>
-              ) : (
-                logs.map((log, index) => {
-                  let colorClass = 'text-slate-300';
-                  if (log.includes('✔') || log.includes('COMPLETED') || log.includes('éxito')) {
-                    colorClass = 'text-emerald-400 font-medium';
-                  } else if (
-                    log.includes('⚠') ||
-                    log.includes('WAITING') ||
-                    log.includes('Aviso')
-                  ) {
-                    colorClass = 'text-amber-300 font-medium';
-                  } else if (log.includes('✖') || log.includes('🚨') || log.includes('Error')) {
-                    colorClass = 'text-rose-400 font-semibold';
-                  } else if (log.includes('🚀') || log.includes('===') || log.includes('SISTEMA')) {
-                    colorClass = 'text-cyan-300 font-semibold';
-                  }
-
-                  return (
-                    <div key={index} className={`break-all ${colorClass}`}>
-                      {log}
+                {/* Overlay de Interacción Necesaria */}
+                {waitingUser && (
+                  <div className='absolute inset-0 bg-black/80 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-fadeIn'>
+                    <div className='w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-pulse'>
+                      <Icons.laptop className='w-7 h-7' />
                     </div>
-                  );
-                })
-              )}
-              <div ref={logsEndRef} />
+                    <h3 className='text-white font-bold text-lg mb-1'>
+                      ¡Selecciona la Categoría en Chrome!
+                    </h3>
+                    <p className='text-slate-300 text-xs max-w-sm mb-4'>
+                      Cambia al modo "noVNC Interactivo" arriba para hacer clic con tu ratón dentro
+                      de la página, o si ya seleccionaste la categoría pulsa el botón:
+                    </p>
+                    <button
+                      onClick={handleContinue}
+                      className='px-6 py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all flex items-center gap-2'
+                    >
+                      <Icons.check className='w-4 h-4' />
+                      <span>Continuar Scraping Ahora</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Barra de Estado Inferior */}
+          <div className='px-4 py-2 bg-[#121826] border-t border-border/50 flex items-center justify-between text-[11px] text-slate-400 shrink-0'>
+            <div className='flex items-center gap-2'>
+              <span className='w-2 h-2 rounded-full bg-emerald-400' />
+              <span>
+                {viewMode === 'vnc'
+                  ? 'Transmisión WebSockets Segura activa (Ratón y Teclado habilitados)'
+                  : 'Modo Captura Estática (Actualización cada 2 seg)'}
+              </span>
+            </div>
+            <div className='flex items-center gap-3 font-mono text-[10px]'>
+              <span>Escala Nativa: 1280x800</span>
+              <span>•</span>
+              <span>Zoom actual: {isFit ? 'Ajustado a ventana' : `${zoomLevel}%`}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sección Inferior: Base de Datos SQLite (productos.db) */}
+      {/* SECCIÓN COLAPSABLE: TERMINAL EN VIVO */}
+      <div className='rounded-2xl border border-border bg-[#0a0d14] overflow-hidden shadow-xs'>
+        <div className='flex items-center justify-between px-4 py-3 bg-[#10141f] border-b border-slate-800 text-xs'>
+          <div className='flex items-center gap-3'>
+            <button
+              onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+              className='flex items-center gap-2 text-foreground font-bold hover:text-[#E63946] transition-colors'
+            >
+              <Icons.terminal className='w-4 h-4 text-emerald-400' />
+              <span>Terminal y Consola de Eventos</span>
+              <span className='text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono font-normal'>
+                {logs.length} líneas
+              </span>
+            </button>
+            <span className='text-slate-600 hidden sm:inline'>|</span>
+            <span className='text-slate-400 font-mono text-[11px] hidden sm:inline'>
+              python scraping-coronel/main.py
+            </span>
+          </div>
+
+          <div className='flex items-center gap-2'>
+            <label className='flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none mr-2'>
+              <input
+                type='checkbox'
+                checked={autoScroll}
+                onChange={(e) => setAutoScroll(e.target.checked)}
+                className='rounded border-slate-700 bg-slate-900 text-[#E63946] focus:ring-0 w-3 h-3'
+              />
+              <span className='hidden sm:inline'>Auto-scroll</span>
+            </label>
+
+            <button
+              onClick={handleCopyLogs}
+              className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
+              title='Copiar logs'
+            >
+              <Icons.copy className='w-3.5 h-3.5' />
+              <span className='hidden sm:inline'>Copiar</span>
+            </button>
+
+            <button
+              onClick={handleClearLogs}
+              className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
+              title='Limpiar consola'
+            >
+              <Icons.trash className='w-3.5 h-3.5' />
+              <span className='hidden sm:inline'>Limpiar</span>
+            </button>
+
+            <button
+              onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+              className='text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-md hover:bg-slate-800 transition-colors'
+            >
+              {isTerminalOpen ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
+        </div>
+
+        {/* Cuerpo de la Terminal */}
+        {isTerminalOpen ? (
+          <div className='p-4 font-mono text-[12px] leading-relaxed text-slate-200 overflow-y-auto space-y-1 h-[260px] sm:h-[300px]'>
+            {logs.length === 0 ? (
+              <div className='text-slate-500 italic py-8 text-center'>
+                Consola lista. Pulsa "Iniciar Scraping" para visualizar la salida en tiempo real.
+              </div>
+            ) : (
+              logs.map((log, index) => {
+                let colorClass = 'text-slate-300';
+                if (log.includes('✔') || log.includes('COMPLETED') || log.includes('éxito')) {
+                  colorClass = 'text-emerald-400 font-medium';
+                } else if (
+                  log.includes('⚠') ||
+                  log.includes('WAITING') ||
+                  log.includes('Aviso')
+                ) {
+                  colorClass = 'text-amber-300 font-medium';
+                } else if (log.includes('✖') || log.includes('🚨') || log.includes('Error')) {
+                  colorClass = 'text-rose-400 font-semibold';
+                } else if (log.includes('🚀') || log.includes('===') || log.includes('SISTEMA')) {
+                  colorClass = 'text-cyan-300 font-semibold';
+                }
+
+                return (
+                  <div key={index} className={`break-all ${colorClass}`}>
+                    {log}
+                  </div>
+                );
+              })
+            )}
+            <div ref={logsEndRef} />
+          </div>
+        ) : (
+          <div className='px-4 py-2 bg-[#0c101a] text-[11px] text-slate-400 font-mono truncate flex items-center justify-between'>
+            <span>
+              Último log:{' '}
+              <span className='text-slate-300'>
+                {logs[logs.length - 1] || 'Sin eventos recientes'}
+              </span>
+            </span>
+            <button
+              onClick={() => setIsTerminalOpen(true)}
+              className='text-emerald-400 hover:underline font-semibold'
+            >
+              Expandir terminal
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* SECCIÓN INFERIOR: BASE DE DATOS SQLITE (PRODUCTOS.DB) */}
       <div className='space-y-4 pt-4 border-t border-border'>
         <div className='flex items-center justify-between'>
           <div>
@@ -664,7 +902,7 @@ export default function CoronelScraperPage() {
               BASE DE DATOS LOCAL (PRODUCTOS.DB)
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Catálogo extraído y almacenado en SQLite en la carpeta local de scraping.
+              Catálogo extraído y almacenado en SQLite en la carpeta de scraping.
             </p>
           </div>
 

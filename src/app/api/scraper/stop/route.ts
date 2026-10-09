@@ -2,6 +2,9 @@ import { scraperManager } from '@/lib/scraper-process';
 
 export const dynamic = 'force-dynamic';
 
+const SCRAPER_AUTH_TOKEN =
+  process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
+
 function getScraperHost() {
   return (
     process.env.SCRAPER_SERVICE_URL ||
@@ -15,7 +18,12 @@ export async function POST() {
     if (scraperHost) {
       try {
         const remoteUrl = `${scraperHost.replace(/\/$/, '')}/api/stop`;
-        const remoteRes = await fetch(remoteUrl, { method: 'POST' });
+        const remoteRes = await fetch(remoteUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SCRAPER_AUTH_TOKEN}`
+          }
+        });
         const data = await remoteRes.json();
         return Response.json(data, { status: remoteRes.status });
       } catch (err: any) {
