@@ -250,6 +250,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Nginx configurado para redirigir la raíz `/` a la tienda principal protegida (`https://jg-store.press-cloud.com`), y `/vnc/` restringido mediante token de seguridad `$arg_token`.
     - API FastAPI (`api_server.py`) protegida con middleware HTTP que exige `SCRAPER_AUTH_TOKEN` (`Bearer`, header `X-Scraper-Token`, o query param).
     - Endpoints de Next.js (`stream`, `continue`, `stop`, `preview`, `products`) transmiten de forma transparente el token en cada llamada.
+  - **Corrección de Descarga de Lista de Precios Excel:**
+    - Activación de descargas automáticas en Chromium Linux/Docker vía Chrome DevTools Protocol (`Page.setDownloadBehavior: allow`).
+    - Búsqueda insensible a mayúsculas y guiones (`lista-precios-*.xlsx`) con sondeo activo de temporales `.crdownload` y validación de descarga completada en `scraping-coronel/app/login.py`.
+  - **Escalado Proporcional Nativo sin Barras de Scroll en Visor VNC:**
+    - Inyección de parámetro nativo noVNC `scale=true` en `vnc_lite.html`.
+    - Contenedor con `aspectRatio: 16/10`, `maxWidth: 100%`, `maxHeight: 100%` y `overflow: hidden`, garantizando visualización completa sin scrollbars al 75% de resolución.
   - **Ejecución Asíncrona Desatendida:** El usuario puede ingresar al panel `/dashboard/coronel`, interactuar con el ratón directamente sobre la página de Coronel Mayorista para seleccionar la categoría deseada, dar clic en "CONTINUAR SCRAPING", y apagar su computadora mientras el servidor continúa procesando en la nube 24/7.
 - [ ] **Paso 2: Sincronización Remota de Catálogo (Pausado / Achantado por indicación del usuario):** La sincronización automática hacia Tiendanube o endpoints remotos se mantiene pausada para priorizar la ejecución y validación local de productos.
 

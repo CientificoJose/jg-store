@@ -179,8 +179,9 @@ graph TD
   - Sustitución de Tkinter por señal en archivo `.scraper_continue` emitible desde el panel web.
   - Capturas periódicas en `preview.png` y transmisión continua para visualización del navegador.
   - **Despliegue Cloud en Dokploy (`uJJ_UD7QnPV9FrDO5fsKR`):** Microservicio Docker independiente en el proyecto `JG-STORE` corriendo Python 3.11, Google Chrome (`--no-sandbox`), `Xvfb` (pantalla virtual :99), `x11vnc`, `noVNC` y `FastAPI`, unificado bajo Nginx en el puerto 80 en el dominio `coronel.press-cloud.com`.
-  - **Visor Interactivo Remoto (Opción A):** Integrado en el panel `/dashboard/coronel` mediante `<iframe>` noVNC con controles de escalado y zoom ajustable (`50%`, `75% Ideal`, `100%`, `125%`, `Fit`), botón de pantalla completa, y terminal colapsable, permitiendo interactuar con el ratón sobre la página de Coronel Mayorista directamente desde la web, confirmar la categoría, presionar "CONTINUAR SCRAPING" y apagar la PC mientras el proceso continúa en el servidor.
+  - **Visor Interactivo Remoto (Opción A):** Integrado en el panel `/dashboard/coronel` mediante `<iframe>` noVNC con controles de escalado y zoom ajustable (`50%`, `75% Ideal`, `100%`, `125%`, `Fit`), relación de aspecto 16:10 sin barras de scroll (`scale=true`), botón de pantalla completa, y terminal colapsable, permitiendo interactuar con el ratón sobre la página de Coronel Mayorista directamente desde la web, confirmar la categoría, presionar "CONTINUAR SCRAPING" y apagar la PC mientras el proceso continúa en el servidor.
   - **Seguridad y Tokens:** Autenticación estricta con contraseña en `x11vnc`, redirección a tienda principal en raíz de Nginx, validación de token de sesión en `/vnc/` y middleware HTTP Bearer en FastAPI.
+  - **Descarga Robusta de Excel:** Configuración de `Page.setDownloadBehavior` (allow) vía CDP en Selenium y búsqueda flexible insensible a mayúsculas y guiones para `lista-precios-*.xlsx` con verificación de temporales `.crdownload`.
   - Paso 2 (Sincronización remota a Tiendanube) pausado deliberadamente por indicación comercial del usuario.
 
 
