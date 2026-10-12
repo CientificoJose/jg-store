@@ -3,7 +3,7 @@ from app.core.logger import registrar_error
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 import time
 import re
 import os
@@ -90,10 +90,33 @@ def scraping_product(driver, max_retries=3, wait_time=10):
     if not hasattr(scraping_product, 'db_path'):
         scraping_product.db_path = inicializar_bd()
 
-    # Esperar a que carguen los productos en el listado
-    WebDriverWait(driver, wait_time).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "itemsBlock"))
-    )
+    # Esperar a que carguen los productos en el listado O que aparezca mensaje de fin de resultados
+    try:
+        def contenido_listado_listo(d):
+            # 1. Si hay tarjetas o bloque de productos
+            if d.find_elements(By.CSS_SELECTOR, ".col-art .card-product") or d.find_elements(By.CLASS_NAME, "itemsBlock"):
+                return True
+            # 2. Si aparece el mensaje explícito de Coronel 'No encontramos resultados'
+            try:
+                body_text = d.find_element(By.TAG_NAME, "body").text.lower()
+                if "no encontramos resultados" in body_text or "sin resultados" in body_text:
+                    return True
+            except Exception:
+                pass
+            return False
+
+        WebDriverWait(driver, wait_time).until(contenido_listado_listo)
+    except TimeoutException:
+        pass
+
+    # Verificar si la página no tiene productos (fin de categoría o búsqueda sin resultados)
+    try:
+        body_text = driver.find_element(By.TAG_NAME, "body").text.lower()
+        if "no encontramos resultados" in body_text:
+            print(f"{Fore.YELLOW}ℹ️ 'No encontramos resultados para tu búsqueda' detectado. Fin del catálogo alcanzado.{Style.RESET_ALL}")
+            return [], "Sin Categoría", scraping_product.db_path
+    except Exception:
+        pass
     
     # Extraer categorías (una sola vez por página del listado)
     try:
@@ -177,6 +200,10 @@ def scraping_product(driver, max_retries=3, wait_time=10):
         raw_products = driver.execute_script(EXTRACTION_JS) or []
 
     total_products = len(raw_products)
+    if total_products == 0:
+        print(f"{Fore.YELLOW}ℹ️ 0 productos detectados en la página. Fin de la categoría.{Style.RESET_ALL}")
+        return [], categoria_principal, scraping_product.db_path
+
     print(f"{Fore.CYAN}📦 Extraídos instantáneamente {total_products} productos en el listado.{Style.RESET_ALL}")
 
     for index, raw in enumerate(raw_products):

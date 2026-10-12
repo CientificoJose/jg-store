@@ -63,7 +63,7 @@ def scraping_all_product(driver):
         current_products, categoria, db_path = scraping_product(driver)
         
         if not current_products:
-            print(Fore.GREEN + "No se encontraron productos - fin del scraping" + Fore.RESET)
+            print(Fore.GREEN + f"✔ No se encontraron más productos en la página {page_number}. Fin del catálogo alcanzado con éxito." + Fore.RESET)
             break
             
         all_products.extend(current_products)
