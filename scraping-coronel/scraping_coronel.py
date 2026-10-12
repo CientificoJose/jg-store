@@ -8,11 +8,11 @@ from inputimeout import inputimeout, TimeoutOccurred
 
 from app.login import login
 from app.scraping_all_product import scraping_all_product
-from app.scraping_product import consolidar_todo_en_base_de_datos, set_download_images
+from app.scraping_product import consolidar_todo_en_base_de_datos, set_download_images, set_margenes
 from app.core.browser import get_chrome_driver
 from config import preguntar_download, preguntar_porcentaje
 
-def run_scrape(ganancia=None, download_images=None):
+def run_scrape(ganancia=None, download_images=None, margen_mayorista=None):
     """
     Función ejecutable para realizar el scraping del catálogo de Coronel Mayorista.
     Retorna (success, ganancia, download_images)
@@ -25,6 +25,15 @@ def run_scrape(ganancia=None, download_images=None):
 
     if ganancia is None:
         ganancia = preguntar_porcentaje()
+
+    if margen_mayorista is None:
+        try:
+            margen_mayorista = float(os.getenv("SCRAPER_MARGEN_MAYORISTA", "18.0"))
+        except Exception:
+            margen_mayorista = 18.0
+
+    # Configurar márgenes duales para detal y mayor
+    set_margenes(margen_minorista=float(ganancia), margen_mayorista=float(margen_mayorista))
 
     # Inicializar driver centralizado
     driver = get_chrome_driver()

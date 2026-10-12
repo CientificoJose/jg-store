@@ -199,7 +199,8 @@ def main():
     
     # Subcomando scrape
     parser_scrape = subparsers.add_parser("scrape", help="Ejecuta la extracción de productos y actualización de BD local")
-    parser_scrape.add_argument("-g", "--ganancia", type=int, help="Porcentaje de ganancia para precios (ej. 40)")
+    parser_scrape.add_argument("-g", "--ganancia", type=int, help="Porcentaje de ganancia para precios minorista (ej. 40)")
+    parser_scrape.add_argument("-m", "--margen-mayorista", type=int, default=18, help="Porcentaje de ganancia mayorista (ej. 18)")
     parser_scrape.add_argument("-d", "--download-images", choices=["t", "f"], help="Descargar imágenes ('t' o 'f')")
     parser_scrape.add_argument("-y", "--no-prompt", action="store_true", help="No solicitar confirmación interactiva")
     
@@ -215,7 +216,8 @@ def main():
     
     # Subcomando full-run
     parser_full = subparsers.add_parser("full-run", help="Ejecuta el pipeline completo (scrape -> sync -> stock)")
-    parser_full.add_argument("-g", "--ganancia", type=int, help="Porcentaje de ganancia para precios (ej. 40)")
+    parser_full.add_argument("-g", "--ganancia", type=int, help="Porcentaje de ganancia minorista (ej. 40)")
+    parser_full.add_argument("-m", "--margen-mayorista", type=int, default=18, help="Porcentaje de ganancia mayorista (ej. 18)")
     parser_full.add_argument("-d", "--download-images", choices=["t", "f"], help="Descargar imágenes ('t' o 'f')")
     parser_full.add_argument("-c", "--concurrency", type=int, default=3, help="Cantidad de hilos concurrentes para subida (default: 3)")
     parser_full.add_argument("-y", "--no-prompt", action="store_true", help="No solicitar confirmación interactiva")
@@ -223,6 +225,7 @@ def main():
     # Subcomando scrape-sync
     parser_scrape_sync = subparsers.add_parser("scrape-sync", help="Ejecuta scrape y sync secuencialmente (sin actualizar stocks)")
     parser_scrape_sync.add_argument("-g", "--ganancia", type=int, help="Porcentaje de ganancia para precios (ej. 40)")
+    parser_scrape_sync.add_argument("-m", "--margen-mayorista", type=int, default=18, help="Porcentaje de ganancia mayorista (ej. 18)")
     parser_scrape_sync.add_argument("-d", "--download-images", choices=["t", "f"], help="Descargar imágenes ('t' o 'f')")
     parser_scrape_sync.add_argument("-c", "--concurrency", type=int, default=3, help="Cantidad de hilos concurrentes para subida (default: 3)")
     parser_scrape_sync.add_argument("-y", "--no-prompt", action="store_true", help="No solicitar confirmación interactiva")
@@ -232,6 +235,7 @@ def main():
     # Resolver ganancia y descargas
     ganancia = None
     download_images = None
+    margen_mayorista = getattr(args, "margen_mayorista", 18)
     
     if args.command in ["scrape", "sync", "full-run", "scrape-sync"]:
         if args.no_prompt:
@@ -244,7 +248,7 @@ def main():
     # Ejecución de comandos
     if args.command == "scrape":
         print(Fore.CYAN + "\n=== [EJECUTANDO SCRAPE] ===" + Style.RESET_ALL)
-        success, final_ganancia, final_download = run_scrape(ganancia, download_images)
+        success, final_ganancia, final_download = run_scrape(ganancia, download_images, margen_mayorista=margen_mayorista)
         if success:
             print("[SCRAPER_STATUS:COMPLETED]", flush=True)
             print(Fore.GREEN + "\n✓ Scrape finalizado con éxito." + Style.RESET_ALL, flush=True)

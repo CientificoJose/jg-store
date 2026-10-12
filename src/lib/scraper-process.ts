@@ -94,6 +94,7 @@ class ScraperProcessManager {
     options: {
       mode?: 'scrape' | 'stock' | 'full-run';
       ganancia?: number;
+      margenMayorista?: number;
       downloadImages?: boolean;
     } = {}
   ) {
@@ -101,7 +102,12 @@ class ScraperProcessManager {
       throw new Error('El scraper ya se encuentra en ejecución.');
     }
 
-    const { mode = 'scrape', ganancia = 40, downloadImages = false } = options;
+    const {
+      mode = 'scrape',
+      ganancia = 40,
+      margenMayorista = 18,
+      downloadImages = false
+    } = options;
     const downloadFlag = downloadImages ? 't' : 'f';
 
     this.setStatus('STARTING');
@@ -111,12 +117,36 @@ class ScraperProcessManager {
       this.addLog(`📦 [SISTEMA] Iniciando modo: Solo Actualizar Stock...`);
       args = ['main.py', 'stock'];
     } else if (mode === 'full-run') {
-      this.addLog(`⚡ [SISTEMA] Iniciando Pipeline Completo (Scrape + Stock + Sync)...`);
-      args = ['main.py', 'full-run', '-y', '-g', String(ganancia), '-d', downloadFlag];
+      this.addLog(
+        `⚡ [SISTEMA] Iniciando Pipeline Completo (Margen Detal: ${ganancia}%, Mayor: ${margenMayorista}%)...`
+      );
+      args = [
+        'main.py',
+        'full-run',
+        '-y',
+        '-g',
+        String(ganancia),
+        '-m',
+        String(margenMayorista),
+        '-d',
+        downloadFlag
+      ];
     } else {
       this.addLog(`🚀 [SISTEMA] Iniciando Extracción de Productos (Scraping)...`);
-      this.addLog(`⚙️ [CONFIG] Ganancia: ${ganancia}%, Descargar fotos a disco: ${downloadFlag}`);
-      args = ['main.py', 'scrape', '-y', '-g', String(ganancia), '-d', downloadFlag];
+      this.addLog(
+        `⚙️ [CONFIG] Margen Detal: ${ganancia}%, Margen Mayor: ${margenMayorista}%, Descargar fotos: ${downloadFlag}`
+      );
+      args = [
+        'main.py',
+        'scrape',
+        '-y',
+        '-g',
+        String(ganancia),
+        '-m',
+        String(margenMayorista),
+        '-d',
+        downloadFlag
+      ];
     }
 
     const scriptPath = path.join(this.baseDir, 'main.py');

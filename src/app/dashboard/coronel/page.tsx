@@ -37,6 +37,10 @@ export default function CoronelScraperPage() {
   const [waitingUser, setWaitingUser] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [ganancia, setGanancia] = useState(40);
+  const [margenMayorista, setMargenMayorista] = useState(18);
+  const [bulkMargenMinorista, setBulkMargenMinorista] = useState(40);
+  const [bulkMargenMayorista, setBulkMargenMayorista] = useState(18);
+  const [updatingMargins, setUpdatingMargins] = useState(false);
   const [downloadImages, setDownloadImages] = useState(false);
   const [scraperMode, setScraperMode] = useState<'scrape' | 'stock' | 'full-run'>('scrape');
 
@@ -170,6 +174,7 @@ export default function CoronelScraperPage() {
         body: JSON.stringify({
           mode: scraperMode,
           ganancia,
+          margenMayorista,
           downloadImages: scraperMode === 'stock' ? false : downloadImages
         })
       });
@@ -219,6 +224,29 @@ export default function CoronelScraperPage() {
       }
     } catch (err) {
       toast.error('Error deteniendo el proceso');
+    }
+  };
+
+  // Recálculo masivo e instantáneo de márgenes y precios
+  const handleUpdateMargins = async () => {
+    setUpdatingMargins(true);
+    try {
+      const res = await fetch('/api/scraper/products/margins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          margen_minorista: Number(bulkMargenMinorista),
+          margen_mayorista: Number(bulkMargenMayorista)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al actualizar márgenes');
+      toast.success(`¡Márgenes actualizados! ${data.updated ?? 0} productos recalculados al instante.`);
+      fetchDbStats();
+    } catch (err: any) {
+      toast.error(err.message || 'Error al recalcular precios masivos');
+    } finally {
+      setUpdatingMargins(false);
     }
   };
 
@@ -416,7 +444,7 @@ export default function CoronelScraperPage() {
             {scraperMode !== 'stock' ? (
               <>
                 <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                  <span>Margen Ganancia:</span>
+                  <span>Margen Detal (B2C):</span>
                   <div className='flex items-center gap-1 bg-background border border-border px-2.5 py-1 rounded-lg'>
                     <input
                       type='number'
@@ -424,6 +452,22 @@ export default function CoronelScraperPage() {
                       max='200'
                       value={ganancia}
                       onChange={(e) => setGanancia(Number(e.target.value))}
+                      disabled={isRunning}
+                      className='w-12 bg-transparent text-foreground text-sm font-bold text-center outline-none'
+                    />
+                    <span className='text-muted-foreground font-semibold'>%</span>
+                  </div>
+                </div>
+
+                <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                  <span>Margen Mayor (B2B):</span>
+                  <div className='flex items-center gap-1 bg-background border border-border px-2.5 py-1 rounded-lg'>
+                    <input
+                      type='number'
+                      min='0'
+                      max='200'
+                      value={margenMayorista}
+                      onChange={(e) => setMargenMayorista(Number(e.target.value))}
                       disabled={isRunning}
                       className='w-12 bg-transparent text-foreground text-sm font-bold text-center outline-none'
                     />
@@ -1044,10 +1088,65 @@ export default function CoronelScraperPage() {
           </div>
         </div>
 
+        {/* Barra de Recálculo Masivo de Márgenes */}
+        <div className='p-3.5 rounded-xl bg-card border border-border flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs'>
+          <div className='flex items-center gap-2 text-foreground font-bold'>
+            <Icons.settings className='w-4 h-4 text-[#E63946]' />
+            <span>Ajuste Masivo de Márgenes (%):</span>
+            <span className='text-[11px] font-normal text-muted-foreground hidden sm:inline'>
+              (Recalcula precios de venta en SQLite en 1 segundo sin scrapear)
+            </span>
+          </div>
+
+          <div className='flex flex-wrap items-center gap-3'>
+            <div className='flex items-center gap-1.5'>
+              <span className='text-muted-foreground font-medium'>Detal (B2C):</span>
+              <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
+                <input
+                  type='number'
+                  min='0'
+                  max='200'
+                  value={bulkMargenMinorista}
+                  onChange={(e) => setBulkMargenMinorista(Number(e.target.value))}
+                  className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
+                />
+                <span className='text-muted-foreground font-semibold'>%</span>
+              </div>
+            </div>
+
+            <div className='flex items-center gap-1.5'>
+              <span className='text-muted-foreground font-medium'>Mayor (B2B):</span>
+              <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
+                <input
+                  type='number'
+                  min='0'
+                  max='200'
+                  value={bulkMargenMayorista}
+                  onChange={(e) => setBulkMargenMayorista(Number(e.target.value))}
+                  className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
+                />
+                <span className='text-muted-foreground font-semibold'>%</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleUpdateMargins}
+              disabled={updatingMargins}
+              className='px-3.5 py-1.5 rounded-lg bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-xs flex items-center gap-1.5'
+            >
+              <Icons.refresh className={`w-3.5 h-3.5 ${updatingMargins ? 'animate-spin' : ''}`} />
+              <span>{updatingMargins ? 'Recalculando...' : 'Aplicar a Catálogo'}</span>
+            </button>
+          </div>
+        </div>
+
         {/* Tabla con los últimos productos guardados */}
         <div className='rounded-xl border border-border overflow-hidden bg-card'>
-          <div className='p-3 bg-muted/40 border-b border-border text-xs font-bold text-foreground'>
-            Últimos Artículos Extraídos
+          <div className='p-3 bg-muted/40 border-b border-border text-xs font-bold text-foreground flex items-center justify-between'>
+            <span>Últimos Artículos Extraídos</span>
+            <span className='text-[11px] font-normal text-muted-foreground'>
+              Jerarquía de 3 Niveles y Precios Duales (Detal / Mayor)
+            </span>
           </div>
 
           <div className='overflow-x-auto max-h-96'>
@@ -1057,40 +1156,79 @@ export default function CoronelScraperPage() {
                   <th className='px-4 py-2.5'>Foto</th>
                   <th className='px-4 py-2.5'>SKU / Código</th>
                   <th className='px-4 py-2.5'>Descripción</th>
-                  <th className='px-4 py-2.5'>Precio Mayorista</th>
-                  <th className='px-4 py-2.5'>Categoría</th>
-                  <th className='px-4 py-2.5'>Subcategoría</th>
+                  <th className='px-4 py-2.5'>Jerarquía Completa</th>
+                  <th className='px-4 py-2.5'>Costo Coronel</th>
+                  <th className='px-4 py-2.5'>PVP Detal</th>
+                  <th className='px-4 py-2.5'>PVP Mayor</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-border'>
                 {dbStats?.latest_products && dbStats.latest_products.length > 0 ? (
-                  dbStats.latest_products.map((p, idx) => (
-                    <tr key={idx} className='hover:bg-muted/30 transition-colors'>
-                      <td className='px-4 py-2'>
-                        {p.imagen_url ? (
-                          <img
-                            src={p.imagen_url}
-                            alt={p.codigo}
-                            className='w-9 h-9 object-cover rounded-md border border-border'
-                          />
-                        ) : (
-                          <div className='w-9 h-9 bg-muted rounded-md flex items-center justify-center text-[10px] text-muted-foreground'>
-                            N/A
-                          </div>
-                        )}
-                      </td>
-                      <td className='px-4 py-2 font-mono font-bold text-foreground'>{p.codigo}</td>
-                      <td className='px-4 py-2 text-foreground font-medium max-w-xs truncate'>
-                        {p.descripcion}
-                      </td>
-                      <td className='px-4 py-2 text-emerald-500 font-bold'>{p.precio}</td>
-                      <td className='px-4 py-2 text-muted-foreground'>{p.categoria || '-'}</td>
-                      <td className='px-4 py-2 text-muted-foreground'>{p.subcategoria || '-'}</td>
-                    </tr>
-                  ))
+                  dbStats.latest_products.map((p, idx) => {
+                    const fotoSrc = p.foto || p.imagen_url || '';
+                    const costoStr = p.precio_costo
+                      ? `$ ${Number(p.precio_costo).toLocaleString('es-AR')}`
+                      : p.precio || '-';
+                    const detalStr = p.precio_minorista
+                      ? `$ ${Number(p.precio_minorista).toLocaleString('es-AR')}`
+                      : p.precio || '-';
+                    const mayorStr = p.precio_mayorista
+                      ? `$ ${Number(p.precio_mayorista).toLocaleString('es-AR')}`
+                      : '-';
+                    const rutaStr =
+                      p.categoria_ruta ||
+                      [p.categoria, p.subcategoria, p.sub_subcategoria].filter(Boolean).join(' > ') ||
+                      'Sin categoría';
+
+                    return (
+                      <tr key={idx} className='hover:bg-muted/30 transition-colors'>
+                        <td className='px-4 py-2'>
+                          {fotoSrc ? (
+                            <img
+                              src={fotoSrc}
+                              alt={p.codigo}
+                              className='w-9 h-9 object-cover rounded-md border border-border'
+                            />
+                          ) : (
+                            <div className='w-9 h-9 bg-muted rounded-md flex items-center justify-center text-[10px] text-muted-foreground'>
+                              N/A
+                            </div>
+                          )}
+                        </td>
+                        <td className='px-4 py-2 font-mono font-bold text-foreground'>{p.codigo}</td>
+                        <td className='px-4 py-2 text-foreground font-medium max-w-xs truncate'>
+                          {p.descripcion}
+                        </td>
+                        <td className='px-4 py-2 text-muted-foreground max-w-xs truncate' title={rutaStr}>
+                          <span className='px-2 py-0.5 rounded bg-muted/80 text-[11px] font-medium text-foreground'>
+                            {rutaStr}
+                          </span>
+                        </td>
+                        <td className='px-4 py-2 font-mono text-muted-foreground font-semibold'>
+                          {costoStr}
+                        </td>
+                        <td className='px-4 py-2 text-emerald-500 font-bold'>
+                          <div>{detalStr}</div>
+                          {p.margen_minorista && (
+                            <div className='text-[10px] text-muted-foreground font-normal'>
+                              +{p.margen_minorista}%
+                            </div>
+                          )}
+                        </td>
+                        <td className='px-4 py-2 text-amber-500 font-bold'>
+                          <div>{mayorStr}</div>
+                          {p.margen_mayorista && (
+                            <div className='text-[10px] text-muted-foreground font-normal'>
+                              +{p.margen_mayorista}%
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={6} className='px-4 py-8 text-center text-muted-foreground'>
+                    <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
                       No hay productos registrados aún en la base de datos local.
                     </td>
                   </tr>

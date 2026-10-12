@@ -28,9 +28,26 @@ class Producto(BaseModel):
     imagen_url: Optional[str] = Field(default="", description="URL remota de la imagen")
     imagen_local: Optional[str] = Field(default="", description="Ruta local si se descargó en disco")
     variante: Optional[str] = Field(default=None, description="Variante o atributo si aplica")
-    categoria: Optional[str] = Field(default="", description="Categoría principal")
-    subcategoria: Optional[str] = Field(default="", description="Subcategoría o etiquetas")
-    
+    categoria: Optional[str] = Field(default="", description="Categoría principal (Nivel 1)")
+    subcategoria: Optional[str] = Field(default="", description="Subcategoría (Nivel 2)")
+    sub_subcategoria: Optional[str] = Field(default="", description="Sub-subcategoría o línea (Nivel 3)")
+    categoria_ruta: Optional[str] = Field(default="", description="Ruta completa jerárquica")
+    categoria_slug: Optional[str] = Field(default="", description="Slug normalizado nivel 1")
+    subcategoria_slug: Optional[str] = Field(default="", description="Slug normalizado nivel 2")
+    sub_subcategoria_slug: Optional[str] = Field(default="", description="Slug normalizado nivel 3")
+
+    # Precios y Márgenes Duales
+    precio_costo: Optional[float] = Field(default=0.0, description="Precio original del proveedor (Coronel)")
+    margen_minorista: Optional[float] = Field(default=40.0, description="Margen de ganancia B2C / Detal (%)")
+    margen_mayorista: Optional[float] = Field(default=18.0, description="Margen de ganancia B2B / Mayor (%)")
+    precio_minorista: Optional[float] = Field(default=0.0, description="Precio final calculado detal (ARS)")
+    precio_mayorista: Optional[float] = Field(default=0.0, description="Precio final calculado mayor (ARS)")
+    precio_venta: Optional[float] = Field(default=0.0, description="Alias precio venta al público")
+    porcentaje_ganancia: Optional[float] = Field(default=40.0, description="Alias margen de ganancia general")
+    foto: Optional[str] = Field(default="", description="Ruta o URL de la foto principal")
+    stock: Optional[int] = Field(default=1, description="Stock disponible")
+    updated_at: Optional[str] = Field(default="", description="Fecha de última actualización")
+
     # Dimensiones
     peso_kg: Optional[str] = Field(default="0.05", description="Peso estimado")
     ancho_cm: Optional[str] = Field(default="5.0", description="Ancho estimado")

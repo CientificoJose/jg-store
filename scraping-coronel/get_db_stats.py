@@ -28,14 +28,20 @@ def main():
         cursor.execute("SELECT categoria, COUNT(*) FROM productos GROUP BY categoria ORDER BY COUNT(*) DESC")
         categories = [{"name": row[0] or "Sin categoría", "count": row[1]} for row in cursor.fetchall()]
         
-        # Últimos 20 productos
+        # Últimos 50 productos con estructura completa de precios y jerarquía
         cursor.execute("""
-            SELECT codigo, codigo_barra, descripcion, precio, imagen_url, categoria, subcategoria, peso_kg, ancho_cm, alto_cm, profundidad_cm 
+            SELECT codigo, codigo_barra, descripcion, precio, precio_costo, precio_minorista, precio_mayorista,
+                   margen_minorista, margen_mayorista, precio_venta, porcentaje_ganancia, imagen_url, foto,
+                   categoria, subcategoria, sub_subcategoria, categoria_ruta, peso_kg, ancho_cm, alto_cm, profundidad_cm 
             FROM productos 
             ORDER BY rowid DESC 
-            LIMIT 20
+            LIMIT 50
         """)
-        columns = ["codigo", "codigo_barra", "descripcion", "precio", "imagen_url", "categoria", "subcategoria", "peso_kg", "ancho_cm", "alto_cm", "profundidad_cm"]
+        columns = [
+            "codigo", "codigo_barra", "descripcion", "precio", "precio_costo", "precio_minorista", "precio_mayorista",
+            "margen_minorista", "margen_mayorista", "precio_venta", "porcentaje_ganancia", "imagen_url", "foto",
+            "categoria", "subcategoria", "sub_subcategoria", "categoria_ruta", "peso_kg", "ancho_cm", "alto_cm", "profundidad_cm"
+        ]
         latest = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
         conn.close()

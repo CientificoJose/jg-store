@@ -103,7 +103,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { ganancia = 40, downloadImages = false, mode = 'scrape' } = body;
+    const {
+      ganancia = 40,
+      margenMayorista = 18,
+      downloadImages = false,
+      mode = 'scrape'
+    } = body;
 
     const scraperHost = getScraperHost();
     if (scraperHost) {
@@ -118,6 +123,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({
             mode,
             ganancia: Number(ganancia),
+            margen_mayorista: Number(margenMayorista),
             download_images: Boolean(downloadImages)
           })
         });
@@ -134,6 +140,7 @@ export async function POST(request: NextRequest) {
     const result = scraperManager.startScraper({
       mode,
       ganancia: Number(ganancia),
+      margenMayorista: Number(margenMayorista),
       downloadImages: Boolean(downloadImages)
     });
 

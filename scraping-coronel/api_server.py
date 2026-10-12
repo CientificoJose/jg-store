@@ -91,7 +91,14 @@ state = ProcessState()
 class StartScraperRequest(BaseModel):
     mode: str = "scrape"
     ganancia: int = 40
+    margen_mayorista: Optional[int] = 18
     download_images: bool = False
+
+class UpdateMarginsRequest(BaseModel):
+    margen_minorista: Optional[float] = None
+    margen_mayorista: Optional[float] = None
+    categoria: Optional[str] = None
+    subcategoria: Optional[str] = None
 
 @app.get("/health")
 def health():
@@ -185,6 +192,8 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
         except Exception:
             pass
 
+    margen_mayor = req.margen_mayorista or 18
+
     if mode == "stock":
         cmd = [
             sys.executable,
@@ -199,9 +208,10 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
             "full-run",
             "-y",
             "-g", str(req.ganancia),
+            "-m", str(margen_mayor),
             "-d", download_flag
         ]
-        log_msg = f"⚡ [SISTEMA CLOUD] Iniciando: Pipeline Completo (Scrape + Stock + Sync) con margen {req.ganancia}%..."
+        log_msg = f"⚡ [SISTEMA CLOUD] Iniciando: Pipeline Completo (Margen Detal: {req.ganancia}%, Mayor: {margen_mayor}%)..."
     else:
         cmd = [
             sys.executable,
@@ -209,9 +219,10 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
             "scrape",
             "-y",
             "-g", str(req.ganancia),
+            "-m", str(margen_mayor),
             "-d", download_flag
         ]
-        log_msg = f"🛒 [SISTEMA CLOUD] Iniciando: Extracción de Productos (Margen: {req.ganancia}%, Fotos: {download_flag})..."
+        log_msg = f"🛒 [SISTEMA CLOUD] Iniciando: Extracción de Productos (Detal: +{req.ganancia}%, Mayor: +{margen_mayor}%, Fotos: {download_flag})..."
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
@@ -333,11 +344,11 @@ def get_products():
         categories = [{"name": row["categoria"], "count": row["count"]} for row in cursor.fetchall()]
 
         cursor.execute("""
-            SELECT codigo, codigo_barra, descripcion, categoria, 
-                   precio_costo, precio_venta, porcentaje_ganancia,
-                   precio_por_bulto, stock, foto, updated_at
+            SELECT codigo, codigo_barra, descripcion, categoria, subcategoria, sub_subcategoria, categoria_ruta,
+                   precio, precio_costo, precio_minorista, precio_mayorista, margen_minorista, margen_mayorista,
+                   precio_venta, porcentaje_ganancia, foto, imagen_url, updated_at
             FROM productos
-            ORDER BY id DESC
+            ORDER BY rowid DESC
             LIMIT 100
         """)
         products = [dict(row) for row in cursor.fetchall()]
@@ -354,3 +365,18 @@ def get_products():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error consultando base de datos: {str(e)}")
+
+@app.post("/api/products/margins")
+def update_margins(req: UpdateMarginsRequest):
+    """Permite recalcular masivamente precios en base a márgenes porcentuales de forma instantánea."""
+    from app.core.db import actualizar_margenes_masivo
+    try:
+        result = actualizar_margenes_masivo(
+            margen_minorista=req.margen_minorista,
+            margen_mayorista=req.margen_mayorista,
+            categoria=req.categoria,
+            subcategoria=req.subcategoria
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error actualizando márgenes: {str(e)}")
