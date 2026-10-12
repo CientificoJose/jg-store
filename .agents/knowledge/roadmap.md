@@ -264,6 +264,18 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
       2. **📦 Solo Actualizar Stock:** Recorrido ultra rápido de artículos para refrescar existencias y marcar discontinuados/agotados en SQLite local y Tiendanube.
       3. **⚡ Pipeline Completo:** Extracción de catálogo + actualización de stock + sincronización de punta a punta.
     - Soporte en API FastAPI (`api_server.py`) y Next.js (`stream/route.ts` y `scraper-process.ts`) con evento de estado `STOCK_UPDATING`.
+  - **Detección Robusta de Fin de Catálogo (Sin Fallos de TimeoutException):**
+    - En `scraping_product.py` y `scraping_all_product.py`, detección automática de páginas sin resultados o con el mensaje *"No encontramos resultados para tu búsqueda"*, retornando una lista vacía limpiamente y finalizando con `[SCRAPER_STATUS:COMPLETED]` en lugar de abortar abruptamente.
+  - **Arquitectura de Costo Original y Márgenes Dinámicos Duales (B2B & B2C):**
+    - Persistencia de `precio_costo` original del proveedor (Coronel) en `productos.db` y modelos.
+    - Soporte de doble margen comercial: **Margen Detal / Minorista** (B2C, default 40%) y **Margen Mayorista** (B2B, default 18%).
+    - Cálculo dinámico de `precio_minorista` y `precio_mayorista` con persistencia en SQLite.
+    - Endpoint y herramienta de **Ajuste Masivo de Márgenes** (`/api/products/margins`) en el Dashboard: permite recalcular los precios de todo el catálogo en 0.01 segundos sin requerir re-scraping ni abrir Selenium.
+  - **Réplica Completa de la Jerarquía de Categorías de Coronel (3 Niveles):**
+    - Extracción dinámica de todas las etiquetas del breadcrumb (`.breadcrumb2`) y filtros laterales de línea.
+    - Mapeo a los 3 niveles de JG Store: Nivel 1 (Departamento), Nivel 2 (Subcategoría) y Nivel 3 (Línea / Sub-subcategoría).
+    - Almacenamiento de ruta completa (`categoria_ruta`), niveles desglosados y slugs normalizados (`categoria_slug`, `subcategoria_slug`, `sub_subcategoria_slug`).
+    - Visualización en la tabla de productos del Dashboard con ruta jerárquica y comparativa de costos vs PVP Detal y PVP Mayor.
   - **Ejecución Asíncrona Desatendida:** El usuario puede ingresar al panel `/dashboard/coronel`, interactuar con el ratón directamente sobre la página de Coronel Mayorista para seleccionar la categoría deseada, dar clic en "CONTINUAR SCRAPING", y apagar su computadora mientras el servidor continúa procesando en la nube 24/7.
 - [ ] **Paso 2: Sincronización Remota de Catálogo (Pausado / Achantado por indicación del usuario):** La sincronización automática hacia Tiendanube o endpoints remotos se mantiene pausada para priorizar la ejecución y validación local de productos.
 
