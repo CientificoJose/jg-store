@@ -89,6 +89,7 @@ class ProcessState:
 state = ProcessState()
 
 class StartScraperRequest(BaseModel):
+    mode: str = "scrape"
     ganancia: int = 40
     download_images: bool = False
 
@@ -150,6 +151,8 @@ def monitor_process(proc: subprocess.Popen):
                 state.set_status("WAITING_USER_SELECTION")
             elif "[SCRAPER_STATUS:SCRAPING]" in cleaned:
                 state.set_status("SCRAPING")
+            elif "[SCRAPER_STATUS:STOCK_UPDATING]" in cleaned:
+                state.set_status("STOCK_UPDATING")
             elif "[SCRAPER_STATUS:COMPLETED]" in cleaned:
                 state.set_status("COMPLETED")
             elif "[SCRAPER_STATUS:FAILED]" in cleaned:
@@ -172,6 +175,7 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
     if state.process and state.process.poll() is None:
         raise HTTPException(status_code=400, detail="El scraper ya está en ejecución.")
 
+    mode = req.mode or "scrape"
     download_flag = "t" if req.download_images else "f"
     
     # Limpiar señal previa
@@ -181,14 +185,33 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
         except Exception:
             pass
 
-    cmd = [
-        sys.executable,
-        os.path.join(BASE_DIR, "main.py"),
-        "scrape",
-        "-y",
-        "-g", str(req.ganancia),
-        "-d", download_flag
-    ]
+    if mode == "stock":
+        cmd = [
+            sys.executable,
+            os.path.join(BASE_DIR, "main.py"),
+            "stock"
+        ]
+        log_msg = "📦 [SISTEMA CLOUD] Iniciando: Solo Actualizar Stock..."
+    elif mode == "full-run":
+        cmd = [
+            sys.executable,
+            os.path.join(BASE_DIR, "main.py"),
+            "full-run",
+            "-y",
+            "-g", str(req.ganancia),
+            "-d", download_flag
+        ]
+        log_msg = f"⚡ [SISTEMA CLOUD] Iniciando: Pipeline Completo (Scrape + Stock + Sync) con margen {req.ganancia}%..."
+    else:
+        cmd = [
+            sys.executable,
+            os.path.join(BASE_DIR, "main.py"),
+            "scrape",
+            "-y",
+            "-g", str(req.ganancia),
+            "-d", download_flag
+        ]
+        log_msg = f"🛒 [SISTEMA CLOUD] Iniciando: Extracción de Productos (Margen: {req.ganancia}%, Fotos: {download_flag})..."
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
@@ -198,8 +221,8 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
 
     state.logs.clear()
     state.set_status("STARTING")
-    state.add_log(f"🚀 [SISTEMA CLOUD] Iniciando scraper en display {env.get('DISPLAY')}...")
-    state.add_log(f"⚙️ [CONFIG] Margen: {req.ganancia}%, Descargar imágenes: {download_flag}")
+    state.add_log(f"🚀 [SISTEMA CLOUD] Entorno listo en display {env.get('DISPLAY')}...")
+    state.add_log(log_msg)
 
     proc = subprocess.Popen(
         cmd,

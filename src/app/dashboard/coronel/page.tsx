@@ -12,6 +12,7 @@ interface ScraperStatusData {
     | 'DOWNLOADING_PRICES'
     | 'WAITING_USER_SELECTION'
     | 'SCRAPING'
+    | 'STOCK_UPDATING'
     | 'COMPLETED'
     | 'FAILED';
   isRunning: boolean;
@@ -37,6 +38,7 @@ export default function CoronelScraperPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [ganancia, setGanancia] = useState(40);
   const [downloadImages, setDownloadImages] = useState(false);
+  const [scraperMode, setScraperMode] = useState<'scrape' | 'stock' | 'full-run'>('scrape');
 
   // Vista previa de navegador
   const [previewTimestamp, setPreviewTimestamp] = useState<number>(Date.now());
@@ -159,13 +161,17 @@ export default function CoronelScraperPage() {
     return () => clearInterval(interval);
   }, [isRunning, viewMode]);
 
-  // Iniciar Scraping
+  // Iniciar Scraping / Actualización según modo
   const handleStartScraper = async () => {
     try {
       const res = await fetch('/api/scraper/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ganancia, downloadImages })
+        body: JSON.stringify({
+          mode: scraperMode,
+          ganancia,
+          downloadImages: scraperMode === 'stock' ? false : downloadImages
+        })
       });
 
       const data = await res.json();
@@ -173,7 +179,12 @@ export default function CoronelScraperPage() {
         throw new Error(data.error || 'Error iniciando scraper');
       }
 
-      toast.success('Proceso de scraping iniciado en el servidor');
+      const modeNames = {
+        scrape: 'Extracción de productos',
+        stock: 'Actualización rápida de stock',
+        'full-run': 'Pipeline completo (Scrape + Stock + Sync)'
+      };
+      toast.success(`${modeNames[scraperMode]} iniciado en el servidor`);
       setIsRunning(true);
       setStatus('STARTING');
     } catch (err: any) {
@@ -331,6 +342,7 @@ export default function CoronelScraperPage() {
               {status === 'DOWNLOADING_PRICES' && 'Descargando lista Excel...'}
               {status === 'WAITING_USER_SELECTION' && 'Esperando categoría en Chrome'}
               {status === 'SCRAPING' && 'Extrayendo productos...'}
+              {status === 'STOCK_UPDATING' && 'Actualizando existencias de stock...'}
               {status === 'COMPLETED' && 'Completado'}
               {status === 'FAILED' && 'Error en proceso'}
             </span>
@@ -339,69 +351,145 @@ export default function CoronelScraperPage() {
       </div>
 
       {/* Barra Superior de Parámetros y Acciones */}
-      <div className='p-4 rounded-2xl bg-card border border-border shadow-xs flex flex-wrap items-center justify-between gap-4'>
-        <div className='flex flex-wrap items-center gap-4'>
-          <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-            <span>Margen Ganancia:</span>
-            <div className='flex items-center gap-1 bg-background border border-border px-2.5 py-1 rounded-lg'>
-              <input
-                type='number'
-                min='0'
-                max='200'
-                value={ganancia}
-                onChange={(e) => setGanancia(Number(e.target.value))}
+      <div className='p-4 rounded-2xl bg-card border border-border shadow-xs flex flex-col gap-4'>
+        {/* Selector de Modo de Operación */}
+        <div className='flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3'>
+          <div className='flex items-center gap-2'>
+            <span className='text-xs font-bold uppercase tracking-wider text-muted-foreground'>
+              Modo de Operación:
+            </span>
+            <div className='flex items-center bg-muted/60 p-1 rounded-xl border border-border text-xs font-medium'>
+              <button
+                type='button'
+                onClick={() => setScraperMode('scrape')}
                 disabled={isRunning}
-                className='w-12 bg-transparent text-foreground text-sm font-bold text-center outline-none'
-              />
-              <span className='text-muted-foreground font-semibold'>%</span>
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  scraperMode === 'scrape'
+                    ? 'bg-background text-foreground shadow-xs font-bold border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icons.package className='w-3.5 h-3.5 text-[#E63946]' />
+                <span>Extraer Catálogo</span>
+              </button>
+
+              <button
+                type='button'
+                onClick={() => setScraperMode('stock')}
+                disabled={isRunning}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  scraperMode === 'stock'
+                    ? 'bg-background text-foreground shadow-xs font-bold border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icons.box className='w-3.5 h-3.5 text-amber-500' />
+                <span>Solo Actualizar Stock</span>
+              </button>
+
+              <button
+                type='button'
+                onClick={() => setScraperMode('full-run')}
+                disabled={isRunning}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  scraperMode === 'full-run'
+                    ? 'bg-background text-foreground shadow-xs font-bold border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icons.refresh className='w-3.5 h-3.5 text-blue-500' />
+                <span>Pipeline Completo</span>
+              </button>
             </div>
           </div>
 
-          <label className='flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none'>
-            <input
-              type='checkbox'
-              checked={downloadImages}
-              onChange={(e) => setDownloadImages(e.target.checked)}
-              disabled={isRunning}
-              className='rounded border-border text-[#E63946] focus:ring-[#E63946]'
-            />
-            <span>Descargar fotos a disco</span>
-          </label>
+          <div className='text-xs text-muted-foreground'>
+            {scraperMode === 'scrape' && '⚡ Extrae productos de la categoría seleccionada con fotos y margen comercial'}
+            {scraperMode === 'stock' && '📦 Recorre artículos rápidamente para refrescar existencias y marcar discontinuados'}
+            {scraperMode === 'full-run' && '🚀 Extracción de catálogo + actualización de stock de punta a punta'}
+          </div>
         </div>
 
-        {/* Botonera de Acción */}
-        <div className='flex items-center gap-3'>
-          {/* Botón Principal: CONTINUAR SCRAPING */}
-          <button
-            onClick={handleContinue}
-            disabled={!waitingUser}
-            className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md ${
-              waitingUser
-                ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25 animate-bounce ring-4 ring-emerald-500/30'
-                : 'bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
-            }`}
-          >
-            <Icons.check className='w-4 h-4' />
-            <span>CONTINUAR SCRAPING</span>
-          </button>
+        {/* Fila de Parámetros y Botonera */}
+        <div className='flex flex-wrap items-center justify-between gap-4'>
+          <div className='flex flex-wrap items-center gap-4'>
+            {scraperMode !== 'stock' ? (
+              <>
+                <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                  <span>Margen Ganancia:</span>
+                  <div className='flex items-center gap-1 bg-background border border-border px-2.5 py-1 rounded-lg'>
+                    <input
+                      type='number'
+                      min='0'
+                      max='200'
+                      value={ganancia}
+                      onChange={(e) => setGanancia(Number(e.target.value))}
+                      disabled={isRunning}
+                      className='w-12 bg-transparent text-foreground text-sm font-bold text-center outline-none'
+                    />
+                    <span className='text-muted-foreground font-semibold'>%</span>
+                  </div>
+                </div>
 
-          {!isRunning ? (
+                <label className='flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none'>
+                  <input
+                    type='checkbox'
+                    checked={downloadImages}
+                    onChange={(e) => setDownloadImages(e.target.checked)}
+                    disabled={isRunning}
+                    className='rounded border-border text-[#E63946] focus:ring-[#E63946]'
+                  />
+                  <span>Descargar fotos a disco</span>
+                </label>
+              </>
+            ) : (
+              <div className='flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg'>
+                <Icons.box className='w-3.5 h-3.5' />
+                <span>Modo rápido optimizado: No requiere descarga de imágenes pesadas</span>
+              </div>
+            )}
+          </div>
+
+          {/* Botonera de Acción */}
+          <div className='flex items-center gap-3'>
+            {/* Botón Principal: CONTINUAR SCRAPING */}
             <button
-              onClick={handleStartScraper}
-              className='px-5 py-2.5 rounded-xl font-bold text-sm bg-[#E63946] hover:bg-[#c92a37] text-white shadow-md shadow-[#E63946]/20 transition-all flex items-center gap-2'
+              onClick={handleContinue}
+              disabled={!waitingUser}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md ${
+                waitingUser
+                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25 animate-bounce ring-4 ring-emerald-500/30'
+                  : 'bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
+              }`}
             >
-              <Icons.arrowRight className='w-4 h-4' />
-              <span>Iniciar Scraping</span>
+              <Icons.check className='w-4 h-4' />
+              <span>CONTINUAR SCRAPING</span>
             </button>
-          ) : (
-            <button
-              onClick={handleStop}
-              className='px-4 py-2.5 rounded-xl font-bold text-sm bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 border border-rose-500/30 transition-all flex items-center gap-2'
-            >
-              <Icons.close className='w-4 h-4' />
-              <span>Detener</span>
-            </button>
-          )}
+
+            {!isRunning ? (
+              <button
+                onClick={handleStartScraper}
+                className='px-5 py-2.5 rounded-xl font-bold text-sm bg-[#E63946] hover:bg-[#c92a37] text-white shadow-md shadow-[#E63946]/20 transition-all flex items-center gap-2'
+              >
+                <Icons.arrowRight className='w-4 h-4' />
+                <span>
+                  {scraperMode === 'stock'
+                    ? 'Iniciar Actualización de Stock'
+                    : scraperMode === 'full-run'
+                    ? 'Iniciar Pipeline Completo'
+                    : 'Iniciar Scraping'}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={handleStop}
+                className='px-4 py-2.5 rounded-xl font-bold text-sm bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 border border-rose-500/30 transition-all flex items-center gap-2'
+              >
+                <Icons.close className='w-4 h-4' />
+                <span>Detener</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

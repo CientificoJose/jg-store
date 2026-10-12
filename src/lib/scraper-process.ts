@@ -9,6 +9,7 @@ export type ScraperStatus =
   | 'DOWNLOADING_PRICES'
   | 'WAITING_USER_SELECTION'
   | 'SCRAPING'
+  | 'STOCK_UPDATING'
   | 'COMPLETED'
   | 'FAILED';
 
@@ -89,20 +90,36 @@ class ScraperProcessManager {
     this.logs = [];
   }
 
-  public startScraper(options: { ganancia?: number; downloadImages?: boolean } = {}) {
+  public startScraper(
+    options: {
+      mode?: 'scrape' | 'stock' | 'full-run';
+      ganancia?: number;
+      downloadImages?: boolean;
+    } = {}
+  ) {
     if (this.activeProcess) {
       throw new Error('El scraper ya se encuentra en ejecución.');
     }
 
-    const { ganancia = 40, downloadImages = false } = options;
+    const { mode = 'scrape', ganancia = 40, downloadImages = false } = options;
     const downloadFlag = downloadImages ? 't' : 'f';
 
     this.setStatus('STARTING');
-    this.addLog(`🚀 [SISTEMA] Iniciando Scraper de Coronel Mayorista...`);
-    this.addLog(`⚙️ [CONFIG] Ganancia: ${ganancia}%, Descargar fotos a disco: ${downloadFlag}`);
+    let args: string[];
+
+    if (mode === 'stock') {
+      this.addLog(`📦 [SISTEMA] Iniciando modo: Solo Actualizar Stock...`);
+      args = ['main.py', 'stock'];
+    } else if (mode === 'full-run') {
+      this.addLog(`⚡ [SISTEMA] Iniciando Pipeline Completo (Scrape + Stock + Sync)...`);
+      args = ['main.py', 'full-run', '-y', '-g', String(ganancia), '-d', downloadFlag];
+    } else {
+      this.addLog(`🚀 [SISTEMA] Iniciando Extracción de Productos (Scraping)...`);
+      this.addLog(`⚙️ [CONFIG] Ganancia: ${ganancia}%, Descargar fotos a disco: ${downloadFlag}`);
+      args = ['main.py', 'scrape', '-y', '-g', String(ganancia), '-d', downloadFlag];
+    }
 
     const scriptPath = path.join(this.baseDir, 'main.py');
-    const args = ['main.py', 'scrape', '-y', '-g', String(ganancia), '-d', downloadFlag];
 
     // Limpiar señal anterior
     const signalFile = path.join(this.baseDir, '.scraper_continue');
@@ -138,6 +155,8 @@ class ScraperProcessManager {
             this.setStatus('WAITING_USER_SELECTION');
           } else if (line.includes('[SCRAPER_STATUS:SCRAPING]')) {
             this.setStatus('SCRAPING');
+          } else if (line.includes('[SCRAPER_STATUS:STOCK_UPDATING]')) {
+            this.setStatus('STOCK_UPDATING');
           } else if (line.includes('[SCRAPER_STATUS:COMPLETED]')) {
             this.setStatus('COMPLETED');
           } else if (line.includes('[SCRAPER_STATUS:FAILED]')) {

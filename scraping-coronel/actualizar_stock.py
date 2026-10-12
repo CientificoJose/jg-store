@@ -236,67 +236,46 @@ def scraping_product(driver, max_retries=MAX_RETRIES, wait_time=WAIT_TIME):
         categoria = ""
         #print(f"{Fore.RED}⚠️ No se pudo obtener la categoría{Style.RESET_ALL}")
     
-    # Obtener todos los productos de una vez
-    product_elements = driver.find_elements(By.CSS_SELECTOR, ".col-art .card-product")
-    total_products = len(product_elements)
-    
-    print(f"{Fore.CYAN}📦 Procesando {total_products} productos{Style.RESET_ALL}")
-    
-    for index in range(total_products):
-        for intento in range(3):
-            try:
-                cards = driver.find_elements(By.CSS_SELECTOR, ".col-art .card-product")
-                if index >= len(cards):
-                    break
-                product = cards[index]
-                
-                # Obtener el código del producto
-                try:
-                    code_element = product.find_element(By.CSS_SELECTOR, ".span-codigo")
-                    code = code_element.text.replace("Código: ", "").strip()
-                except:
-                    print(f"{Fore.RED}⚠️ No se pudo obtener el código del producto {index + 1}{Style.RESET_ALL}")
-                    break
-                
-                code = formatear_codigo(code)
-                
-                # Procesar variante (ORO)
-                variant = ""
-                try:
-                    adicional_element = product.find_element(By.CSS_SELECTOR, ".adicional span")
-                    adicional_text = adicional_element.text.strip()
-                    if adicional_text:
-                        # Sanitizar la variante eliminando espacios y caracteres problemáticos
-                        variant = adicional_text.upper()
-                        variant = variant.replace(' ', '').replace('/', '-').replace('\\', '-')
-                        code += f"-{variant}"
-                except:
-                    pass
-                
-                # Agregar producto a la lista
-                product_data = {
-                    'codigo': code,
-                    'categoria': categoria,
-                    'stock': 999999  # Stock "infinito"
-                }
-                products.append(product_data)
-                
-                # Mostrar progreso
-                print(f"\n{Fore.GREEN}⚡ Producto {index + 1}/{total_products}{Style.RESET_ALL}")
-                print(f"{Fore.CYAN}🔍 Código: {Style.RESET_ALL}{code}")
-                if variant:
-                    print(f"{Fore.CYAN}🎨 Variante: {Style.RESET_ALL}{variant}")
-                print("-" * 50)
-                break
-                
-            except StaleElementReferenceException:
-                time.sleep(0.3)
-                if intento == 2:
-                    print(f"{Fore.RED}⚠️ No se pudo extraer producto en índice {index} por StaleElementReference tras 3 intentos.{Style.RESET_ALL}")
-            except Exception as e:
-                print(f"Error al extraer producto: {e}")
-                break
+    # Extracción en bloque ultra rápida mediante JavaScript nativo en el navegador
+    EXTRACTION_JS = """
+    return Array.from(document.querySelectorAll('.col-art .card-product')).map(card => {
+        let code = '';
+        const spanCodigo = card.querySelector('.span-codigo');
+        if (spanCodigo) {
+            code = spanCodigo.textContent.replace(/c[óo]digo:/i, '').trim();
+        } else {
+            const codEl = card.querySelector('.codigo');
+            if (codEl) code = codEl.textContent.replace(/c[óo]digo:/i, '').trim();
+        }
+        let variant = '';
+        const adicional = card.querySelector('.adicional span');
+        if (adicional && adicional.textContent.trim()) {
+            variant = adicional.textContent.trim();
+        }
+        return { codigo: code, variante: variant };
+    });
+    """
 
+    raw_items = driver.execute_script(EXTRACTION_JS) or []
+    total_products = len(raw_items)
+    print(f"{Fore.CYAN}📦 Extraídos instantáneamente {total_products} productos para verificación de stock{Style.RESET_ALL}")
+
+    for index, item in enumerate(raw_items):
+        raw_code = item.get('codigo', '')
+        if not raw_code:
+            continue
+        code = formatear_codigo(raw_code)
+        variant = item.get('variante', '').strip()
+        if variant:
+            v_clean = variant.upper().replace(' ', '').replace('/', '-').replace('\\', '-')
+            if not code.endswith(f"-{v_clean}"):
+                code = f"{code}-{v_clean}"
+        products.append({
+            'codigo': code,
+            'categoria': categoria,
+            'stock': 999999
+        })
+        print(f"{Fore.GREEN}⚡ [{index + 1}/{total_products}]{Style.RESET_ALL} {Fore.CYAN}{code}{Style.RESET_ALL}")
     
     # Return both products and category
     return products, categoria
@@ -310,15 +289,36 @@ def update_tiendanube_stock(scraped_products):
     - Un producto se oculta (published=False) si todas sus variantes tienen stock 0.
     """
     print(Fore.CYAN + "\n🔄 Actualizando stock y visibilidad en Tienda Nube..." + Style.RESET_ALL)
-
     try:
-        # 1. Obtener todos los productos de Tienda Nube usando el cliente
-        print("Obteniendo productos de Tienda Nube...")
-        tiendanube_products = client.get_all_products()
-        print(f"\nTotal de productos obtenidos: {len(tiendanube_products)}")
-
-        # 2. Preparar datos y contadores
+        # 1. Actualizar base de datos local SQLite con las existencias encontradas
         scraped_codes = {p['codigo']: p for p in scraped_products}
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            db_path = os.path.join(base_dir, 'productos.db')
+            if os.path.exists(db_path):
+                with sqlite3.connect(db_path) as conn:
+                    c = conn.cursor()
+                    try:
+                        c.execute("ALTER TABLE productos ADD COLUMN stock INTEGER DEFAULT 999999")
+                    except Exception:
+                        pass
+                    for code in scraped_codes:
+                        c.execute("UPDATE productos SET stock = 999999 WHERE codigo = ?", (code,))
+                    conn.commit()
+                print(Fore.GREEN + f"✔ Stock actualizado localmente en SQLite para {len(scraped_codes)} productos." + Style.RESET_ALL)
+        except Exception as db_err:
+            print(Fore.YELLOW + f"⚠ Aviso actualizando SQLite: {db_err}" + Style.RESET_ALL)
+
+        # 2. Obtener productos de Tienda Nube (si está configurada)
+        tiendanube_products = []
+        try:
+            print("Obteniendo productos de Tienda Nube...")
+            tiendanube_products = client.get_all_products()
+            print(f"\nTotal de productos obtenidos en Tienda Nube: {len(tiendanube_products)}")
+        except Exception as tn_err:
+            print(Fore.YELLOW + f"ℹ️ Sincronización remota con Tiendanube omitida o en pausa ({tn_err}). Existencias guardadas en SQLite local." + Style.RESET_ALL)
+            return
+
         updates = {'infinito': 0, 'cero': 0, 'visibles': 0, 'ocultos': 0, 'error': 0}
 
         # 3. Procesar cada producto
@@ -406,6 +406,14 @@ def scraping_all_product(driver):
     
     while True:
         print(Fore.YELLOW + f"\nProcesando página {page_number}..." + Fore.RESET)
+        
+        # Actualizar captura de pantalla para el Dashboard
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            driver.save_screenshot(os.path.join(base_dir, "preview.png"))
+        except Exception:
+            pass
+
         current_products, categoria = scraping_product(driver)
         
         if not current_products:
@@ -456,6 +464,7 @@ def run_stock():
             return False
 
         # Ejecutar scraping y actualización de stock
+        print("[SCRAPER_STATUS:STOCK_UPDATING]", flush=True)
         products, _ = scraping_all_product(driver)
         if products:
             update_tiendanube_stock(products)

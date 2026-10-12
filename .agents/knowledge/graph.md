@@ -182,6 +182,8 @@ graph TD
   - **Visor Interactivo Remoto (Opción A):** Integrado en el panel `/dashboard/coronel` mediante `<iframe>` noVNC con controles de escalado y zoom ajustable (`50%`, `75% Ideal`, `100%`, `125%`, `Fit`), relación de aspecto 16:10 sin barras de scroll (`scale=true`), botón de pantalla completa, y terminal colapsable, permitiendo interactuar con el ratón sobre la página de Coronel Mayorista directamente desde la web, confirmar la categoría, presionar "CONTINUAR SCRAPING" y apagar la PC mientras el proceso continúa en el servidor.
   - **Seguridad y Tokens:** Autenticación estricta con contraseña en `x11vnc`, redirección a tienda principal en raíz de Nginx, validación de token de sesión en `/vnc/` y middleware HTTP Bearer en FastAPI.
   - **Descarga Robusta de Excel:** Configuración de `Page.setDownloadBehavior` (allow) vía CDP en Selenium y búsqueda flexible insensible a mayúsculas y guiones para `lista-precios-*.xlsx` con verificación de temporales `.crdownload`.
+  - **Aceleración Extrema por Inyección JS:** Extracción de productos en 5ms por página mediante `document.querySelectorAll` inyectado en vez de llamadas remotas múltiples de Selenium, y descarga asíncrona de fotos en pool de hilos (`ThreadPoolExecutor`).
+  - **Selector de Modos en Panel:** Selector segmentado para 3 operaciones (Extraer Catálogo con fotos/margen, Solo Actualizar Stock rápido, y Pipeline Completo).
   - Paso 2 (Sincronización remota a Tiendanube) pausado deliberadamente por indicación comercial del usuario.
 
 

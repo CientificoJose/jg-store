@@ -17,8 +17,22 @@ from colorama import Fore, Style
 import urllib3
 
 # Desactivar advertencias de solicitud insegura para solicitudes sin verificación SSL
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)    
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+from concurrent.futures import ThreadPoolExecutor
+_img_executor = ThreadPoolExecutor(max_workers=5)
+
+def _descargar_imagen_async(image_url: str, img_path: str):
+    try:
+        if not image_url or image_url.startswith("data:"):
+            return
+        resp = requests.get(image_url, stream=True, verify=False, timeout=10)
+        if resp.status_code == 200:
+            with open(img_path, 'wb') as f:
+                for chunk in resp.iter_content(1024):
+                    f.write(chunk)
+    except Exception:
+        pass
 
 
 
@@ -96,144 +110,117 @@ def scraping_product(driver, max_retries=3, wait_time=10):
         
     products = []
     
-    # 1. Scroll progresivo por la página para forzar a Angular a renderizar todas las tarjetas (32 o más) y sus fotos
+    # 1. Scroll rápido para disparar la carga diferida (lazy load) de Angular
     try:
         altura_doc = driver.execute_script("return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);")
-        paso = 700
-        for y_pos in range(0, altura_doc, paso):
-            driver.execute_script(f"window.scrollTo(0, {y_pos});")
-            time.sleep(0.12)
-        time.sleep(0.5)
-        # Regresar al inicio para procesar ordenadamente
+        for ratio in [0.33, 0.66, 1.0]:
+            driver.execute_script(f"window.scrollTo(0, {int(altura_doc * ratio)});")
+            time.sleep(0.15)
+        time.sleep(0.2)
         driver.execute_script("window.scrollTo(0, 0);")
-        time.sleep(0.3)
-    except Exception as scroll_err:
+    except Exception:
         pass
 
-    # 2. Obtener todas las tarjetas renderizadas
-    product_elements = driver.find_elements(By.CSS_SELECTOR, ".col-art .card-product")
-    total_products = len(product_elements)
-    
-    print(f"{Fore.CYAN}📦 Encontrados {total_products} productos en el listado. Procesando...{Style.RESET_ALL}")
-    
-    for index in range(total_products):
-        for intento in range(3):
-            try:
-                # Re-obtener la lista fresca de tarjetas del DOM
-                cards = driver.find_elements(By.CSS_SELECTOR, ".col-art .card-product")
-                if index >= len(cards):
-                    # Si el índice supera las tarjetas visibles, hacer scroll para forzar más tarjetas
-                    driver.execute_script("window.scrollBy(0, 800);")
-                    time.sleep(0.4)
-                    cards = driver.find_elements(By.CSS_SELECTOR, ".col-art .card-product")
-                    if index >= len(cards):
-                        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                        time.sleep(0.6)
-                        cards = driver.find_elements(By.CSS_SELECTOR, ".col-art .card-product")
-                        if index >= len(cards):
-                            break
+    # 2. Extracción ultra rápida en bloque mediante JavaScript nativo en el navegador
+    EXTRACTION_JS = """
+    return Array.from(document.querySelectorAll('.col-art .card-product')).map(card => {
+        let code = '';
+        const spanCodigo = card.querySelector('.span-codigo');
+        if (spanCodigo) {
+            code = spanCodigo.textContent.replace(/c[óo]digo:/i, '').trim();
+        } else {
+            const codEl = card.querySelector('.codigo');
+            if (codEl) code = codEl.textContent.replace(/c[óo]digo:/i, '').trim();
+        }
 
-                product = cards[index]
+        let desc = '';
+        const descEl = card.querySelector('.descripcion');
+        if (descEl) desc = descEl.textContent.trim();
 
-                # 1. Extraer código (SKU)
-                try:
-                    code = product.find_element(By.CSS_SELECTOR, ".span-codigo").text.replace("Código: ", "").strip()
-                except Exception:
-                    try:
-                        code = product.find_element(By.CSS_SELECTOR, ".codigo").text.replace("Código: ", "").strip()
-                    except Exception:
-                        print(f"{Fore.RED}⚠️ No se pudo obtener el código del producto {index + 1}{Style.RESET_ALL}")
-                        break
+        let price = '0';
+        const tachado = card.querySelector('span.tachado');
+        if (tachado && tachado.textContent.trim()) {
+            price = tachado.textContent.trim();
+        } else {
+            const sintachar = card.querySelector('span.sintachar');
+            if (sintachar && sintachar.textContent.trim()) {
+                price = sintachar.textContent.trim();
+            }
+        }
 
-                code = formatear_codigo(code)
+        let variant = '';
+        const adicional = card.querySelector('.adicional span');
+        if (adicional && adicional.textContent.trim()) {
+            variant = adicional.textContent.trim();
+        }
 
-                # 2. Extraer descripción
-                try:
-                    description = product.find_element(By.CSS_SELECTOR, ".descripcion").text.strip()
-                except Exception:
-                    description = ""
+        let imgUrl = '';
+        const imgEl = card.querySelector('.card-img-top');
+        if (imgEl) {
+            imgUrl = imgEl.getAttribute('src') || imgEl.getAttribute('data-src') || imgEl.getAttribute('data-original') || '';
+        }
 
-                # 3. Extraer precio (tachado/oferta primero, si no existe el normal)
-                try:
-                    price = product.find_element(By.CSS_SELECTOR, "span.tachado").text.strip()
-                except Exception:
-                    try:
-                        price = product.find_element(By.CSS_SELECTOR, "span.sintachar").text.strip()
-                    except Exception:
-                        price = "0"
+        return {
+            codigo: code,
+            descripcion: desc,
+            precio: price,
+            variante: variant,
+            imagen_url: imgUrl
+        };
+    });
+    """
 
-                # 4. Extraer variante si existe
-                variant = ""
-                try:
-                    adicional_element = product.find_element(By.CSS_SELECTOR, ".adicional span")
-                    adicional_text = adicional_element.text.strip()
-                    if adicional_text:
-                        variant = adicional_text.upper()
-                        variant = variant.replace(' ', '').replace('/', '-').replace('\\', '-')
-                        # Solo añadir si no está ya en el código
-                        if not code.endswith(f"-{variant}"):
-                            code = f"{code}-{variant}"
-                except Exception:
-                    pass
+    raw_products = driver.execute_script(EXTRACTION_JS) or []
+    if not raw_products:
+        # Reintento breve si Angular estaba aún montando los elementos
+        time.sleep(0.8)
+        raw_products = driver.execute_script(EXTRACTION_JS) or []
 
-                # 5. Extraer URL de la imagen
-                try:
-                    image_element = product.find_element(By.CSS_SELECTOR, ".card-img-top")
-                    image_url = (
-                        image_element.get_attribute("src")
-                        or image_element.get_attribute("data-src")
-                        or image_element.get_attribute("data-original")
-                        or ""
-                    )
-                except Exception:
-                    image_url = ""
+    total_products = len(raw_products)
+    print(f"{Fore.CYAN}📦 Extraídos instantáneamente {total_products} productos en el listado.{Style.RESET_ALL}")
 
-                # 6. Descargar imagen localmente si está activado
-                img_name = f"{code}.jpg"
-                img_path = os.path.join(img_dir, img_name)
-                
-                if DOWNLOAD_IMAGES and image_url:
-                    try:
-                        # Evitar errores si la imagen es una URL base64/data
-                        if not image_url.startswith("data:"):
-                            response = requests.get(image_url, stream=True, verify=False, timeout=10)
-                            if response.status_code == 200:
-                                with open(img_path, 'wb') as f:
-                                    for chunk in response.iter_content(1024):
-                                        f.write(chunk)
-                    except Exception as img_err:
-                        print(f"Advertencia al descargar imagen para {code}: {img_err}")
+    for index, raw in enumerate(raw_products):
+        raw_code = raw.get('codigo', '')
+        if not raw_code:
+            continue
 
-                # 7. Obtener código de barras del Excel/SQLite si existe
-                codigo_barra = obtener_codigo_barra(code, scraping_product.db_path) if scraping_product.db_path else ""
+        code = formatear_codigo(raw_code)
+        variant = raw.get('variante', '').strip()
+        if variant:
+            v_clean = variant.upper().replace(' ', '').replace('/', '-').replace('\\', '-')
+            if not code.endswith(f"-{v_clean}"):
+                code = f"{code}-{v_clean}"
 
-                # Guardar datos estructurados
-                product_data = {
-                    'codigo': code,
-                    'descripcion': description,
-                    'precio': price,
-                    'imagen_url': image_url,
-                    'imagen_local': f"img-scraping/{img_name}",
-                    'variante': variant,
-                    'codigo_de_barras': codigo_barra,
-                    "categoria": categoria_principal,
-                    "subcategoria": subcategoria
-                }
-                products.append(product_data)
-                
-                # Mostrar progreso con formato
-                print(f"{Fore.GREEN}⚡ Procesado {index + 1}/{total_products} {Style.RESET_ALL} | {Fore.CYAN}Código: {code}{Style.RESET_ALL} | Price: {price}")
-                break  # Éxito en este producto, terminar intentos
+        description = raw.get('descripcion', '')
+        price = raw.get('precio', '0')
+        image_url = raw.get('imagen_url', '')
 
-            except StaleElementReferenceException as stale_err:
-                time.sleep(0.3)
-                if intento == 2:
-                    print(f"{Fore.RED}⚠️ No se pudo extraer producto en índice {index} por StaleElementReference tras 3 intentos.{Style.RESET_ALL}")
-                    registrar_error(f"Fallo por StaleElementReference en producto índice {index} tras 3 intentos", stale_err)
-            except Exception as e:
-                print(f"Error al extraer producto individual en índice {index}: {e}")
-                registrar_error(f"Error al extraer producto en índice {index}", e)
-                break
+        # Descargar imagen en segundo plano (asíncrono) para no ralentizar el scraping
+        img_name = f"{code}.jpg"
+        img_path = os.path.join(img_dir, img_name)
+
+        if DOWNLOAD_IMAGES and image_url:
+            _img_executor.submit(_descargar_imagen_async, image_url, img_path)
+
+        # Obtener código de barras del Excel/SQLite si existe
+        codigo_barra = obtener_codigo_barra(code, scraping_product.db_path) if scraping_product.db_path else ""
+
+        # Guardar datos estructurados
+        product_data = {
+            'codigo': code,
+            'descripcion': description,
+            'precio': price,
+            'imagen_url': image_url,
+            'imagen_local': f"img-scraping/{img_name}",
+            'variante': variant,
+            'codigo_de_barras': codigo_barra,
+            "categoria": categoria_principal,
+            "subcategoria": subcategoria
+        }
+        products.append(product_data)
+
+        # Mostrar progreso resumido
+        print(f"{Fore.GREEN}⚡ [{index + 1}/{total_products}]{Style.RESET_ALL} {Fore.CYAN}{code}{Style.RESET_ALL} | {description[:35]} | Price: {price}")
 
     # Categoría completa formateada
     categoria_grupal = categoria_principal
