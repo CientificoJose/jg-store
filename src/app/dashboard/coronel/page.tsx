@@ -241,7 +241,9 @@ export default function CoronelScraperPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al actualizar márgenes');
-      toast.success(`¡Márgenes actualizados! ${data.updated ?? 0} productos recalculados al instante.`);
+      toast.success(
+        `¡Márgenes actualizados! ${data.updated ?? 0} productos recalculados al instante.`
+      );
       fetchDbStats();
     } catch (err: any) {
       toast.error(err.message || 'Error al recalcular precios masivos');
@@ -432,9 +434,12 @@ export default function CoronelScraperPage() {
           </div>
 
           <div className='text-xs text-muted-foreground'>
-            {scraperMode === 'scrape' && '⚡ Extrae productos de la categoría seleccionada con fotos y margen comercial'}
-            {scraperMode === 'stock' && '📦 Recorre artículos rápidamente para refrescar existencias y marcar discontinuados'}
-            {scraperMode === 'full-run' && '🚀 Extracción de catálogo + actualización de stock de punta a punta'}
+            {scraperMode === 'scrape' &&
+              '⚡ Extrae productos de la categoría seleccionada con fotos y margen comercial'}
+            {scraperMode === 'stock' &&
+              '📦 Recorre artículos rápidamente para refrescar existencias y marcar discontinuados'}
+            {scraperMode === 'full-run' &&
+              '🚀 Extracción de catálogo + actualización de stock de punta a punta'}
           </div>
         </div>
 
@@ -520,8 +525,8 @@ export default function CoronelScraperPage() {
                   {scraperMode === 'stock'
                     ? 'Iniciar Actualización de Stock'
                     : scraperMode === 'full-run'
-                    ? 'Iniciar Pipeline Completo'
-                    : 'Iniciar Scraping'}
+                      ? 'Iniciar Pipeline Completo'
+                      : 'Iniciar Scraping'}
                 </span>
               </button>
             ) : (
@@ -993,11 +998,7 @@ export default function CoronelScraperPage() {
                 let colorClass = 'text-slate-300';
                 if (log.includes('✔') || log.includes('COMPLETED') || log.includes('éxito')) {
                   colorClass = 'text-emerald-400 font-medium';
-                } else if (
-                  log.includes('⚠') ||
-                  log.includes('WAITING') ||
-                  log.includes('Aviso')
-                ) {
+                } else if (log.includes('⚠') || log.includes('WAITING') || log.includes('Aviso')) {
                   colorClass = 'text-amber-300 font-medium';
                 } else if (log.includes('✖') || log.includes('🚨') || log.includes('Error')) {
                   colorClass = 'text-rose-400 font-semibold';
@@ -1165,7 +1166,10 @@ export default function CoronelScraperPage() {
               <tbody className='divide-y divide-border'>
                 {dbStats?.latest_products && dbStats.latest_products.length > 0 ? (
                   dbStats.latest_products.map((p, idx) => {
-                    const fotoSrc = p.foto || p.imagen_url || '';
+                    const rawImg = p.imagen_url || p.foto || '';
+                    const fotoSrc = rawImg
+                      ? `/api/scraper/image?url=${encodeURIComponent(p.imagen_url || '')}&file=${encodeURIComponent(p.foto || '')}`
+                      : '';
                     const costoStr = p.precio_costo
                       ? `$ ${Number(p.precio_costo).toLocaleString('es-AR')}`
                       : p.precio || '-';
@@ -1177,29 +1181,52 @@ export default function CoronelScraperPage() {
                       : '-';
                     const rutaStr =
                       p.categoria_ruta ||
-                      [p.categoria, p.subcategoria, p.sub_subcategoria].filter(Boolean).join(' > ') ||
+                      [p.categoria, p.subcategoria, p.sub_subcategoria]
+                        .filter(Boolean)
+                        .join(' > ') ||
                       'Sin categoría';
 
                     return (
                       <tr key={idx} className='hover:bg-muted/30 transition-colors'>
                         <td className='px-4 py-2'>
-                          {fotoSrc ? (
-                            <img
-                              src={fotoSrc}
-                              alt={p.codigo}
-                              className='w-9 h-9 object-cover rounded-md border border-border'
-                            />
-                          ) : (
-                            <div className='w-9 h-9 bg-muted rounded-md flex items-center justify-center text-[10px] text-muted-foreground'>
+                          <div className='relative w-9 h-9 flex items-center justify-center bg-muted/60 rounded-md border border-border overflow-hidden'>
+                            {fotoSrc ? (
+                              <img
+                                src={fotoSrc}
+                                alt={p.codigo}
+                                loading='lazy'
+                                className='w-full h-full object-cover transition-opacity duration-200'
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    const fallback = parent.querySelector(
+                                      '.img-fallback'
+                                    ) as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className='img-fallback absolute inset-0 items-center justify-center text-[10px] text-muted-foreground font-semibold'
+                              style={{ display: fotoSrc ? 'none' : 'flex' }}
+                            >
                               N/A
                             </div>
-                          )}
+                          </div>
                         </td>
-                        <td className='px-4 py-2 font-mono font-bold text-foreground'>{p.codigo}</td>
+                        <td className='px-4 py-2 font-mono font-bold text-foreground'>
+                          {p.codigo}
+                        </td>
                         <td className='px-4 py-2 text-foreground font-medium max-w-xs truncate'>
                           {p.descripcion}
                         </td>
-                        <td className='px-4 py-2 text-muted-foreground max-w-xs truncate' title={rutaStr}>
+                        <td
+                          className='px-4 py-2 text-muted-foreground max-w-xs truncate'
+                          title={rutaStr}
+                        >
                           <span className='px-2 py-0.5 rounded bg-muted/80 text-[11px] font-medium text-foreground'>
                             {rutaStr}
                           </span>

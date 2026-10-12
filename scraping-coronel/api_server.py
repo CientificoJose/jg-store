@@ -25,8 +25,8 @@ app.add_middleware(
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
-    # Permitir healthcheck y preflight OPTIONS sin token
-    if request.url.path == "/health" or request.method == "OPTIONS":
+    # Permitir healthcheck, imágenes y preflight OPTIONS sin token
+    if request.url.path == "/health" or request.url.path.startswith("/api/image") or request.method == "OPTIONS":
         return await call_next(request)
         
     auth_header = request.headers.get("Authorization", "")
@@ -380,3 +380,56 @@ def update_margins(req: UpdateMarginsRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error actualizando márgenes: {str(e)}")
+
+@app.get("/api/image")
+def get_image(url: Optional[str] = None, file: Optional[str] = None):
+    """Sirve de proxy seguro para imágenes de productos evitando bloqueos de puerto 70 y SSL."""
+    # 1. Buscar en disco local si se proporcionó nombre/ruta de archivo
+    if file:
+        filename = os.path.basename(file.replace("\\", "/"))
+        local_path = os.path.join(BASE_DIR, "img-scraping", filename)
+        if os.path.exists(local_path):
+            return FileResponse(
+                local_path,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "public, max-age=604800, stale-while-revalidate=86400"}
+            )
+
+    # 2. Descargar desde la URL remota de Coronel
+    if url:
+        clean_url = url.replace("\\", "/").strip()
+        try:
+            import requests
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            resp = requests.get(
+                clean_url,
+                verify=False,
+                timeout=10,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            )
+            if resp.status_code == 200:
+                content_type = resp.headers.get("content-type", "image/jpeg")
+                return Response(
+                    content=resp.content,
+                    media_type=content_type,
+                    headers={"Cache-Control": "public, max-age=604800, stale-while-revalidate=86400"}
+                )
+        except Exception:
+            pass
+
+    # 3. Fallback SVG silencioso
+    svg_fallback = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80" fill="none">'
+        '<rect width="80" height="80" rx="8" fill="#1e293b"/>'
+        '<path d="M26 54L38 38L48 48L54 42L62 54H26Z" fill="#475569"/>'
+        '<circle cx="34" cy="30" r="4" fill="#64748b"/>'
+        '</svg>'
+    )
+    return Response(
+        content=svg_fallback,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=3600"}
+    )
+
