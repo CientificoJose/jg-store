@@ -183,7 +183,9 @@ graph TD
   - **Seguridad y Tokens:** Autenticación estricta con contraseña en `x11vnc`, redirección a tienda principal en raíz de Nginx, validación de token de sesión en `/vnc/` y middleware HTTP Bearer en FastAPI.
   - **Descarga Robusta de Excel:** Configuración de `Page.setDownloadBehavior` (allow) vía CDP en Selenium y búsqueda flexible insensible a mayúsculas y guiones para `lista-precios-*.xlsx` con verificación de temporales `.crdownload`.
   - **Aceleración Extrema por Inyección JS:** Extracción de productos en 5ms por página mediante `document.querySelectorAll` inyectado en vez de llamadas remotas múltiples de Selenium, y descarga asíncrona de fotos en pool de hilos (`ThreadPoolExecutor`).
-  - **Selector de Modos en Panel:** Selector segmentado para 3 operaciones (Extraer Catálogo con fotos/margen, Solo Actualizar Stock rápido, y Pipeline Completo).
+  - **Detección Limpia de Fin de Catálogo:** Manejo automático de páginas sin resultados o con "No encontramos resultados para tu búsqueda" en `scraping_product.py`, finalizando con `[SCRAPER_STATUS:COMPLETED]` sin fallos de `TimeoutException`.
+  - **Arquitectura de Costo Original y Márgenes Duales (B2B & B2C):** Guardado de `precio_costo` original del proveedor, margen minorista / detal (B2C, %) y mayorista (B2B, %), con cálculo y persistencia de `precio_minorista` y `precio_mayorista`. Toolbar en `/dashboard/coronel` y endpoint `/api/products/margins` para recálculo masivo instantáneo (0.01s) sin re-scrapear.
+  - **Réplica Taxonómica de 3 Niveles:** Extracción desde migas de pan (`.breadcrumb2`) y árbol de Coronel en Departamento (N1), Subcategoría (N2) y Línea (N3) con slugs y ruta completa (`categoria_ruta`).
   - Paso 2 (Sincronización remota a Tiendanube) pausado deliberadamente por indicación comercial del usuario.
 
 
