@@ -47,6 +47,8 @@ def asegurar_tabla_productos(db_path: Optional[str] = None):
                 categoria_slug TEXT,
                 subcategoria_slug TEXT,
                 sub_subcategoria_slug TEXT,
+                categoria_niveles TEXT,
+                nivel_profundidad INTEGER DEFAULT 1,
                 stock INTEGER DEFAULT 1,
                 peso_kg TEXT,
                 ancho_cm TEXT,
@@ -74,6 +76,8 @@ def asegurar_tabla_productos(db_path: Optional[str] = None):
             ("categoria_slug", "TEXT"),
             ("subcategoria_slug", "TEXT"),
             ("sub_subcategoria_slug", "TEXT"),
+            ("categoria_niveles", "TEXT"),
+            ("nivel_profundidad", "INTEGER DEFAULT 1"),
             ("stock", "INTEGER DEFAULT 1"),
             ("updated_at", "TEXT")
         ]
@@ -242,6 +246,9 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                 subcategoria_slug = producto.get('subcategoria_slug', '')
                 sub_subcategoria_slug = producto.get('sub_subcategoria_slug', '')
 
+                categoria_niveles = producto.get('categoria_niveles', '')
+                nivel_profundidad = int(producto.get('nivel_profundidad') or 1)
+
                 foto = producto.get('imagen_local') or producto.get('imagen_url') or ""
                 ahora = datetime.now().isoformat()
 
@@ -268,6 +275,8 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                         categoria_slug = ?,
                         subcategoria_slug = ?,
                         sub_subcategoria_slug = ?,
+                        categoria_niveles = ?,
+                        nivel_profundidad = ?,
                         stock = 1,
                         updated_at = ?
                     WHERE codigo = ?
@@ -293,6 +302,8 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                     categoria_slug,
                     subcategoria_slug,
                     sub_subcategoria_slug,
+                    categoria_niveles,
+                    nivel_profundidad,
                     ahora,
                     codigo
                 ))

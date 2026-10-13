@@ -34,13 +34,21 @@ export interface StoreProduct {
   sub_subcategory_id?: string;
   sub_subcategory_slug?: string;
   sub_subcategory_name?: string;
-  retail_price: number;       // PVP para cliente detal (desde 1 unidad)
-  wholesale_price: number;    // Precio mayorista por unidad
-  min_wholesale_qty: number;  // Cantidad mínima requerida para activar precio mayorista
-  stock: number;              // Unidades disponibles en almacén
+  retail_price: number; // PVP para cliente detal (desde 1 unidad)
+  wholesale_price: number; // Precio mayorista por unidad
+  cost_price?: number; // Costo original de Coronel ($)
+  retail_margin_pct?: number; // Margen de ganancia B2C (%)
+  wholesale_margin_pct?: number; // Margen de ganancia B2B (%)
+  supplier_code?: string; // Código o SKU original de Coronel
+  barcode?: string; // Código de barras
+  full_category_path?: string; // Ruta completa de categorías
+  category_levels?: string[]; // Niveles completos en orden
+  depth_level?: number; // Nivel de profundidad
+  min_wholesale_qty: number; // Cantidad mínima requerida para activar precio mayorista
+  stock: number; // Unidades disponibles en almacén
   image_url: string;
-  unit: string;               // 'unidad', 'docena', 'pack', 'caja'
-  brand?: string;             // Marca del producto (ej. Samsung, Stanley, Acrilex)
+  unit: string; // 'unidad', 'docena', 'pack', 'caja'
+  brand?: string; // Marca del producto (ej. Samsung, Stanley, Acrilex)
   featured?: boolean;
   is_seasonal?: boolean;
   tags?: string[];
@@ -50,10 +58,10 @@ export interface StoreProduct {
 export interface CartItem {
   product: StoreProduct;
   quantity: number;
-  unit_price: number;         // retail_price o wholesale_price según quantity >= min_wholesale_qty
-  is_wholesale: boolean;      // true si quantity >= min_wholesale_qty
-  subtotal: number;           // unit_price * quantity
-  savings: number;            // (retail_price - wholesale_price) * quantity si is_wholesale
+  unit_price: number; // retail_price o wholesale_price según quantity >= min_wholesale_qty
+  is_wholesale: boolean; // true si quantity >= min_wholesale_qty
+  subtotal: number; // unit_price * quantity
+  savings: number; // (retail_price - wholesale_price) * quantity si is_wholesale
 }
 
 export interface CartSummary {

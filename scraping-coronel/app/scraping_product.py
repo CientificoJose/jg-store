@@ -15,6 +15,7 @@ import sqlite3
 from contextlib import closing
 from config import DOWNLOAD_IMAGES, set_download_images
 from colorama import Fore, Style
+import json
 import urllib3
 
 # Desactivar advertencias de solicitud insegura para solicitudes sin verificación SSL
@@ -273,8 +274,14 @@ def scraping_product(driver, max_retries=3, wait_time=10):
                     prod_sub_sub = l
                     break
 
-        partes_ruta = [p for p in [categoria_principal, subcategoria, prod_sub_sub] if p]
-        categoria_ruta = " > ".join(partes_ruta)
+        # Jerarquía arbitraria: incorporar línea detectada si no está en la lista de breadcrumbs
+        niveles_producto = list(categorias_lista)
+        if prod_sub_sub and prod_sub_sub not in niveles_producto:
+            niveles_producto.append(prod_sub_sub)
+
+        categoria_ruta = " > ".join(niveles_producto) if niveles_producto else categoria_principal
+        categoria_niveles_json = json.dumps(niveles_producto, ensure_ascii=False)
+        nivel_profundidad = len(niveles_producto)
 
         cat_slug = generar_slug(categoria_principal)
         subcat_slug = generar_slug(subcategoria)
@@ -309,6 +316,8 @@ def scraping_product(driver, max_retries=3, wait_time=10):
             'subcategoria': subcategoria,
             'sub_subcategoria': prod_sub_sub,
             'categoria_ruta': categoria_ruta,
+            'categoria_niveles': categoria_niveles_json,
+            'nivel_profundidad': nivel_profundidad,
             'categoria_slug': cat_slug,
             'subcategoria_slug': subcat_slug,
             'sub_subcategoria_slug': sub_subcat_slug

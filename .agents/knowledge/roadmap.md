@@ -192,12 +192,29 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Migas de Pan en Ficha de Producto (`src/components/storefront/product-detail-view.tsx`):**
     - Navegación visual y semántica completa de 3 niveles estilo Mercado Libre (`Inicio > Categoría > Subcategoría > Línea > Producto`).
 - [x] **5. Testing Integral & Aseguramiento de Calidad E2E (`bun test`):**
-  - **Suite de Pruebas Automatizada con Bun Test (`bun test`):** 33 pruebas unitarias y de integración pasando con 100% de éxito (0 fallos, 552 aserciones):
+  - **Suite de Pruebas Automatizada con Bun Test (`bun test`):** 34 pruebas unitarias y de integración pasando con 100% de éxito (0 fallos, 546 aserciones):
     - **Jerarquía y Categorías (`src/tests/categories-hierarchy.test.ts`):** Verificación de integridad de los 24 departamentos oficiales, presencia de subcategorías Nivel 2 y líneas Nivel 3, generadores de breadcrumbs y helpers de opciones dinámicas en cascada.
     - **Motor de Búsqueda Inteligente (`src/tests/search-engine.test.ts`):** Normalización de caracteres/acentos, distancia Levenshtein, búsqueda exacta por nombre/marca/SKU, indexación de subcategorías y líneas de producto (3 niveles), corrección ortográfica fuzzy ("cuaderbo" ➔ "cuaderno") y matriz de sinónimos polirrubro ("telefono" ➔ electro/gadgets).
     - **Reglas Comerciales y WhatsApp (`src/tests/whatsapp-orders.test.ts`):** Formateo de moneda nacional `$ ARS`, escala dual B2B/B2C, umbral global mayorista ($ 50.000 ARS), sanitización de caracteres invisibles `\uFE0F` (prevención de diamantes rotos en WhatsApp), modalidades de Envío vs Retiro, Factura A vs Factura B y endpoint directo `api.whatsapp.com`.
-    - **Servicio de Catálogo y Persistencia (`src/tests/store-service.test.ts`):** Consultas de catálogo con filtros de categoría, ordenamiento por precio/descuento, filtro por stock disponible, y ciclo de vida CRUD completo (crear, buscar, modificar y eliminar productos).
+    - **Servicio de Catálogo y Persistencia (`src/tests/store-service.test.ts`):** Consultas de catálogo con filtros de categoría, ordenamiento por precio/descuento, filtro por stock disponible, recálculo masivo de márgenes (`updateStoreProductMarginsMassive`) y ciclo de vida CRUD completo (crear, buscar, modificar y eliminar productos).
     - **Integración E2E de Rutas HTTP (`src/tests/e2e-http-routes.test.ts`):** Validación de respuesta HTTP 200 y renderizado de Storefront (`/`), Ficha de producto con breadcrumbs (`/producto/prod-001`), Catálogo de administración (`/dashboard/product`), Configuración general (`/dashboard/config/general`), Diseño de landing (`/dashboard/config/landing`), Temas (`/dashboard/config/theme`) y Favoritos (`/favoritos`).
+- [x] **6. Soporte de Jerarquía de Categorías Arbitraria/Infinita (Nivel 1, 2, 3... N) y Retrocompatibilidad:**
+  - En `scraping-coronel/app/scraping_product.py`, extracción dinámica de todos los eslabones `.breadcrumb2` con almacenamiento serializado en `categoria_niveles` (JSON), `nivel_profundidad` y `categoria_ruta`. Se mantiene retrocompatibilidad total con `categoria`, `subcategoria` y `sub_subcategoria`.
+  - Migración SQL en SQLite (`productos.db`) y PostgreSQL / Supabase Dokploy (`supabase/migrations/20261013_recursive_categories_and_cost_pricing.sql`): modelo recursivo de `categories` con `parent_id`, `level`, `path`, `full_slug_path` y campos `category_levels` / `depth_level` en `products`.
+- [x] **7. Gestor Ejecutivo de Márgenes Masivos en Panel de Control (`/dashboard/product`):**
+  - Barra de herramientas ejecutiva `BulkMarginToolbar` integrada en la tabla de productos.
+  - Recálculo masivo e instantáneo de PVP Detal y PVP Mayor aplicando márgenes comerciales (B2C % y B2B %) sobre el precio de costo del proveedor (`cost_price`).
+  - Filtro por alcance: todo el catálogo o por categoría/departamento específico.
+  - Endpoint `/api/products/margins` y función RPC en Supabase `recalculate_product_margins`.
+  - Columnas de la tabla de productos actualizadas para transparentar el costo de compra y el margen aplicado (`Costo: $X (+40%)`).
+- [x] **8. Precios Históricos Fijos ("Precios Quemados" / Snapshot Pattern en `order_items`):**
+  - Registro inmutable del precio unitario y costo al momento de la venta (`unit_price`, `cost_price_at_sale`, `category_snapshot`) en cada renglón de pedido.
+  - Los cambios de precios posteriores en el catálogo nunca alteran las compras ni cotizaciones pasadas, manteniendo el `product_id` para auditorías.
+- [x] **9. Persistencia de Pedidos Pre-WhatsApp y Consolidación de Órdenes (`/dashboard/orders`):**
+  - Endpoint `POST /api/orders` que persiste el pedido en backend antes de abrir WhatsApp.
+  - Generación de número de pedido oficial correlativo argentino (ej. `#JG-2026-0001`) inyectado en el mensaje de WhatsApp.
+  - Vaciado automático del carrito tras confirmar la orden.
+  - Ficha de pedido en el panel administrativo (`OrderDetailSheet`) con edición de cantidades en vivo (+ / - / eliminar), recálculo de totales y botón de "Consolidar Pago".
 
 ---
 

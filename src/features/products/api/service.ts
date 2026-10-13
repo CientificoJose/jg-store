@@ -29,11 +29,7 @@ function mapStoreProductToProduct(item: any): Product {
     name: item.name,
     description: item.description || '',
     category: item.category_slug || item.category || 'bazar-cocina',
-    category_name:
-      item.category_name ||
-      cat?.name ||
-      item.category ||
-      'General',
+    category_name: item.category_name || cat?.name || item.category || 'General',
     subcategory_id: item.subcategory_id || sub?.id,
     subcategory_slug: item.subcategory_slug || item.subcategory,
     subcategory_name: item.subcategory_name || sub?.name,
@@ -42,6 +38,14 @@ function mapStoreProductToProduct(item: any): Product {
     sub_subcategory_name: item.sub_subcategory_name || subSub?.name,
     retail_price: Number(item.retail_price ?? item.price ?? 0),
     wholesale_price: Number(item.wholesale_price ?? item.retail_price ?? item.price ?? 0),
+    cost_price: Number(item.cost_price ?? Math.round((item.retail_price ?? item.price ?? 0) / 1.4)),
+    retail_margin_pct: Number(item.retail_margin_pct ?? 40),
+    wholesale_margin_pct: Number(item.wholesale_margin_pct ?? 18),
+    supplier_code: item.supplier_code,
+    barcode: item.barcode,
+    full_category_path: item.full_category_path,
+    category_levels: item.category_levels,
+    depth_level: item.depth_level,
     min_wholesale_qty: Number(item.min_wholesale_qty || 6),
     stock: Number(item.stock || 0),
     unit: item.unit || 'unidad',

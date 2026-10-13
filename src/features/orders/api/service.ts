@@ -37,7 +37,8 @@ let mockOrders: Order[] = [
         product_id: 'p-1',
         sku: 'DIF-ROD-01',
         name: 'Difusor Varillas Aromáticas 250ml',
-        image_url: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 24,
         unit_price: 5200,
@@ -50,7 +51,8 @@ let mockOrders: Order[] = [
         product_id: 'p-2',
         sku: 'VAS-TER-02',
         name: 'Vaso Térmico Acero Inoxidable 500ml',
-        image_url: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 10,
         unit_price: 7320,
@@ -93,7 +95,8 @@ let mockOrders: Order[] = [
         product_id: 'p-6',
         sku: 'ORG-MAQ-06',
         name: 'Organizador Giratorio Acrílico 360°',
-        image_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 1,
         unit_price: 18500,
@@ -106,7 +109,8 @@ let mockOrders: Order[] = [
         product_id: 'p-4',
         sku: 'RES-PAS-04',
         name: 'Resaltadores Pastel Pack x6 Colores',
-        image_url: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&auto=format&fit=crop&q=80',
         unit: 'pack',
         quantity: 1,
         unit_price: 8300,
@@ -150,7 +154,8 @@ let mockOrders: Order[] = [
         product_id: 'p-13',
         sku: 'TER-DIG-13',
         name: 'Termo Digital Acero Smart 500ml',
-        image_url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 15,
         unit_price: 13900,
@@ -163,7 +168,8 @@ let mockOrders: Order[] = [
         product_id: 'p-14',
         sku: 'AUR-BLU-14',
         name: 'Auriculares Bluetooth In-Ear JG Sound',
-        image_url: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 10,
         unit_price: 10150,
@@ -206,7 +212,8 @@ let mockOrders: Order[] = [
         product_id: 'p-21',
         sku: 'MAS-ESP-21',
         name: 'Comedero Bebedero Automático Mascotas',
-        image_url: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 1,
         unit_price: 18900,
@@ -250,7 +257,8 @@ let mockOrders: Order[] = [
         product_id: 'p-3',
         sku: 'POP-BUR-03',
         name: 'Pop It Fidget Silicona Antiestrés',
-        image_url: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 25,
         unit_price: 3360,
@@ -263,7 +271,8 @@ let mockOrders: Order[] = [
         product_id: 'p-4',
         sku: 'RES-PAS-04',
         name: 'Resaltadores Pastel Pack x6 Colores',
-        image_url: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=800&auto=format&fit=crop&q=80',
         unit: 'pack',
         quantity: 10,
         unit_price: 5800,
@@ -306,7 +315,8 @@ let mockOrders: Order[] = [
         product_id: 'p-2',
         sku: 'VAS-TER-02',
         name: 'Vaso Térmico Acero Inoxidable 500ml',
-        image_url: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
+        image_url:
+          'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
         unit: 'unidad',
         quantity: 12,
         unit_price: 7200,
@@ -372,14 +382,10 @@ export async function getOrders(filters: OrderFilters = {}): Promise<OrdersRespo
       }
     } catch {
       // Por defecto orden por fecha más reciente
-      filtered.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
   } else {
-    filtered.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
   const total_orders = filtered.length;
@@ -435,4 +441,131 @@ export async function updateTrackingNumber(id: string, trackingNumber: string): 
   order.order_status = 'lista_despacho';
   order.updated_at = new Date().toISOString();
   return { ...order };
+}
+
+let orderSequence = 1050;
+
+export async function createOrder(data: Partial<Order>): Promise<Order> {
+  orderSequence++;
+  const id = `ord-${Date.now()}`;
+  const orderNumber = data.order_number || `JG-2026-${orderSequence}`;
+  const now = new Date().toISOString();
+
+  const newOrder: Order = {
+    id,
+    order_number: orderNumber,
+    created_at: now,
+    updated_at: now,
+    order_type: data.order_type || 'retail',
+    customer_name: data.customer_name || 'Cliente JG Store',
+    customer_phone: data.customer_phone || '',
+    customer_email: data.customer_email,
+    document_type: data.document_type || 'DNI',
+    document_number: data.document_number || '0',
+    invoice_type: data.invoice_type || 'B',
+    province: data.province || 'Buenos Aires',
+    city: data.city || 'CABA',
+    postal_code: data.postal_code || '1000',
+    address: data.address || '',
+    shipping_method: data.shipping_method || 'andreani',
+    shipping_status: data.shipping_status || 'preparing',
+    shipping_cost: data.shipping_cost || 0,
+    tracking_number: data.tracking_number,
+    payment_method: data.payment_method || 'bank_transfer',
+    payment_status: data.payment_status || 'pending',
+    subtotal: data.subtotal || 0,
+    discount: data.discount || 0,
+    total_savings: data.total_savings || 0,
+    total_amount: data.total_amount || 0,
+    order_status: data.order_status || 'nueva',
+    notes: data.notes,
+    items: (data.items || []).map((it) => ({
+      ...it,
+      order_id: id
+    }))
+  };
+
+  mockOrders.unshift(newOrder);
+
+  // Si Supabase Dokploy está disponible, persistir en base de datos
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://jg-store-bd.press-cloud.com';
+  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          order_number: newOrder.order_number,
+          order_type: newOrder.order_type,
+          customer_name: newOrder.customer_name,
+          customer_phone: newOrder.customer_phone,
+          customer_email: newOrder.customer_email,
+          document_type: newOrder.document_type,
+          document_number: newOrder.document_number,
+          invoice_type: newOrder.invoice_type,
+          province: newOrder.province,
+          city: newOrder.city,
+          postal_code: newOrder.postal_code,
+          address: newOrder.address,
+          shipping_method: newOrder.shipping_method,
+          shipping_status: newOrder.shipping_status,
+          shipping_cost: newOrder.shipping_cost,
+          payment_method: newOrder.payment_method,
+          payment_status: newOrder.payment_status,
+          subtotal: newOrder.subtotal,
+          discount: newOrder.discount,
+          total_savings: newOrder.total_savings,
+          total_amount: newOrder.total_amount,
+          order_status: newOrder.order_status,
+          notes: newOrder.notes
+        })
+      });
+    } catch {
+      // Silencioso fallback en memoria
+    }
+  }
+
+  return newOrder;
+}
+
+export async function updateOrderItemQuantity(
+  orderId: string,
+  itemId: string,
+  newQuantity: number
+): Promise<Order> {
+  const order = mockOrders.find((o) => o.id === orderId);
+  if (!order) throw new Error('Pedido no encontrado');
+
+  const itemIndex = order.items.findIndex((it) => it.id === itemId);
+  if (itemIndex === -1) throw new Error('Artículo no encontrado en el pedido');
+
+  if (newQuantity <= 0) {
+    order.items.splice(itemIndex, 1);
+  } else {
+    const item = order.items[itemIndex];
+    item.quantity = newQuantity;
+    item.subtotal = item.unit_price * newQuantity;
+  }
+
+  // Recalcular totales de la orden
+  const newSubtotal = order.items.reduce((sum, it) => sum + it.subtotal, 0);
+  const isTransfer = order.payment_method === 'bank_transfer';
+  const newDiscount = isTransfer ? Math.round(newSubtotal * 0.1) : 0;
+  order.subtotal = newSubtotal;
+  order.discount = newDiscount;
+  order.total_amount = Math.max(0, newSubtotal - newDiscount + (order.shipping_cost || 0));
+  order.updated_at = new Date().toISOString();
+
+  return { ...order };
+}
+
+export async function removeOrderItem(orderId: string, itemId: string): Promise<Order> {
+  return updateOrderItemQuantity(orderId, itemId, 0);
 }

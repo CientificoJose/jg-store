@@ -8,6 +8,7 @@ import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
 import { productsQueryOptions } from '../../api/queries';
 import { columns } from './columns';
+import { BulkMarginToolbar } from '../bulk-margin-toolbar';
 
 const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
@@ -44,8 +45,11 @@ export function ProductTable() {
   });
 
   return (
-    <DataTable table={table}>
-      <DataTableToolbar table={table} />
-    </DataTable>
+    <div>
+      <BulkMarginToolbar />
+      <DataTable table={table}>
+        <DataTableToolbar table={table} />
+      </DataTable>
+    </div>
   );
 }

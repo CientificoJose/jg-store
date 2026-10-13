@@ -15,16 +15,12 @@ export const columns: ColumnDef<Product>[] = [
     accessorKey: 'photo_url',
     header: 'FOTO',
     cell: ({ row }) => {
-      const src = row.getValue<string>('photo_url') || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+      const src =
+        row.getValue<string>('photo_url') ||
+        'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
       return (
         <div className='relative w-12 h-12 rounded-lg overflow-hidden border border-border/80 bg-muted/40 shrink-0'>
-          <Image
-            src={src}
-            alt={row.getValue('name')}
-            fill
-            sizes='48px'
-            className='object-cover'
-          />
+          <Image src={src} alt={row.getValue('name')} fill sizes='48px' className='object-cover' />
         </div>
       );
     }
@@ -58,9 +54,7 @@ export const columns: ColumnDef<Product>[] = [
         <span className='font-semibold text-foreground text-sm line-clamp-1'>
           {row.original.name}
         </span>
-        <span className='text-xs text-[#6C757D] line-clamp-1'>
-          {row.original.description}
-        </span>
+        <span className='text-xs text-[#6C757D] line-clamp-1'>{row.original.description}</span>
       </div>
     ),
     meta: {
@@ -80,7 +74,10 @@ export const columns: ColumnDef<Product>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <Badge variant='outline' className='text-xs font-semibold border-[#E63946]/30 text-[#E63946] bg-[#E63946]/5'>
+        <Badge
+          variant='outline'
+          className='text-xs font-semibold border-[#E63946]/30 text-[#E63946] bg-[#E63946]/5'
+        >
           {row.original.category_name}
         </Badge>
       );
@@ -104,20 +101,12 @@ export const columns: ColumnDef<Product>[] = [
         <div className='flex items-center gap-1.5'>
           <span
             className={`w-2 h-2 rounded-full ${
-              stock <= 0
-                ? 'bg-[#6C757D]'
-                : stock <= 10
-                ? 'bg-[#E63946]'
-                : 'bg-emerald-500'
+              stock <= 0 ? 'bg-[#6C757D]' : stock <= 10 ? 'bg-[#E63946]' : 'bg-emerald-500'
             }`}
           />
           <span
             className={`text-xs font-semibold ${
-              stock <= 0
-                ? 'text-[#6C757D]'
-                : stock <= 10
-                ? 'text-[#E63946]'
-                : 'text-foreground'
+              stock <= 0 ? 'text-[#6C757D]' : stock <= 10 ? 'text-[#E63946]' : 'text-foreground'
             }`}
           >
             {stock <= 0 ? 'Agotado' : `${stock} ${row.original.unit || 'u.'}`}
@@ -130,24 +119,30 @@ export const columns: ColumnDef<Product>[] = [
     id: 'retail_price',
     accessorKey: 'retail_price',
     header: ({ column }: { column: Column<Product, unknown> }) => (
-      <DataTableColumnHeader column={column} title='PVP Detal' />
+      <DataTableColumnHeader column={column} title='PVP Detal (B2C)' />
     ),
     cell: ({ row }) => (
-      <span className='font-bold text-sm text-foreground font-gotham'>
-        {formatPrice(row.original.retail_price)}
-      </span>
+      <div className='flex flex-col'>
+        <span className='font-bold text-sm text-foreground font-gotham'>
+          {formatPrice(row.original.retail_price)}
+        </span>
+        {row.original.cost_price ? (
+          <span className='text-[10px] text-muted-foreground'>
+            Costo: {formatPrice(row.original.cost_price)} (+{row.original.retail_margin_pct ?? 40}%)
+          </span>
+        ) : null}
+      </div>
     )
   },
   {
     id: 'wholesale_price',
     accessorKey: 'wholesale_price',
     header: ({ column }: { column: Column<Product, unknown> }) => (
-      <DataTableColumnHeader column={column} title='Tarifa Mayorista' />
+      <DataTableColumnHeader column={column} title='PVP Mayor (B2B)' />
     ),
     cell: ({ row }) => {
       const discount = Math.round(
-        ((row.original.retail_price - row.original.wholesale_price) /
-          row.original.retail_price) *
+        ((row.original.retail_price - row.original.wholesale_price) / row.original.retail_price) *
           100
       );
       return (
@@ -163,7 +158,8 @@ export const columns: ColumnDef<Product>[] = [
             )}
           </div>
           <span className='text-[10px] text-[#6C757D]'>
-            Mínimo {row.original.min_wholesale_qty} {row.original.unit || 'u.'}
+            Margen: +{row.original.wholesale_margin_pct ?? 18}% • Mín.{' '}
+            {row.original.min_wholesale_qty} {row.original.unit || 'u.'}
           </span>
         </div>
       );

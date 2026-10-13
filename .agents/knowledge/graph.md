@@ -185,8 +185,23 @@ graph TD
   - **Aceleración Extrema por Inyección JS:** Extracción de productos en 5ms por página mediante `document.querySelectorAll` inyectado en vez de llamadas remotas múltiples de Selenium, y descarga asíncrona de fotos en pool de hilos (`ThreadPoolExecutor`).
   - **Detección Limpia de Fin de Catálogo:** Manejo automático de páginas sin resultados o con "No encontramos resultados para tu búsqueda" en `scraping_product.py`, finalizando con `[SCRAPER_STATUS:COMPLETED]` sin fallos de `TimeoutException`.
   - **Arquitectura de Costo Original y Márgenes Duales (B2B & B2C):** Guardado de `precio_costo` original del proveedor, margen minorista / detal (B2C, %) y mayorista (B2B, %), con cálculo y persistencia de `precio_minorista` y `precio_mayorista`. Toolbar en `/dashboard/coronel` y endpoint `/api/products/margins` para recálculo masivo instantáneo (0.01s) sin re-scrapear.
-  - **Réplica Taxonómica de 3 Niveles:** Extracción desde migas de pan (`.breadcrumb2`) y árbol de Coronel en Departamento (N1), Subcategoría (N2) y Línea (N3) con slugs y ruta completa (`categoria_ruta`).
+  - **Réplica Taxonómica de 3 Niveles y Soporte Infinito Retrocompatible:** Extracción desde migas de pan (`.breadcrumb2`) y árbol de Coronel con soporte para cualquier profundidad N (`categoria_niveles` JSON), manteniendo retrocompatibilidad total con `categoria`, `subcategoria` y `sub_subcategoria`.
   - Paso 2 (Sincronización remota a Tiendanube) pausado deliberadamente por indicación comercial del usuario.
 
+### 16. 🟢 Gestor Masivo de Márgenes y Arquitectura de Costos (`bulk-margin-manager`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Toolbar ejecutiva `BulkMarginToolbar` integrada en `/dashboard/product`.
+  - Recálculo masivo e instantáneo de PVP Detal y PVP Mayor aplicando márgenes comerciales (%) sobre el costo base (`cost_price`).
+  - Capacidad de aplicar a todo el catálogo o por departamento/categoría específica.
+  - Endpoint `/api/products/margins` y función RPC en Supabase `recalculate_product_margins`.
+  - Columnas de la tabla de productos transparentando costo y margen comercial (`Costo: $X (+40%)`).
 
-
+### 17. 🟢 Persistencia Pre-WhatsApp y Precios Históricos Fijos Quemados (`orders-persistence-snapshots`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Endpoint `POST /api/orders` que persiste la orden en backend antes de abrir WhatsApp.
+  - Generación de identificador correlativo nacional (ej. `#JG-2026-0001`) inyectado en el mensaje de WhatsApp.
+  - Vaciado de carrito tras confirmación de pedido.
+  - Snapshot Pattern ("precios quemados"): cada renglón de pedido almacena inmutablemente `unit_price`, `cost_price_at_sale` y `category_snapshot`, desacoplando las órdenes de futuros cambios de precios en catálogo.
+  - Ficha de pedido interactiva en `/dashboard/orders` (`OrderDetailSheet`) con edición de ítems (+ / - / borrar), recálculo de montos y consolidación de pago.

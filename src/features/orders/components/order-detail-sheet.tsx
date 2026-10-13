@@ -13,7 +13,13 @@ import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { Order, OrderStatus, PaymentStatus } from '../api/types';
 import { formatPrice } from '@/lib/whatsapp';
-import { updateOrderStatus, updatePaymentStatus, updateTrackingNumber } from '../api/service';
+import {
+  updateOrderStatus,
+  updatePaymentStatus,
+  updateTrackingNumber,
+  updateOrderItemQuantity,
+  removeOrderItem
+} from '../api/service';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { orderKeys } from '../api/queries';
 import { toast } from 'sonner';
@@ -64,6 +70,17 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
     onError: () => toast.error('Error al guardar el número de guía')
   });
 
+  // Mutación para editar cantidad o quitar ítem
+  const itemMutation = useMutation({
+    mutationFn: ({ orderId, itemId, qty }: { orderId: string; itemId: string; qty: number }) =>
+      updateOrderItemQuantity(orderId, itemId, qty),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      toast.success('Pedido actualizado con nuevos ítems y totales.');
+    },
+    onError: () => toast.error('Error al modificar los ítems del pedido')
+  });
+
   if (!order) return null;
 
   const handlePrintRemito = () => {
@@ -91,7 +108,10 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
                     <Icons.pro className='mr-1 h-3 w-3' /> Mayorista B2B
                   </Badge>
                 ) : (
-                  <Badge variant='outline' className='text-blue-600 border-blue-500/30 bg-blue-500/10 font-gotham text-xs'>
+                  <Badge
+                    variant='outline'
+                    className='text-blue-600 border-blue-500/30 bg-blue-500/10 font-gotham text-xs'
+                  >
                     <Icons.user className='mr-1 h-3 w-3' /> Minorista B2C
                   </Badge>
                 )}
@@ -108,12 +128,7 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
             </div>
 
             <div className='flex items-center gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={handlePrintRemito}
-                className='text-xs'
-              >
+              <Button variant='outline' size='sm' onClick={handlePrintRemito} className='text-xs'>
                 <Icons.post className='mr-1.5 h-3.5 w-3.5' /> Imprimir Remito
               </Button>
               <a
@@ -202,7 +217,8 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
                 {order.document_number} (Factura {order.invoice_type})
               </p>
               <p className='text-xs text-muted-foreground'>
-                <span className='font-medium text-foreground'>Teléfono:</span> {order.customer_phone}
+                <span className='font-medium text-foreground'>Teléfono:</span>{' '}
+                {order.customer_phone}
               </p>
               {order.customer_email && (
                 <p className='text-xs text-muted-foreground'>
@@ -223,7 +239,8 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
                 <span className='font-medium text-foreground'>Dirección:</span> {order.address}
               </p>
               <p className='text-xs text-muted-foreground'>
-                <span className='font-medium text-foreground'>Ubicación:</span> {order.city}, {order.province} (CP {order.postal_code})
+                <span className='font-medium text-foreground'>Ubicación:</span> {order.city},{' '}
+                {order.province} (CP {order.postal_code})
               </p>
               <div className='pt-1'>
                 {isEditingTracking ? (
@@ -244,11 +261,7 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
                     >
                       Guardar
                     </Button>
-                    <Button
-                      size='xs'
-                      variant='ghost'
-                      onClick={() => setIsEditingTracking(false)}
-                    >
+                    <Button size='xs' variant='ghost' onClick={() => setIsEditingTracking(false)}>
                       X
                     </Button>
                   </div>
@@ -256,7 +269,9 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
                   <div className='flex items-center justify-between text-xs bg-muted/40 p-2 rounded-md'>
                     <span>
                       <span className='font-medium'>Guía / Remito:</span>{' '}
-                      {order.tracking_number || <span className='italic text-muted-foreground'>Sin asignar</span>}
+                      {order.tracking_number || (
+                        <span className='italic text-muted-foreground'>Sin asignar</span>
+                      )}
                     </span>
                     <Button
                       variant='link'
@@ -295,17 +310,21 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
 
             <div className='flex items-center justify-between text-xs'>
               <span>
-                <span className='font-medium'>Medio:</span> {getPaymentMethodLabel(order.payment_method)}
+                <span className='font-medium'>Medio:</span>{' '}
+                {getPaymentMethodLabel(order.payment_method)}
               </span>
               {order.payment_status !== 'paid' ? (
                 <Button
                   size='xs'
-                  variant='outline'
-                  className='text-xs text-emerald-600 border-emerald-500/30 hover:bg-emerald-50'
-                  onClick={() => paymentMutation.mutate({ id: order.id, status: 'paid' })}
+                  variant='default'
+                  className='text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold'
+                  onClick={() => {
+                    paymentMutation.mutate({ id: order.id, status: 'paid' });
+                    statusMutation.mutate({ id: order.id, status: 'en_proceso' });
+                  }}
                   disabled={paymentMutation.isPending}
                 >
-                  <Icons.check className='mr-1 h-3 w-3' /> Marcar como Pagado
+                  <Icons.check className='mr-1 h-3 w-3' /> Consolidar Pago
                 </Button>
               ) : (
                 <Button
@@ -324,22 +343,20 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
           {/* Listado de Productos / Bultos */}
           <div className='space-y-3'>
             <h4 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground font-gotham'>
-              Productos Incluidos ({order.items.length} {order.items.length === 1 ? 'ítem' : 'ítems'})
+              Productos Incluidos ({order.items.length}{' '}
+              {order.items.length === 1 ? 'ítem' : 'ítems'})
             </h4>
             <div className='rounded-xl border border-border/60 divide-y divide-border/60 bg-card overflow-hidden'>
               {order.items.map((item) => (
                 <div key={item.id} className='p-3 flex items-center justify-between gap-4'>
                   <div className='flex items-center gap-3'>
                     <div className='h-12 w-12 rounded-lg overflow-hidden bg-muted relative shrink-0 border border-border/40'>
-                      <Image
-                        src={item.image_url}
-                        alt={item.name}
-                        fill
-                        className='object-cover'
-                      />
+                      <Image src={item.image_url} alt={item.name} fill className='object-cover' />
                     </div>
                     <div>
-                      <p className='text-sm font-medium text-foreground line-clamp-1'>{item.name}</p>
+                      <p className='text-sm font-medium text-foreground line-clamp-1'>
+                        {item.name}
+                      </p>
                       <div className='flex items-center gap-2 mt-0.5 text-xs text-muted-foreground'>
                         <span className='font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded'>
                           {item.sku}
@@ -356,10 +373,58 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
                       </div>
                     </div>
                   </div>
-                  <div className='text-right shrink-0'>
+                  <div className='text-right shrink-0 flex flex-col items-end gap-1'>
                     <span className='font-semibold text-sm text-foreground'>
                       {formatPrice(item.subtotal)}
                     </span>
+                    {order.payment_status !== 'paid' && (
+                      <div className='flex items-center gap-1'>
+                        <button
+                          type='button'
+                          className='h-5 w-5 rounded bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold text-xs cursor-pointer'
+                          onClick={() =>
+                            itemMutation.mutate({
+                              orderId: order.id,
+                              itemId: item.id,
+                              qty: item.quantity - 1
+                            })
+                          }
+                          disabled={itemMutation.isPending}
+                          title='Reducir cantidad'
+                        >
+                          -
+                        </button>
+                        <span className='px-1 font-mono text-[11px] font-bold'>
+                          {item.quantity}
+                        </span>
+                        <button
+                          type='button'
+                          className='h-5 w-5 rounded bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center font-bold text-xs cursor-pointer'
+                          onClick={() =>
+                            itemMutation.mutate({
+                              orderId: order.id,
+                              itemId: item.id,
+                              qty: item.quantity + 1
+                            })
+                          }
+                          disabled={itemMutation.isPending}
+                          title='Aumentar cantidad'
+                        >
+                          +
+                        </button>
+                        <button
+                          type='button'
+                          className='h-5 w-5 rounded hover:bg-red-500/10 text-red-500 flex items-center justify-center ml-1 cursor-pointer'
+                          onClick={() =>
+                            itemMutation.mutate({ orderId: order.id, itemId: item.id, qty: 0 })
+                          }
+                          disabled={itemMutation.isPending}
+                          title='Eliminar producto del pedido'
+                        >
+                          <Icons.trash className='h-3 w-3' />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -390,12 +455,16 @@ export function OrderDetailSheet({ order, open, onOpenChange }: OrderDetailSheet
             <div className='flex justify-between text-xs text-muted-foreground'>
               <span>Costo de Envío:</span>
               <span className='font-mono'>
-                {order.shipping_cost > 0 ? formatPrice(order.shipping_cost) : 'Sin cargo / En destino'}
+                {order.shipping_cost > 0
+                  ? formatPrice(order.shipping_cost)
+                  : 'Sin cargo / En destino'}
               </span>
             </div>
 
             <div className='border-t border-border/60 pt-2 flex justify-between items-baseline'>
-              <span className='font-bold text-sm text-foreground font-gotham'>Total Pedido (ARS):</span>
+              <span className='font-bold text-sm text-foreground font-gotham'>
+                Total Pedido (ARS):
+              </span>
               <span className='font-bebas text-2xl font-bold tracking-wide text-[#E63946]'>
                 {formatPrice(order.total_amount)}
               </span>

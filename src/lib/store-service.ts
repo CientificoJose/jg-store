@@ -26,7 +26,14 @@ export interface FetchProductsResult {
 export async function fetchStoreProductsWithMeta(
   options: FetchProductsOptions = {}
 ): Promise<FetchProductsResult> {
-  const { category, subcategory, sub_subcategory, search, sort = 'popular', onlyInStock = false } = options;
+  const {
+    category,
+    subcategory,
+    sub_subcategory,
+    search,
+    sort = 'popular',
+    onlyInStock = false
+  } = options;
 
   let products: StoreProduct[] = [];
 
@@ -62,9 +69,19 @@ export async function fetchStoreProductsWithMeta(
             sub_subcategory_name: item.sub_subcategory_name,
             retail_price: Number(item.retail_price),
             wholesale_price: Number(item.wholesale_price),
+            cost_price: Number(item.cost_price ?? Math.round(Number(item.retail_price || 0) / 1.4)),
+            retail_margin_pct: Number(item.retail_margin_pct ?? 40),
+            wholesale_margin_pct: Number(item.wholesale_margin_pct ?? 18),
+            supplier_code: item.supplier_code,
+            barcode: item.barcode,
+            full_category_path: item.full_category_path,
+            category_levels: item.category_levels,
+            depth_level: item.depth_level,
             min_wholesale_qty: Number(item.min_wholesale_qty || 6),
             stock: Number(item.stock || 0),
-            image_url: item.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+            image_url:
+              item.image_url ||
+              'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
             unit: item.unit || 'unidad',
             brand: item.brand,
             featured: Boolean(item.featured),
@@ -105,9 +122,10 @@ export async function fetchStoreProductsWithMeta(
   // 2. Filtrar por búsqueda inteligente (coincidencias, fuzzy typos y sinónimos polirrubro)
   if (search && search.trim() !== '') {
     // Si hay categoría seleccionada, probamos primero en esa categoría
-    let pool = (category && category !== 'all')
-      ? products.filter((p) => p.category_slug === category)
-      : products;
+    let pool =
+      category && category !== 'all'
+        ? products.filter((p) => p.category_slug === category)
+        : products;
 
     let smartRes = performSmartSearch(pool, search);
 
@@ -162,7 +180,9 @@ export async function fetchStoreProducts(
 export async function fetchProductById(id: string): Promise<StoreProduct | null> {
   const all = await fetchStoreProducts();
   const mockMatch = INITIAL_PRODUCTS.find((p) => p.id === id);
-  return all.find((p) => p.id === id || p.sku === id || (mockMatch && p.sku === mockMatch.sku)) || null;
+  return (
+    all.find((p) => p.id === id || p.sku === id || (mockMatch && p.sku === mockMatch.sku)) || null
+  );
 }
 
 export async function updateProductStock(
@@ -250,7 +270,9 @@ export async function updateStoreProduct(
     ...data,
     stock: data.stock !== undefined ? Number(data.stock) : localCatalog[index].stock,
     retail_price:
-      data.retail_price !== undefined ? Number(data.retail_price) : localCatalog[index].retail_price,
+      data.retail_price !== undefined
+        ? Number(data.retail_price)
+        : localCatalog[index].retail_price,
     wholesale_price:
       data.wholesale_price !== undefined
         ? Number(data.wholesale_price)
@@ -305,3 +327,90 @@ export async function deleteStoreProduct(id: string): Promise<boolean> {
   return true;
 }
 
+export interface UpdateMarginsOptions {
+  scope: 'all' | 'category';
+  category?: string;
+  retailMargin?: number;
+  wholesaleMargin?: number;
+}
+
+export async function updateStoreProductMarginsMassive(
+  options: UpdateMarginsOptions
+): Promise<{ success: boolean; updated_count: number; message: string }> {
+  const { scope, category, retailMargin, wholesaleMargin } = options;
+
+  let count = 0;
+
+  // 1. Actualizar memoria local
+  localCatalog = localCatalog.map((prod) => {
+    const matchesScope =
+      scope === 'all' ||
+      !category ||
+      category === 'all' ||
+      prod.category_slug === category ||
+      prod.subcategory_slug === category;
+
+    if (!matchesScope) return prod;
+
+    const cost = prod.cost_price || Math.round(prod.retail_price / 1.4);
+    const newRetailMargin =
+      retailMargin !== undefined ? retailMargin : (prod.retail_margin_pct ?? 40);
+    const newWholesaleMargin =
+      wholesaleMargin !== undefined ? wholesaleMargin : (prod.wholesale_margin_pct ?? 18);
+
+    const newRetailPrice =
+      retailMargin !== undefined
+        ? Math.round(cost * (1 + newRetailMargin / 100))
+        : prod.retail_price;
+    const newWholesalePrice =
+      wholesaleMargin !== undefined
+        ? Math.round(cost * (1 + newWholesaleMargin / 100))
+        : prod.wholesale_price;
+
+    count++;
+    return {
+      ...prod,
+      cost_price: cost,
+      retail_margin_pct: newRetailMargin,
+      wholesale_margin_pct: newWholesaleMargin,
+      retail_price: newRetailPrice,
+      wholesale_price: newWholesalePrice
+    };
+  });
+
+  // 2. Si hay conexión con Supabase Dokploy, ejecutar RPC o actualización
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      const rpcEndpoint = `${SUPABASE_URL}/rest/v1/rpc/recalculate_product_margins`;
+      const res = await fetch(rpcEndpoint, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          p_scope: scope,
+          p_category_id: category || null,
+          p_retail_margin: retailMargin ?? null,
+          p_wholesale_margin: wholesaleMargin ?? null
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.updated_count === 'number') {
+          count = data.updated_count;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return {
+    success: true,
+    updated_count: count,
+    message: `Se recalcularon exitosamente ${count} productos con nuevos márgenes.`
+  };
+}

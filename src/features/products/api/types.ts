@@ -13,6 +13,14 @@ export interface Product {
   sub_subcategory_name?: string;
   retail_price: number;
   wholesale_price: number;
+  cost_price?: number;
+  retail_margin_pct?: number;
+  wholesale_margin_pct?: number;
+  supplier_code?: string;
+  barcode?: string;
+  full_category_path?: string;
+  category_levels?: string[];
+  depth_level?: number;
   min_wholesale_qty: number;
   stock: number;
   unit: string;

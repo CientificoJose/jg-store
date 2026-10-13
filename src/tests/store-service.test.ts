@@ -29,13 +29,17 @@ describe('Servicio de Catálogo y Productos JG Store (`store-service`)', () => {
     // 1. Menor precio
     const resAsc = await fetchStoreProductsWithMeta({ sort: 'price_asc' });
     for (let i = 0; i < resAsc.products.length - 1; i++) {
-      expect(resAsc.products[i].retail_price).toBeLessThanOrEqual(resAsc.products[i + 1].retail_price);
+      expect(resAsc.products[i].retail_price).toBeLessThanOrEqual(
+        resAsc.products[i + 1].retail_price
+      );
     }
 
     // 2. Mayor precio
     const resDesc = await fetchStoreProductsWithMeta({ sort: 'price_desc' });
     for (let i = 0; i < resDesc.products.length - 1; i++) {
-      expect(resDesc.products[i].retail_price).toBeGreaterThanOrEqual(resDesc.products[i + 1].retail_price);
+      expect(resDesc.products[i].retail_price).toBeGreaterThanOrEqual(
+        resDesc.products[i + 1].retail_price
+      );
     }
   });
 
@@ -98,5 +102,23 @@ describe('Servicio de Catálogo y Productos JG Store (`store-service`)', () => {
 
     const checkDeleted = await fetchProductById(created.id);
     expect(checkDeleted).toBeNull();
+  });
+
+  it('updateStoreProductMarginsMassive debe recalcular márgenes y precios detal/mayor masivamente', async () => {
+    const { updateStoreProductMarginsMassive } = await import('@/lib/store-service');
+    const res = await updateStoreProductMarginsMassive({
+      scope: 'all',
+      retailMargin: 50,
+      wholesaleMargin: 25
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.updated_count).toBeGreaterThan(0);
+
+    const catalog = await fetchStoreProducts();
+    const sample = catalog[0];
+    expect(sample.retail_margin_pct).toBe(50);
+    expect(sample.wholesale_margin_pct).toBe(25);
+    expect(sample.retail_price).toBeGreaterThan(sample.wholesale_price);
   });
 });

@@ -1,8 +1,7 @@
 import { CartItem, CartSummary, CustomerOrderInfo } from '@/types/store';
 
 // Número de WhatsApp oficial de JG Store para recepción de pedidos/cotizaciones (Argentina +54 9)
-export const JG_STORE_WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '5491155550000';
+export const JG_STORE_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '5491155550000';
 
 // Monto mínimo de compra en pesos argentinos para activar tarifa mayorista en todo el pedido
 export const WHOLESALE_MIN_AMOUNT_ARS = 50000;
@@ -61,7 +60,8 @@ export function formatPrice(price: number): string {
 
 export function generateWhatsAppOrderMessage(
   items: CartItem[],
-  customer: CustomerOrderInfo
+  customer: CustomerOrderInfo,
+  orderNumber?: string
 ): string {
   const summary = calculateCartSummary(items);
   const now = new Date().toLocaleDateString('es-ES', {
@@ -74,6 +74,7 @@ export function generateWhatsAppOrderMessage(
 
   const lines: string[] = [
     `🛍️ *PEDIDO / COTIZACIÓN - JG STORE POLIRUBRO (ARGENTINA)*`,
+    ...(orderNumber ? [`🆔 *PEDIDO OFICIAL:* #${orderNumber}`] : []),
     `📅 Fecha: ${now}`,
     `----------------------------------------`,
     `📋 *DETALLE DE PRODUCTOS:*`
@@ -94,7 +95,8 @@ export function generateWhatsAppOrderMessage(
     );
 
     if (isWholesale) {
-      const itemSavings = (item.product.retail_price - item.product.wholesale_price) * item.quantity;
+      const itemSavings =
+        (item.product.retail_price - item.product.wholesale_price) * item.quantity;
       lines.push(`   • 🎉 Ahorro mayorista: *${formatPrice(itemSavings)}*`);
     } else {
       const neededForWholesale = item.product.min_wholesale_qty - item.quantity;
@@ -153,9 +155,10 @@ export function generateWhatsAppOrderMessage(
 export function buildWhatsAppUrl(
   items: CartItem[],
   customer: CustomerOrderInfo,
-  phoneNumber: string = JG_STORE_WHATSAPP_NUMBER
+  phoneNumber: string = JG_STORE_WHATSAPP_NUMBER,
+  orderNumber?: string
 ): string {
-  const message = generateWhatsAppOrderMessage(items, customer);
+  const message = generateWhatsAppOrderMessage(items, customer, orderNumber);
   // Limpiar número (remover signos y espacios)
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
   // Usar endpoint directo api.whatsapp.com para evitar la redirección 302 de wa.me que rompe los caracteres UTF-8/emojis
