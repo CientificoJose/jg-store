@@ -215,6 +215,9 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Generación de número de pedido oficial correlativo argentino (ej. `#JG-2026-0001`) inyectado en el mensaje de WhatsApp.
   - Vaciado automático del carrito tras confirmar la orden.
   - Ficha de pedido en el panel administrativo (`OrderDetailSheet`) con edición de cantidades en vivo (+ / - / eliminar), recálculo de totales y botón de "Consolidar Pago".
+- [x] **10. Blindaje contra Colapso de Altura de Tablas y Errores de Hidratación en Producción Dokploy:**
+  - Resolución del colapso visual a 0px de altura en la tabla de productos mediante `min-h-[420px]` en `data-table.tsx` y wrapper `flex flex-1 flex-col space-y-4` en `product-tables/index.tsx`.
+  - Corrección del error de hidratación React #418 sustituyendo el formateador dependiente de ICU de Node/Linux por un formateador numérico determinista de moneda argentina `$ X.XXX` en `whatsapp.ts`, con `suppressHydrationWarning` en celdas de precios y envoltura en `<Suspense>` con `DataTableSkeleton`.
 
 ---
 
