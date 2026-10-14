@@ -9,6 +9,7 @@ import { getSortingStateParser } from '@/lib/parsers';
 import { productsQueryOptions } from '../../api/queries';
 import { columns } from './columns';
 import { BulkMarginToolbar } from '../bulk-margin-toolbar';
+import { ProductHierarchyFilters } from '../product-hierarchy-filters';
 
 const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
@@ -18,6 +19,9 @@ export function ProductTable() {
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
     category: parseAsString,
+    subcategory: parseAsString,
+    sub_subcategory: parseAsString,
+    stock_status: parseAsString,
     sort: getSortingStateParser(columnIds).withDefault([])
   });
 
@@ -26,6 +30,9 @@ export function ProductTable() {
     limit: params.perPage,
     ...(params.name && { search: params.name }),
     ...(params.category && { categories: params.category }),
+    ...(params.subcategory && { subcategory: params.subcategory }),
+    ...(params.sub_subcategory && { sub_subcategory: params.sub_subcategory }),
+    ...(params.stock_status && { stock_status: params.stock_status }),
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
@@ -47,6 +54,7 @@ export function ProductTable() {
   return (
     <div className='flex flex-1 flex-col space-y-4'>
       <BulkMarginToolbar />
+      <ProductHierarchyFilters />
       <DataTable table={table}>
         <DataTableToolbar table={table} />
       </DataTable>

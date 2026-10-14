@@ -38,6 +38,9 @@ export type ProductFilters = {
   page?: number;
   limit?: number;
   categories?: string;
+  subcategory?: string;
+  sub_subcategory?: string;
+  stock_status?: string;
   search?: string;
   sort?: string;
   onlyInStock?: boolean;

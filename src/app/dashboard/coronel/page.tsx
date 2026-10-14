@@ -42,6 +42,19 @@ export default function CoronelScraperPage() {
   const [bulkMargenMayorista, setBulkMargenMayorista] = useState(18);
   const [updatingMargins, setUpdatingMargins] = useState(false);
   const [downloadImages, setDownloadImages] = useState(false);
+
+  // Estados de Migración al Catálogo Web (Supabase Dokploy)
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationCategory, setMigrationCategory] = useState<string>('all');
+  const [migrationRetailMargin, setMigrationRetailMargin] = useState<number>(40);
+  const [migrationWholesaleMargin, setMigrationWholesaleMargin] = useState<number>(18);
+  const [lastMigrationInfo, setLastMigrationInfo] = useState<{
+    date: string;
+    total: number;
+    inserted: number;
+    updated: number;
+    categories: number;
+  } | null>(null);
   const [scraperMode, setScraperMode] = useState<'scrape' | 'stock' | 'full-run'>('scrape');
 
   // Vista previa de navegador
@@ -249,6 +262,47 @@ export default function CoronelScraperPage() {
       toast.error(err.message || 'Error al recalcular precios masivos');
     } finally {
       setUpdatingMargins(false);
+    }
+  };
+
+  // Migración masiva de productos y categorías hacia la base de datos oficial (Supabase Dokploy)
+  const handleMigrateToWeb = async () => {
+    setIsMigrating(true);
+    try {
+      const res = await fetch('/api/scraper/migrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: migrationCategory === 'all' ? undefined : migrationCategory,
+          default_retail_margin: Number(migrationRetailMargin),
+          default_wholesale_margin: Number(migrationWholesaleMargin)
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || data.message || 'Error durante la migración');
+      }
+
+      setLastMigrationInfo({
+        date: new Date().toLocaleTimeString(),
+        total: data.migrated_products,
+        inserted: data.inserted_products,
+        updated: data.updated_products,
+        categories:
+          (data.created_categories || 0) +
+          (data.created_subcategories || 0) +
+          (data.created_sub_subcategories || 0)
+      });
+
+      toast.success(
+        `¡Publicación exitosa! ${data.inserted_products} productos nuevos y ${data.updated_products} actualizados en el catálogo oficial de JG Store.`
+      );
+      fetchDbStats();
+    } catch (err: any) {
+      toast.error(err.message || 'No se pudo completar la migración hacia la tienda online');
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -1033,39 +1087,53 @@ export default function CoronelScraperPage() {
         )}
       </div>
 
-      {/* SECCIÓN INFERIOR: BASE DE DATOS SQLITE (PRODUCTOS.DB) */}
+      {/* SECCIÓN INFERIOR: CENTRO DE MIGRACIÓN & PUBLICACIÓN AL CATÁLOGO WEB */}
       <div className='space-y-4 pt-4 border-t border-border'>
-        <div className='flex items-center justify-between'>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
           <div>
             <h2 className='text-xl font-bebas tracking-wide text-foreground flex items-center gap-2'>
               <Icons.box className='w-5 h-5 text-[#E63946]' />
-              BASE DE DATOS LOCAL (PRODUCTOS.DB)
+              CENTRO DE MIGRACIÓN & PUBLICACIÓN AL CATÁLOGO WEB
             </h2>
             <p className='text-xs text-muted-foreground'>
-              Catálogo extraído y almacenado en SQLite en la carpeta de scraping.
+              Sincroniza los productos extraídos hacia la base de datos oficial (PostgreSQL /
+              Supabase Dokploy). Auto-crea categorías recursivas y actualiza precios y stock sin
+              duplicados.
             </p>
           </div>
 
-          <button
-            onClick={fetchDbStats}
-            disabled={loadingDb}
-            className='px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors flex items-center gap-1.5'
-          >
-            <Icons.refresh className={`w-3.5 h-3.5 ${loadingDb ? 'animate-spin' : ''}`} />
-            <span>Refrescar Catálogo</span>
-          </button>
+          <div className='flex items-center gap-2'>
+            <a
+              href='/dashboard/product'
+              className='px-3 py-1.5 rounded-lg border border-[#E63946]/40 bg-[#E63946]/10 text-xs font-semibold text-[#E63946] hover:bg-[#E63946]/20 transition-colors flex items-center gap-1.5'
+            >
+              <Icons.store className='w-3.5 h-3.5' />
+              <span>Ver Catálogo Web (/product)</span>
+            </a>
+
+            <button
+              onClick={fetchDbStats}
+              disabled={loadingDb}
+              className='px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors flex items-center gap-1.5'
+            >
+              <Icons.refresh className={`w-3.5 h-3.5 ${loadingDb ? 'animate-spin' : ''}`} />
+              <span>Refrescar SQLite</span>
+            </button>
+          </div>
         </div>
 
         {/* Tarjetas de Métricas de la BD */}
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           <div className='p-4 rounded-xl bg-card border border-border'>
             <span className='text-xs text-muted-foreground uppercase font-semibold'>
-              Total de Productos
+              Total en SQLite Local
             </span>
             <div className='text-2xl font-bebas text-foreground mt-1'>
               {dbStats?.total_products ?? 0}
             </div>
-            <span className='text-[11px] text-emerald-500'>Listos en SQLite local</span>
+            <span className='text-[11px] text-emerald-500 font-medium'>
+              Listos para migrar a la Web
+            </span>
           </div>
 
           <div className='p-4 rounded-xl bg-card border border-border'>
@@ -1075,33 +1143,133 @@ export default function CoronelScraperPage() {
             <div className='text-2xl font-bebas text-foreground mt-1'>
               {dbStats?.categories?.length ?? 0}
             </div>
-            <span className='text-[11px] text-muted-foreground'>Categorías mayoristas</span>
+            <span className='text-[11px] text-muted-foreground'>Categorías del proveedor</span>
           </div>
 
           <div className='p-4 rounded-xl bg-card border border-border'>
             <span className='text-xs text-muted-foreground uppercase font-semibold'>
-              Tamaño Archivo .db
+              Estado de Sincronización Web
             </span>
-            <div className='text-2xl font-bebas text-foreground mt-1'>
-              {dbStats?.db_size_kb ? `${dbStats.db_size_kb} KB` : 'N/A'}
+            <div className='text-2xl font-bebas text-[#D4A017] mt-1'>
+              {lastMigrationInfo ? `${lastMigrationInfo.total} Migrados` : 'En Espera'}
             </div>
-            <span className='text-[11px] text-muted-foreground'>productos.db</span>
+            <span className='text-[11px] text-muted-foreground'>
+              {lastMigrationInfo ? `A las ${lastMigrationInfo.date}` : 'Sin migrar en esta sesión'}
+            </span>
           </div>
         </div>
 
-        {/* Barra de Recálculo Masivo de Márgenes */}
-        <div className='p-3.5 rounded-xl bg-card border border-border flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs'>
-          <div className='flex items-center gap-2 text-foreground font-bold'>
-            <Icons.settings className='w-4 h-4 text-[#E63946]' />
-            <span>Ajuste Masivo de Márgenes (%):</span>
+        {/* PANEL PRINCIPAL: PUBLICAR / MIGRAR A LA TIENDA WEB */}
+        <div className='p-4 rounded-xl bg-card border-2 border-[#E63946]/30 shadow-md space-y-3.5 relative overflow-hidden'>
+          <div className='flex flex-wrap items-center justify-between gap-2'>
+            <div className='flex items-center gap-2'>
+              <div className='w-7 h-7 rounded-lg bg-[#E63946] text-white flex items-center justify-center font-bold'>
+                <Icons.arrowRight className='w-4 h-4' />
+              </div>
+              <div>
+                <h3 className='text-sm font-bold text-foreground font-gotham'>
+                  Sincronizador ETL: SQLite &rarr; Catálogo Web (PostgreSQL)
+                </h3>
+                <p className='text-[11px] text-muted-foreground'>
+                  Crea automáticamente las categorías y subcategorías faltantes y actualiza costos,
+                  PVP y stock sin duplicar productos.
+                </p>
+              </div>
+            </div>
+
+            {lastMigrationInfo && (
+              <span className='px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'>
+                ✓ {lastMigrationInfo.total} sincronizados ({lastMigrationInfo.inserted} nuevos,{' '}
+                {lastMigrationInfo.updated} actualizados)
+              </span>
+            )}
+          </div>
+
+          <div className='flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/60 text-xs'>
+            {/* Selector de Ámbito / Categoría */}
+            <div className='flex items-center gap-2'>
+              <span className='text-muted-foreground font-medium'>Seleccionar:</span>
+              <select
+                value={migrationCategory}
+                onChange={(e) => setMigrationCategory(e.target.value)}
+                disabled={isMigrating}
+                className='px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
+              >
+                <option value='all'>
+                  Todo el Catálogo ({dbStats?.total_products ?? 0} artículos)
+                </option>
+                {dbStats?.categories?.map((cat) => (
+                  <option key={cat.name} value={cat.name}>
+                    {cat.name} ({cat.count} prods)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Márgenes por Defecto para la Migración */}
+            <div className='flex flex-wrap items-center gap-3'>
+              <div className='flex items-center gap-1.5'>
+                <span className='text-muted-foreground font-medium'>Margen Detal:</span>
+                <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
+                  <input
+                    type='number'
+                    min='0'
+                    max='200'
+                    value={migrationRetailMargin}
+                    onChange={(e) => setMigrationRetailMargin(Number(e.target.value))}
+                    disabled={isMigrating}
+                    className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
+                  />
+                  <span className='text-muted-foreground font-semibold'>%</span>
+                </div>
+              </div>
+
+              <div className='flex items-center gap-1.5'>
+                <span className='text-muted-foreground font-medium'>Margen Mayor:</span>
+                <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
+                  <input
+                    type='number'
+                    min='0'
+                    max='200'
+                    value={migrationWholesaleMargin}
+                    onChange={(e) => setMigrationWholesaleMargin(Number(e.target.value))}
+                    disabled={isMigrating}
+                    className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
+                  />
+                  <span className='text-muted-foreground font-semibold'>%</span>
+                </div>
+              </div>
+
+              {/* Botón Principal de Migración */}
+              <button
+                onClick={handleMigrateToWeb}
+                disabled={isMigrating || (dbStats?.total_products ?? 0) === 0}
+                className='px-4 py-2 rounded-lg bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer'
+              >
+                <Icons.refresh className={`w-4 h-4 ${isMigrating ? 'animate-spin' : ''}`} />
+                <span>
+                  {isMigrating
+                    ? 'Publicando en Catálogo Web...'
+                    : '🚀 Publicar / Migrar al Catálogo Web'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Barra Secundaria de Recálculo Masivo de Márgenes en SQLite Local */}
+        <div className='p-3 rounded-xl bg-card border border-border flex flex-wrap items-center justify-between gap-3 text-xs'>
+          <div className='flex items-center gap-2 text-foreground font-semibold'>
+            <Icons.settings className='w-4 h-4 text-muted-foreground' />
+            <span>Recálculo en SQLite Local:</span>
             <span className='text-[11px] font-normal text-muted-foreground hidden sm:inline'>
-              (Recalcula precios de venta en SQLite en 1 segundo sin scrapear)
+              (Ajusta los precios dentro del archivo local productos.db antes de publicar)
             </span>
           </div>
 
           <div className='flex flex-wrap items-center gap-3'>
             <div className='flex items-center gap-1.5'>
-              <span className='text-muted-foreground font-medium'>Detal (B2C):</span>
+              <span className='text-muted-foreground'>Detal:</span>
               <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
                 <input
                   type='number'
@@ -1109,14 +1277,14 @@ export default function CoronelScraperPage() {
                   max='200'
                   value={bulkMargenMinorista}
                   onChange={(e) => setBulkMargenMinorista(Number(e.target.value))}
-                  className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
+                  className='w-10 bg-transparent text-foreground font-bold text-center outline-none'
                 />
                 <span className='text-muted-foreground font-semibold'>%</span>
               </div>
             </div>
 
             <div className='flex items-center gap-1.5'>
-              <span className='text-muted-foreground font-medium'>Mayor (B2B):</span>
+              <span className='text-muted-foreground'>Mayor:</span>
               <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
                 <input
                   type='number'
@@ -1124,7 +1292,7 @@ export default function CoronelScraperPage() {
                   max='200'
                   value={bulkMargenMayorista}
                   onChange={(e) => setBulkMargenMayorista(Number(e.target.value))}
-                  className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
+                  className='w-10 bg-transparent text-foreground font-bold text-center outline-none'
                 />
                 <span className='text-muted-foreground font-semibold'>%</span>
               </div>
@@ -1133,10 +1301,10 @@ export default function CoronelScraperPage() {
             <button
               onClick={handleUpdateMargins}
               disabled={updatingMargins}
-              className='px-3.5 py-1.5 rounded-lg bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-xs flex items-center gap-1.5'
+              className='px-3 py-1 rounded-lg border border-border bg-muted/60 hover:bg-muted text-foreground font-semibold transition-all flex items-center gap-1.5'
             >
-              <Icons.refresh className={`w-3.5 h-3.5 ${updatingMargins ? 'animate-spin' : ''}`} />
-              <span>{updatingMargins ? 'Recalculando...' : 'Aplicar a Catálogo'}</span>
+              <Icons.refresh className={`w-3 h-3 ${updatingMargins ? 'animate-spin' : ''}`} />
+              <span>{updatingMargins ? 'Recalculando...' : 'Guardar en SQLite'}</span>
             </button>
           </div>
         </div>

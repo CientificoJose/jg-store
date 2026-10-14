@@ -323,7 +323,7 @@ async def sse_stream():
     )
 
 @app.get("/api/products")
-def get_products():
+def get_products(category: Optional[str] = None, all_products: bool = False, limit: int = 100):
     if not os.path.exists(DB_PATH):
         return {
             "total_products": 0,
@@ -340,17 +340,27 @@ def get_products():
         cursor.execute("SELECT count(*) as total FROM productos")
         total = cursor.fetchone()["total"]
 
-        cursor.execute("SELECT categoria, count(*) as count FROM productos GROUP BY categoria ORDER BY count DESC")
+        cursor.execute("SELECT categoria, count(*) as count FROM productos WHERE categoria IS NOT NULL GROUP BY categoria ORDER BY count DESC")
         categories = [{"name": row["categoria"], "count": row["count"]} for row in cursor.fetchall()]
 
-        cursor.execute("""
+        query = """
             SELECT codigo, codigo_barra, descripcion, categoria, subcategoria, sub_subcategoria, categoria_ruta,
+                   categoria_slug, subcategoria_slug, sub_subcategoria_slug, categoria_niveles, nivel_profundidad,
                    precio, precio_costo, precio_minorista, precio_mayorista, margen_minorista, margen_mayorista,
-                   precio_venta, porcentaje_ganancia, foto, imagen_url, updated_at
+                   precio_venta, porcentaje_ganancia, foto, imagen_url, imagen_local, variante, stock, updated_at
             FROM productos
-            ORDER BY rowid DESC
-            LIMIT 100
-        """)
+        """
+        params = []
+        if category and category != "all":
+            query += " WHERE categoria = ? OR categoria_slug = ?"
+            params.extend([category, category])
+
+        query += " ORDER BY rowid DESC"
+        if not all_products:
+            query += " LIMIT ?"
+            params.append(limit)
+
+        cursor.execute(query, params)
         products = [dict(row) for row in cursor.fetchall()]
         conn.close()
 

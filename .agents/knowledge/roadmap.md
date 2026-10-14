@@ -296,8 +296,17 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Mapeo a los 3 niveles de JG Store: Nivel 1 (Departamento), Nivel 2 (Subcategoría) y Nivel 3 (Línea / Sub-subcategoría).
     - Almacenamiento de ruta completa (`categoria_ruta`), niveles desglosados y slugs normalizados (`categoria_slug`, `subcategoria_slug`, `sub_subcategoria_slug`).
     - Visualización en la tabla de productos del Dashboard con ruta jerárquica y comparativa de costos vs PVP Detal y PVP Mayor.
-  - **Ejecución Asíncrona Desatendida:** El usuario puede ingresar al panel `/dashboard/coronel`, interactuar con el ratón directamente sobre la página de Coronel Mayorista para seleccionar la categoría deseada, dar clic en "CONTINUAR SCRAPING", y apagar su computadora mientras el servidor continúa procesando en la nube 24/7.
-- [ ] **Paso 2: Sincronización Remota de Catálogo (Pausado / Achantado por indicación del usuario):** La sincronización automática hacia Tiendanube o endpoints remotos se mantiene pausada para priorizar la ejecución y validación local de productos.
+  - **Centro de Migración & Publicación al Catálogo Web Oficial (`/dashboard/coronel`):**
+    - Transformación de la sección inferior de SQLite en un Centro ETL de Publicación Activo hacia la base de datos oficial (PostgreSQL / Supabase Dokploy).
+    - Endpoint `/api/scraper/migrate` con auto-creación recursiva de categorías (Nivel 1), subcategorías (Nivel 2) y líneas (Nivel 3) que no existan previamente, evitando duplicados y preservando la jerarquía completa.
+    - Upsert inteligente de productos por SKU / `codigo` que sincroniza costos, PVP detal/mayor y stock.
+    - Selector de ámbito (Todo el catálogo o por categoría), márgenes configurables y feedback en tiempo real con estadísticas de migración y enlace directo al catálogo `/dashboard/product`.
+  - **Barra de Búsqueda y Filtros Jerárquicos en Cascada (`/dashboard/product`):**
+    - Componente `ProductHierarchyFilters` con búsqueda global por texto/SKU/código.
+    - Selectores en cascada: Departamento (Nivel 1) ➔ Subcategoría (Nivel 2) ➔ Línea (Nivel 3).
+    - Selector de disponibilidad de stock (Todos, En Stock, Stock Bajo, Agotado).
+    - Badges / pills interactivas de filtros activos y botón de restablecimiento rápido en 1 clic.
+- [x] **Paso 2: Sincronización de Catálogo SQLite -> Supabase Dokploy:** Implementada y validada exitosamente con upserts idempotentes y auto-creación de categorías en PostgREST.
 
 ---
 

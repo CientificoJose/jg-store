@@ -205,3 +205,10 @@ graph TD
   - Vaciado de carrito tras confirmación de pedido.
   - Snapshot Pattern ("precios quemados"): cada renglón de pedido almacena inmutablemente `unit_price`, `cost_price_at_sale` y `category_snapshot`, desacoplando las órdenes de futuros cambios de precios en catálogo.
   - Ficha de pedido interactiva en `/dashboard/orders` (`OrderDetailSheet`) con edición de ítems (+ / - / borrar), recálculo de montos y consolidación de pago.
+
+### 18. 🟢 Sincronizador ETL de Catálogo SQLite ➔ Supabase & Filtros Jerárquicos (`catalog-migration-and-filters`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Centro de Migración en `/dashboard/coronel`:** Transformación de la sección inferior de SQLite en un centro activo de migración y publicación al catálogo web oficial.
+  - **Endpoint ETL `/api/scraper/migrate`:** Lectura de productos desde SQLite o microservicio remoto de scraping, auto-creación recursiva de categorías (Nivel 1), subcategorías (Nivel 2) y líneas (Nivel 3) en PostgreSQL / Supabase Dokploy si no existen, y upsert de productos por SKU / `codigo` evitando duplicados.
+  - **Toolbar de Filtros Jerárquicos en `/dashboard/product` (`ProductHierarchyFilters`):** Selectores en cascada Nivel 1 (Departamento) ➔ Nivel 2 (Subcategoría) ➔ Nivel 3 (Línea de producto), buscador global por texto, selector de estado de stock (En stock, Stock crítico, Agotado), y badges reactivos de filtros activos con botón de limpieza global.

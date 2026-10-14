@@ -14,6 +14,7 @@ export interface FetchProductsOptions {
   search?: string;
   sort?: ProductSortOption;
   onlyInStock?: boolean;
+  stockStatus?: string;
 }
 
 import { performSmartSearch, SearchMatchMetadata } from './search-engine';
@@ -32,7 +33,8 @@ export async function fetchStoreProductsWithMeta(
     sub_subcategory,
     search,
     sort = 'popular',
-    onlyInStock = false
+    onlyInStock = false,
+    stockStatus
   } = options;
 
   let products: StoreProduct[] = [];
@@ -138,8 +140,16 @@ export async function fetchStoreProductsWithMeta(
     searchMetadata = smartRes.metadata;
   }
 
-  // 3. Filtrar solo productos en stock
-  if (onlyInStock) {
+  // 3. Filtrar stock
+  if (stockStatus && stockStatus !== 'all') {
+    if (stockStatus === 'in_stock') {
+      products = products.filter((p) => p.stock > 0);
+    } else if (stockStatus === 'low_stock') {
+      products = products.filter((p) => p.stock > 0 && p.stock <= 10);
+    } else if (stockStatus === 'out_of_stock') {
+      products = products.filter((p) => p.stock <= 0);
+    }
+  } else if (onlyInStock) {
     products = products.filter((p) => p.stock > 0);
   }
 

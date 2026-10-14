@@ -11,6 +11,9 @@ export default function ProductListingPage() {
   const search = searchParamsCache.get('name');
   const pageLimit = searchParamsCache.get('perPage');
   const categories = searchParamsCache.get('category');
+  const subcategory = searchParamsCache.get('subcategory');
+  const sub_subcategory = searchParamsCache.get('sub_subcategory');
+  const stock_status = searchParamsCache.get('stock_status');
   const sort = searchParamsCache.get('sort');
 
   const filters = {
@@ -18,6 +21,9 @@ export default function ProductListingPage() {
     limit: pageLimit,
     ...(search && { search }),
     ...(categories && { categories }),
+    ...(subcategory && { subcategory }),
+    ...(sub_subcategory && { sub_subcategory }),
+    ...(stock_status && { stock_status }),
     ...(sort && { sort })
   };
 

@@ -65,8 +65,11 @@ function mapStoreProductToProduct(item: any): Product {
 export async function getProducts(filters: ProductFilters): Promise<ProductsResponse> {
   const allStoreProducts = await fetchStoreProducts({
     category: filters.categories,
+    subcategory: filters.subcategory,
+    sub_subcategory: filters.sub_subcategory,
     search: filters.search,
-    onlyInStock: filters.onlyInStock
+    onlyInStock: filters.onlyInStock,
+    stockStatus: filters.stock_status
   });
 
   const allMapped = allStoreProducts.map(mapStoreProductToProduct);

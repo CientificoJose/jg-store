@@ -35,6 +35,14 @@ const baseConfig: NextConfig = {
         protocol: 'https',
         hostname: 'jg-store-bd.press-cloud.com',
         port: ''
+      },
+      {
+        protocol: 'https',
+        hostname: 'imgcoronel.dyndns.org'
+      },
+      {
+        protocol: 'http',
+        hostname: 'imgcoronel.dyndns.org'
       }
     ]
   },
