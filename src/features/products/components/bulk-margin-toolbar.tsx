@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PRODUCT_CATEGORIES, ProductCategory } from '@/constants/categories';
 import { Icons } from '@/components/icons';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,11 +9,27 @@ import { toast } from 'sonner';
 
 export function BulkMarginToolbar() {
   const queryClient = useQueryClient();
+  const [categoriesList, setCategoriesList] = useState<ProductCategory[]>(PRODUCT_CATEGORIES);
   const [scope, setScope] = useState<'all' | 'category'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [margenDetal, setMargenDetal] = useState<number>(40);
   const [margenMayor, setMargenMayor] = useState<number>(18);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/categories')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setCategoriesList(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleApplyMargins = async () => {
     setIsLoading(true);
@@ -85,10 +101,17 @@ export function BulkMarginToolbar() {
               <option value='all' className='bg-background text-foreground'>
                 Todo el Catálogo (Global)
               </option>
-              {PRODUCT_CATEGORIES.map((cat: ProductCategory) => (
-                <option key={cat.slug} value={cat.slug} className='bg-background text-foreground'>
-                  {cat.name}
-                </option>
+              {categoriesList.map((cat: ProductCategory) => (
+                <optgroup key={cat.slug} label={cat.name} className='bg-background text-foreground font-semibold'>
+                  <option value={cat.slug} className='bg-background text-foreground font-normal'>
+                    Todo {cat.name}
+                  </option>
+                  {(cat.subcategories || []).map((sub) => (
+                    <option key={sub.slug} value={sub.slug} className='bg-background text-foreground font-normal'>
+                      &nbsp;&nbsp;└─ {sub.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>

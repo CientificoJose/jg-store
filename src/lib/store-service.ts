@@ -1,8 +1,20 @@
 import { INITIAL_PRODUCTS } from '@/constants/initial-catalog';
 import { StoreProduct, ProductSortOption } from '@/types/store';
+import { PRODUCT_CATEGORIES, ProductCategory } from '@/constants/categories';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://jg-store-bd.press-cloud.com';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const DEFAULT_SUPABASE_URL = 'http://jg-store-bd.press-cloud.com';
+const DEFAULT_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.MHnaK-G4RLBfaybcOR7IOVsRj6WK5of1v3xooRJAObc';
+
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  (process.env.SUPABASE_HOST ? `http://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
+
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.ANON_KEY ||
+  process.env.SERVICE_ROLE_KEY ||
+  DEFAULT_SUPABASE_ANON_KEY;
 
 // Memoria local para cambios de stock en sesión cuando no esté la tabla en Supabase
 let localCatalog: StoreProduct[] = [...INITIAL_PRODUCTS];
@@ -100,6 +112,32 @@ export async function fetchStoreProductsWithMeta(
   // Fallback si la BD aún no tiene registros o no está inicializada
   if (products.length === 0) {
     products = [...localCatalog];
+  } else {
+    // Si la BD tiene registros, sincronizar cualquier producto creado en memoria local
+    const remoteSkus = new Set(products.map((p) => p.sku));
+    const remoteIds = new Set(products.map((p) => p.id));
+    const localNew = localCatalog.filter(
+      (p) => !remoteIds.has(p.id) && (!p.sku || !remoteSkus.has(p.sku))
+    );
+    if (localNew.length > 0) {
+      products = [...localNew, ...products];
+    }
+
+    // Aplicar márgenes locales si se han ajustado en la sesión
+    const localMarginMap = new Map(localCatalog.map((p) => [p.sku, p]));
+    products = products.map((prod) => {
+      const local = localMarginMap.get(prod.sku);
+      if (local && (local.retail_margin_pct !== undefined || local.wholesale_margin_pct !== undefined)) {
+        return {
+          ...prod,
+          retail_margin_pct: local.retail_margin_pct,
+          wholesale_margin_pct: local.wholesale_margin_pct,
+          retail_price: local.retail_price,
+          wholesale_price: local.wholesale_price
+        };
+      }
+      return prod;
+    });
   }
 
   const allAvailableProducts = [...products];
@@ -123,16 +161,27 @@ export async function fetchStoreProductsWithMeta(
 
   // 2. Filtrar por búsqueda inteligente (coincidencias, fuzzy typos y sinónimos polirrubro)
   if (search && search.trim() !== '') {
-    // Si hay categoría seleccionada, probamos primero en esa categoría
-    let pool =
-      category && category !== 'all'
-        ? products.filter((p) => p.category_slug === category)
-        : products;
+    // Si hay categoría / subcategoría seleccionada, filtramos primero ese grupo
+    let pool = products;
+    if (category && category !== 'all') {
+      pool = pool.filter((p) => p.category_slug === category);
+    }
+    if (subcategory && subcategory !== 'all') {
+      pool = pool.filter((p) => p.subcategory_slug === subcategory);
+    }
+    if (sub_subcategory && sub_subcategory !== 'all') {
+      pool = pool.filter((p) => p.sub_subcategory_slug === sub_subcategory);
+    }
 
     let smartRes = performSmartSearch(pool, search);
 
-    // Si dentro de la categoría no hubo nada, buscamos en todo el catálogo
-    if (smartRes.products.length === 0 && category && category !== 'all') {
+    // Si dentro del filtro no hubo nada, buscamos en todo el catálogo
+    if (
+      smartRes.products.length === 0 &&
+      ((category && category !== 'all') ||
+        (subcategory && subcategory !== 'all') ||
+        (sub_subcategory && sub_subcategory !== 'all'))
+    ) {
       smartRes = performSmartSearch(allAvailableProducts, search);
     }
 
@@ -191,7 +240,9 @@ export async function fetchProductById(id: string): Promise<StoreProduct | null>
   const all = await fetchStoreProducts();
   const mockMatch = INITIAL_PRODUCTS.find((p) => p.id === id);
   return (
-    all.find((p) => p.id === id || p.sku === id || (mockMatch && p.sku === mockMatch.sku)) || null
+    all.find((p) => p.id === id || p.sku === id || (mockMatch && p.sku === mockMatch.sku)) ||
+    localCatalog.find((p) => p.id === id || p.sku === id) ||
+    null
   );
 }
 
@@ -424,3 +475,101 @@ export async function updateStoreProductMarginsMassive(
     message: `Se recalcularon exitosamente ${count} productos con nuevos márgenes.`
   };
 }
+
+export async function fetchStoreCategories(): Promise<ProductCategory[]> {
+  const categoriesMap = new Map<string, ProductCategory>(
+    PRODUCT_CATEGORIES.map((c) => [
+      c.slug,
+      {
+        ...c,
+        subcategories: (c.subcategories || []).map((sub) => ({
+          ...sub,
+          sub_subcategories: [...(sub.sub_subcategories || [])]
+        }))
+      }
+    ])
+  );
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      // 1. Obtener subcategorías dinámicas de Supabase
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/subcategories?select=*`, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        cache: 'no-store'
+      });
+
+      if (res.ok) {
+        const dbSubs = await res.json();
+        for (const sub of dbSubs) {
+          const categorySlug = sub.category_id || sub.category_slug;
+          const cat = categoriesMap.get(categorySlug);
+          if (cat) {
+            const existingSub = cat.subcategories?.find(
+              (s) => s.slug === sub.slug || s.id === sub.id
+            );
+            if (!existingSub) {
+              cat.subcategories = cat.subcategories || [];
+              cat.subcategories.push({
+                id: sub.id,
+                category_id: categorySlug,
+                category_slug: categorySlug,
+                slug: sub.slug,
+                name: sub.name,
+                description: sub.description || sub.name,
+                icon: sub.icon || cat.icon || 'tag',
+                display_order: sub.display_order ?? (cat.subcategories.length || 0) + 1,
+                sub_subcategories: []
+              });
+            }
+          }
+        }
+      }
+
+      // 2. Obtener sub_subcategorías dinámicas de Supabase
+      const resLines = await fetch(`${SUPABASE_URL}/rest/v1/sub_subcategories?select=*`, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        cache: 'no-store'
+      });
+
+      if (resLines.ok) {
+        const dbLines = await resLines.json();
+        for (const line of dbLines) {
+          for (const cat of categoriesMap.values()) {
+            const sub = cat.subcategories?.find(
+              (s) => s.id === line.subcategory_id || s.slug === line.subcategory_slug
+            );
+            if (sub) {
+              const existingLine = sub.sub_subcategories?.find(
+                (l) => l.slug === line.slug || l.id === line.id
+              );
+              if (!existingLine) {
+                sub.sub_subcategories = sub.sub_subcategories || [];
+                sub.sub_subcategories.push({
+                  id: line.id,
+                  subcategory_id: sub.id,
+                  subcategory_slug: sub.slug,
+                  category_slug: cat.slug,
+                  slug: line.slug,
+                  name: line.name,
+                  description: line.description || line.name,
+                  display_order: line.display_order ?? (sub.sub_subcategories.length || 0) + 1
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return Array.from(categoriesMap.values());
+}
+

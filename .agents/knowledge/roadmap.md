@@ -305,7 +305,14 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Componente `ProductHierarchyFilters` con búsqueda global por texto/SKU/código.
     - Selectores en cascada: Departamento (Nivel 1) ➔ Subcategoría (Nivel 2) ➔ Línea (Nivel 3).
     - Selector de disponibilidad de stock (Todos, En Stock, Stock Bajo, Agotado).
-    - Badges / pills interactivas de filtros activos y botón de restablecimiento rápido en 1 clic.
+  - **Diagnóstico y Resolución de Visibilidad de Productos y Subcategorías en la Web:**
+    - Identificada causa raíz de no visualización de productos migrados: en Dokploy las variables se nombraron `ANON_KEY` en vez de `NEXT_PUBLIC_SUPABASE_ANON_KEY`, lo cual impedía que el cliente Next.js recibiera la clave en tiempo de compilación y provocaba respuestas 401 en PostgREST, activando el fallback silencioso al catálogo mock (28 productos).
+    - Implementado `DEFAULT_SUPABASE_ANON_KEY` con fallback en `src/lib/store-service.ts`, asegurando acceso PostgREST en SSR y cliente.
+    - Actualizado el contenedor en Dokploy con `application-saveEnvironment` configurando `buildArgs` y `env` con `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+    - Agregado soporte en `Dockerfile` y `Dockerfile.bun` para `ARG NEXT_PUBLIC_SUPABASE_URL` y `ARG NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+    - Creado endpoint `/api/categories` y función `fetchStoreCategories()` que sincroniza dinámicamente las subcategorías creadas durante el scraping (ej. `LENCERIA`, `PANTUFLAS Y PANTUMEDIAS`) con los 24 departamentos base.
+    - Conectado `ProductHierarchyFilters` y `BulkMarginToolbar` a `/api/categories` para mostrar todas las subcategorías migradas en los dropdowns de filtrado y ajuste masivo de márgenes.
+    - Conectadas las rutas `/api/products` y `/api/products/[id]` al servicio real de catálogo en lugar de datos simulados `fakeProducts`.
 - [x] **Paso 2: Sincronización de Catálogo SQLite -> Supabase Dokploy:** Implementada y validada exitosamente con upserts idempotentes y auto-creación de categorías en PostgREST.
 
 ---

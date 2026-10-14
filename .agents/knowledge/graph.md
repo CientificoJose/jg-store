@@ -212,3 +212,12 @@ graph TD
   - **Centro de Migración en `/dashboard/coronel`:** Transformación de la sección inferior de SQLite en un centro activo de migración y publicación al catálogo web oficial.
   - **Endpoint ETL `/api/scraper/migrate`:** Lectura de productos desde SQLite o microservicio remoto de scraping, auto-creación recursiva de categorías (Nivel 1), subcategorías (Nivel 2) y líneas (Nivel 3) en PostgreSQL / Supabase Dokploy si no existen, y upsert de productos por SKU / `codigo` evitando duplicados.
   - **Toolbar de Filtros Jerárquicos en `/dashboard/product` (`ProductHierarchyFilters`):** Selectores en cascada Nivel 1 (Departamento) ➔ Nivel 2 (Subcategoría) ➔ Nivel 3 (Línea de producto), buscador global por texto, selector de estado de stock (En stock, Stock crítico, Agotado), y badges reactivos de filtros activos con botón de limpieza global.
+
+### 19. 🟢 Sincronización Dinámica de Subcategorías & Conectividad Supabase PostgREST (`catalog-dynamic-sync`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Resolución de Autenticación Supabase:** Corregida variable en Dokploy (`ANON_KEY` a `NEXT_PUBLIC_SUPABASE_ANON_KEY`) e implementado `DEFAULT_SUPABASE_ANON_KEY` en `src/lib/store-service.ts` para garantizar acceso permanente en cliente y servidor sin bloqueos 401.
+  - **Subcategorías Dinámicas:** Creación de endpoint `/api/categories` y función `fetchStoreCategories()` que combina en tiempo real los 24 departamentos base con todas las subcategorías y líneas creadas durante la migración (ej. `LENCERIA`, `PANTUFLAS Y PANTUMEDIAS`).
+  - **Filtros y Márgenes Reactivos:** `ProductHierarchyFilters` y `BulkMarginToolbar` ahora consumen `/api/categories`, permitiendo filtrar y ajustar márgenes sobre subcategorías extraídas de proveedores sin necesidad de reiniciar la app.
+  - **Rutas API Conectadas:** Actualizadas `/api/products` y `/api/products/[id]` para delegar en el servicio de catálogo real de PostgreSQL.
+

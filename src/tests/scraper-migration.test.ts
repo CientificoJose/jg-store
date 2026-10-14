@@ -13,7 +13,7 @@ describe('Migrador de Catálogo Scraper -> PostgreSQL Supabase (`/api/scraper/mi
       })
     });
 
-    const res = await POST(req);
+    const res = await POST(req as any);
     expect(res.status).toBe(200);
 
     const data = await res.json();

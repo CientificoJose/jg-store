@@ -11,6 +11,23 @@ import { Input } from '@/components/ui/input';
 export function ProductHierarchyFilters() {
   const [, startTransition] = useTransition();
 
+  const [categoriesList, setCategoriesList] = React.useState<ProductCategory[]>(PRODUCT_CATEGORIES);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    fetch('/api/categories')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setCategoriesList(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [params, setParams] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     name: parseAsString,
@@ -21,7 +38,7 @@ export function ProductHierarchyFilters() {
   });
 
   // Categoría seleccionada (Nivel 1)
-  const selectedCategory = PRODUCT_CATEGORIES.find(
+  const selectedCategory = categoriesList.find(
     (c: ProductCategory) => c.slug === params.category
   );
 
@@ -136,8 +153,8 @@ export function ProductHierarchyFilters() {
             onChange={(e) => handleCategoryChange(e.target.value)}
             className='w-full h-9 px-3 rounded-lg border border-border bg-background text-xs font-medium text-foreground outline-none focus:ring-1 focus:ring-[#E63946] transition-colors cursor-pointer truncate'
           >
-            <option value='all'>Todos los Departamentos (24)</option>
-            {PRODUCT_CATEGORIES.map((cat: ProductCategory) => (
+            <option value='all'>Todos los Departamentos ({categoriesList.length})</option>
+            {categoriesList.map((cat: ProductCategory) => (
               <option key={cat.slug} value={cat.slug}>
                 {cat.name}
               </option>
