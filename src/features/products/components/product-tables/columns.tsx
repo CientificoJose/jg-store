@@ -12,6 +12,7 @@ import { formatPrice } from '@/lib/whatsapp';
 
 export const columns: ColumnDef<Product>[] = [
   {
+    id: 'photo_url',
     accessorKey: 'photo_url',
     header: 'FOTO',
     cell: ({ row }) => {
@@ -123,11 +124,11 @@ export const columns: ColumnDef<Product>[] = [
     ),
     cell: ({ row }) => (
       <div className='flex flex-col'>
-        <span className='font-bold text-sm text-foreground font-gotham'>
+        <span suppressHydrationWarning className='font-bold text-sm text-foreground font-gotham'>
           {formatPrice(row.original.retail_price)}
         </span>
         {row.original.cost_price ? (
-          <span className='text-[10px] text-muted-foreground'>
+          <span suppressHydrationWarning className='text-[10px] text-muted-foreground'>
             Costo: {formatPrice(row.original.cost_price)} (+{row.original.retail_margin_pct ?? 40}%)
           </span>
         ) : null}
@@ -148,7 +149,10 @@ export const columns: ColumnDef<Product>[] = [
       return (
         <div className='flex flex-col'>
           <div className='flex items-center gap-1.5'>
-            <span className='font-bold text-sm text-[#D4A017] font-bebas tracking-wide text-base'>
+            <span
+              suppressHydrationWarning
+              className='font-bold text-sm text-[#D4A017] font-bebas tracking-wide text-base'
+            >
               {formatPrice(row.original.wholesale_price)}
             </span>
             {discount > 0 && (
@@ -157,7 +161,7 @@ export const columns: ColumnDef<Product>[] = [
               </span>
             )}
           </div>
-          <span className='text-[10px] text-[#6C757D]'>
+          <span suppressHydrationWarning className='text-[10px] text-[#6C757D]'>
             Margen: +{row.original.wholesale_margin_pct ?? 18}% • Mín.{' '}
             {row.original.min_wholesale_qty} {row.original.unit || 'u.'}
           </span>

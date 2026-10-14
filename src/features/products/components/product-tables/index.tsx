@@ -45,7 +45,7 @@ export function ProductTable() {
   });
 
   return (
-    <div>
+    <div className='flex flex-1 flex-col space-y-4'>
       <BulkMarginToolbar />
       <DataTable table={table}>
         <DataTableToolbar table={table} />

@@ -48,14 +48,10 @@ export function calculateCartSummary(items: CartItem[]): CartSummary {
 }
 
 export function formatPrice(price: number): string {
-  const formatted = new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: price % 1 === 0 ? 0 : 2,
-    maximumFractionDigits: 2
-  }).format(price);
-  // Reemplazar espacios no divisibles por espacios estándar para evitar caracteres extraños en WhatsApp
-  return formatted.replace(/[\u00A0\u202F]/g, ' ');
+  if (typeof price !== 'number' || isNaN(price)) return '$ 0';
+  const rounded = Math.round(price);
+  const formatted = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `$ ${formatted}`;
 }
 
 export function generateWhatsAppOrderMessage(
