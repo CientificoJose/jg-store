@@ -328,6 +328,18 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - **Sincronización Web por SKU:** Actualización idempotente en `/api/scraper/migrate` usando el SKU como clave unívoca para insertar o actualizar (`PATCH`) taxonomía, marca, galería y precios.
     - **UI Dashboard y Detalle Storefront:** Indicador numérico de fotos adicionales (`+N`) en `/dashboard/product`, badge de marca oficial y reemplazo de fotos placeholder por las imágenes reales en `ProductDetailView`.
 - [x] **Paso 2: Sincronización de Catálogo SQLite -> Supabase Dokploy:** Implementada y validada exitosamente con upserts idempotentes y auto-creación de categorías en PostgREST.
+- [x] **Actualización de Stock y Precios Automatizada, Timers y Cron Background (`actualizar_stock.py`):**
+  - **Ejecución 100% Desatendida (`auto_mode=True`):** Se suprimió la necesidad de confirmación manual con botón flotante en Tkinter llamando a `login(driver, show_button=False)` y pasando el flag `-y` por CLI, permitiendo que el proceso corra autónomo en segundo plano.
+  - **Sincronización Dual de Precios y Stock (SQLite + Supabase PostgREST):**
+    - Extracción JS directa de costos actuales (`precio_costo`) en todo el catálogo de Coronel.
+    - Cálculo de margen minorista (+40%) y mayorista (+18%).
+    - Actualización directa en `productos.db` (SQLite) y en la tabla `products` de Supabase mediante PostgREST con Service Key y `ThreadPoolExecutor(max_workers=8)`.
+    - **Gestión de Discontinuados:** Los artículos presentes en la base de datos pero ausentes en el catálogo vigente de Coronel reciben automáticamente `stock = 0`, marcándolos como "Agotado" y ocultándolos de las vistas activas de la tienda.
+  - **Cronómetro de Alta Precisión en Todas las Funciones:** Registro detallado de tiempos de login, extracción por página (tiempo individual y acumulado), tiempo de actualización en SQLite, tiempo de sincronización en Supabase y duración total con formato amigable (`Xm Ys` o `X.XXs`).
+  - **Programador Cron Configurable en Backend y Dashboard (`/dashboard/coronel`):**
+    - `CronManager` integrado en `api_server.py` con persistencia en `cron_config.json` y loop en asyncio cada 30s.
+    - Endpoints de control `/api/cron` (GET/POST) y `/api/cron/run` (POST) con proxy en `src/app/api/scraper/cron/route.ts`.
+    - Tarjeta de control en la interfaz web con switch de activación, selector de frecuencia (1h, 3h, 6h, 12h, 24h), badges de estado, fecha de última/próxima ejecución y botón de disparo manual inmediato.
 
 ---
 

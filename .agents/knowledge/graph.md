@@ -240,5 +240,15 @@ graph TD
   - **Sincronización Web por SKU (`/api/scraper/migrate`):** Identificador maestro único por SKU: crea o actualiza (`PATCH`) taxonomía, marca, galería de Supabase Storage y precios detal/mayor sin duplicados.
   - **UI Dashboard & Storefront:** Indicador de conteo de fotos (`+N`), badge de marca oficial, y visualización de galería real en `ProductDetailView`.
 
+### 22. 🟢 Actualización Automática de Stock, Cron Scheduler y Timers de Benchmarking (`automated-stock-cron-and-benchmarking`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Modo 100% Desatendido (`auto_mode=True`):** Supresión de cuadros de diálogo y esperas manuales en `actualizar_stock.py` pasando `-y` y `show_button=False` al autenticador de Selenium, permitiendo ejecuciones autónomas programadas.
+  - **Detección y Ocultación de Discontinuados:** Al barrer todo el catálogo de Coronel Mayorista (~680 páginas), los productos presentes en la base de datos (SQLite y PostgreSQL) que no aparezcan en la extracción actual reciben automáticamente `stock = 0`, marcándolos como agotados y ocultándolos de la vista en tienda.
+  - **Sincronización Dual Directa:** Actualización atómica en `productos.db` (SQLite) y en la tabla `products` de Supabase Dokploy mediante PostgREST (`PATCH /products?sku=eq.{sku}`) concurrente con `ThreadPoolExecutor(max_workers=8)`.
+  - **Timers y Benchmarking de Rendimiento:** Cronometraje detallado por función (login, tiempo de scrape por página, tiempo acumulado, sincronización SQLite, sincronización Supabase y duración total) formateado en minutos/segundos (`⏱️ [CRONÓMETRO]`).
+  - **Programador Cron en Background:** `CronManager` integrado en `api_server.py` con persistencia en `cron_config.json`, loop asíncrono y endpoints de gestión (`/api/cron`, `/api/cron/run`).
+  - **Panel de Control Web (`/dashboard/coronel`):** Módulo interactivo con switch para habilitar/deshabilitar cron, selector de intervalo (1h, 3h, 6h, 12h, 24h), monitoreo de última y próxima corrida, y botón para ejecución inmediata.
+
 
 
