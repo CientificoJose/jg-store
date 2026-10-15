@@ -363,89 +363,114 @@ def scraping_product(driver, max_retries=3, wait_time=10):
         # --- EXTRACCIÓN EN PROFUNDIDAD (app-articulo) ---
         # Entra a la ficha de cada producto para leer el breadcrumb exacto y la galería de fotos
         if DEEP_SCRAPE_PRODUCTS:
+            entrado_a_detalle = False
             try:
-                cards = driver.find_elements(By.CSS_SELECTOR, '.col-art .card-product')
-                if index < len(cards):
-                    target_card = cards[index]
+                # 1. Hacer click en .span-3 (el título interactivo con cursor:pointer en Angular)
+                CLICK_JS = """
+                const targetCode = arguments[0];
+                const targetIdx = arguments[1];
+                const cards = Array.from(document.querySelectorAll('.col-art .card-product'));
+                
+                let targetCard = null;
+                if (targetCode) {
+                    for (const c of cards) {
+                        const codEl = c.querySelector('.span-codigo, .codigo');
+                        if (codEl && codEl.textContent.toUpperCase().includes(targetCode.toUpperCase())) {
+                            targetCard = c;
+                            break;
+                        }
+                    }
+                }
+                if (!targetCard && targetIdx < cards.length) {
+                    targetCard = cards[targetIdx];
+                }
+                
+                if (!targetCard) return { success: false, reason: 'card_not_found' };
+                
+                const trigger = targetCard.querySelector('.span-3') || 
+                                targetCard.querySelector('.descripcion') || 
+                                targetCard.querySelector('.card-img-top') || 
+                                targetCard;
+                                
+                trigger.scrollIntoView({ behavior: 'instant', block: 'center' });
+                try {
+                    trigger.click();
+                    return { success: true };
+                } catch(e) {
+                    return { success: false, error: e.toString() };
+                }
+                """
+                click_res = driver.execute_script(CLICK_JS, raw_code, index) or {}
+                
+                # 2. Esperar específicamente a que monte el componente app-articulo y su URL cambie
+                def en_detalle_articulo(d):
+                    if d.find_elements(By.TAG_NAME, "app-articulo"):
+                        return True
+                    curr = d.current_url.lower()
+                    return "#/articulo" in curr or "/articulo" in curr
 
-                    # 1. Hacer click en el elemento interactivo dentro de la tarjeta
-                    CLICK_JS = """
-                    const card = arguments[0];
-                    const target = card.querySelector('.card-img-top') ||
-                                   card.querySelector('img') ||
-                                   card.querySelector('.descripcion') ||
-                                   card.querySelector('a') ||
-                                   card;
-                    target.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
-                    ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(evtType => {
-                        target.dispatchEvent(new MouseEvent(evtType, { bubbles: true, cancelable: true, view: window }));
-                    });
-                    try { target.click(); } catch(e) {}
-                    try { card.click(); } catch(e) {}
-                    """
-                    driver.execute_script(CLICK_JS, target_card)
-
-                    # 2. Esperar específicamente a que monte el componente app-articulo
-                    def en_detalle_articulo(d):
-                        if d.find_elements(By.TAG_NAME, "app-articulo"):
-                            return True
-                        if d.find_elements(By.CSS_SELECTOR, "app-articulo .gallery, .gallery .img-gallery, .contenedor-card .gallery"):
-                            return True
-                        curr = d.current_url.lower()
-                        if "#/articulo" in curr or "/articulo" in curr:
-                            return True
-                        return False
-
+                try:
+                    WebDriverWait(driver, 6).until(en_detalle_articulo)
+                    entrado_a_detalle = True
+                    
+                    # Esperar a que los elementos internos de app-articulo estén presentes
                     try:
-                        WebDriverWait(driver, 5).until(en_detalle_articulo)
-                        time.sleep(0.4)
-
-                        DETALLE_JS = """
-                        const container = document.querySelector('app-articulo') || document.querySelector('.contenedor-card') || document;
-                        const crumbSpans = Array.from(container.querySelectorAll('#breadcrumb .breadcrumb-item.breadcrumb2, app-breadcrumbs .breadcrumb-item.breadcrumb2, .breadcrumb .breadcrumb-item.breadcrumb2'));
-                        const crumbs = crumbSpans.map(s => s.textContent.trim().toUpperCase()).filter(Boolean);
-
-                        const galleryImgs = Array.from(container.querySelectorAll('.gallery .img-gallery, .gallery-item img, img.img-gallery, .gallery img'));
-                        const galleryUrls = galleryImgs.map(img => img.getAttribute('src') || img.getAttribute('data-src') || img.src || '').filter(s => s && !s.startsWith('data:'));
-
-                        return {
-                            crumbs: crumbs,
-                            gallery: Array.from(new Set(galleryUrls))
-                        };
-                        """
-                        detalle = driver.execute_script(DETALLE_JS) or {}
-                        inner_crumbs = detalle.get('crumbs') or []
-                        inner_gallery = detalle.get('gallery') or []
-
-                        if inner_crumbs:
-                            if len(inner_crumbs) > 0: prod_cat = inner_crumbs[0]
-                            if len(inner_crumbs) > 1: prod_sub = inner_crumbs[1]
-                            if len(inner_crumbs) > 2: prod_sub_sub = inner_crumbs[2]
-                            if len(inner_crumbs) > 3: prod_marca = inner_crumbs[3]
-
-                        if inner_gallery:
-                            galeria_urls = inner_gallery
-
-                        if inner_crumbs or inner_gallery:
-                            print(Fore.MAGENTA + f"   🔍 [Detalle {code}] Breadcrumb: {' > '.join(inner_crumbs)} | Fotos: {len(galeria_urls)}" + Style.RESET_ALL)
+                        WebDriverWait(driver, 4).until(
+                            lambda d: len(d.find_elements(By.CSS_SELECTOR, "app-articulo #breadcrumb .breadcrumb-item.breadcrumb2, app-articulo app-breadcrumbs .breadcrumb-item.breadcrumb2, app-articulo .gallery")) > 0
+                        )
                     except Exception:
-                        pass
-                    finally:
-                        # 3. Regresar a la grilla de productos
+                        time.sleep(0.5)
+
+                    DETALLE_JS = """
+                    const container = document.querySelector('app-articulo');
+                    if (!container) return { crumbs: [], gallery: [] };
+
+                    const crumbSpans = Array.from(container.querySelectorAll('#breadcrumb .breadcrumb-item.breadcrumb2, app-breadcrumbs .breadcrumb-item.breadcrumb2, .breadcrumb .breadcrumb-item.breadcrumb2'));
+                    const crumbs = crumbSpans.map(s => s.textContent.trim().toUpperCase()).filter(Boolean);
+
+                    const galleryImgs = Array.from(container.querySelectorAll('.gallery .img-gallery, .gallery-item img, img.img-gallery, .gallery img'));
+                    const galleryUrls = galleryImgs.map(img => img.getAttribute('src') || img.getAttribute('data-src') || img.src || '').filter(s => s && !s.startsWith('data:'));
+
+                    return {
+                        crumbs: crumbs,
+                        gallery: Array.from(new Set(galleryUrls))
+                    };
+                    """
+                    detalle = driver.execute_script(DETALLE_JS) or {}
+                    inner_crumbs = detalle.get('crumbs') or []
+                    inner_gallery = detalle.get('gallery') or []
+
+                    if inner_crumbs:
+                        if len(inner_crumbs) > 0: prod_cat = inner_crumbs[0]
+                        if len(inner_crumbs) > 1: prod_sub = inner_crumbs[1]
+                        if len(inner_crumbs) > 2: prod_sub_sub = inner_crumbs[2]
+                        if len(inner_crumbs) > 3: prod_marca = inner_crumbs[3]
+
+                    if inner_gallery:
+                        galeria_urls = inner_gallery
+
+                    if inner_crumbs or inner_gallery:
+                        print(Fore.MAGENTA + f"   🔍 [Detalle {code}] Breadcrumb: {' > '.join(inner_crumbs)} | Fotos: {len(galeria_urls)}" + Style.RESET_ALL)
+                except Exception as e:
+                    pass
+                finally:
+                    # 3. Regresar siempre a la grilla de productos si entramos al detalle o la URL cambió
+                    curr_url = driver.current_url.lower()
+                    if entrado_a_detalle or "articulo" in curr_url:
                         try:
                             driver.execute_script("window.history.back();")
                             def en_listado_productos(d):
                                 return len(d.find_elements(By.CSS_SELECTOR, ".col-art .card-product, .itemsBlock")) > 0
                             try:
-                                WebDriverWait(driver, 4).until(en_listado_productos)
+                                WebDriverWait(driver, 5).until(en_listado_productos)
                             except Exception:
                                 driver.execute_script("""
-                                    const back = document.querySelector('#breadcrumb .breadcrumb-item:first-child') || 
+                                    const back = document.querySelector('app-articulo #breadcrumb .breadcrumb-item:first-child') || 
                                                  document.querySelector('.breadcrumb-item');
                                     if (back) back.click();
                                 """)
-                                WebDriverWait(driver, 3).until(en_listado_productos)
-                            time.sleep(0.2)
+                                WebDriverWait(driver, 4).until(en_listado_productos)
+                            time.sleep(0.3)
                         except Exception:
                             time.sleep(0.5)
             except Exception as e:
