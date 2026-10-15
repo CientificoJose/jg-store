@@ -367,21 +367,45 @@ def scraping_product(driver, max_retries=3, wait_time=10):
                 cards = driver.find_elements(By.CSS_SELECTOR, '.col-art .card-product')
                 if index < len(cards):
                     target_card = cards[index]
-                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_card)
-                    time.sleep(0.15)
-                    driver.execute_script("arguments[0].click();", target_card)
+
+                    # 1. Hacer click en el elemento interactivo dentro de la tarjeta
+                    CLICK_JS = """
+                    const card = arguments[0];
+                    const target = card.querySelector('.card-img-top') ||
+                                   card.querySelector('img') ||
+                                   card.querySelector('.descripcion') ||
+                                   card.querySelector('a') ||
+                                   card;
+                    target.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+                    ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(evtType => {
+                        target.dispatchEvent(new MouseEvent(evtType, { bubbles: true, cancelable: true, view: window }));
+                    });
+                    try { target.click(); } catch(e) {}
+                    try { card.click(); } catch(e) {}
+                    """
+                    driver.execute_script(CLICK_JS, target_card)
+
+                    # 2. Esperar específicamente a que monte el componente app-articulo
+                    def en_detalle_articulo(d):
+                        if d.find_elements(By.TAG_NAME, "app-articulo"):
+                            return True
+                        if d.find_elements(By.CSS_SELECTOR, "app-articulo .gallery, .gallery .img-gallery, .contenedor-card .gallery"):
+                            return True
+                        curr = d.current_url.lower()
+                        if "#/articulo" in curr or "/articulo" in curr:
+                            return True
+                        return False
 
                     try:
-                        WebDriverWait(driver, 4).until(
-                            lambda d: d.find_elements(By.TAG_NAME, "app-articulo") or d.find_elements(By.ID, "breadcrumb")
-                        )
-                        time.sleep(0.3)
+                        WebDriverWait(driver, 5).until(en_detalle_articulo)
+                        time.sleep(0.4)
 
                         DETALLE_JS = """
-                        const crumbSpans = Array.from(document.querySelectorAll('#breadcrumb .breadcrumb-item.breadcrumb2, app-breadcrumbs .breadcrumb-item.breadcrumb2'));
+                        const container = document.querySelector('app-articulo') || document.querySelector('.contenedor-card') || document;
+                        const crumbSpans = Array.from(container.querySelectorAll('#breadcrumb .breadcrumb-item.breadcrumb2, app-breadcrumbs .breadcrumb-item.breadcrumb2, .breadcrumb .breadcrumb-item.breadcrumb2'));
                         const crumbs = crumbSpans.map(s => s.textContent.trim().toUpperCase()).filter(Boolean);
 
-                        const galleryImgs = Array.from(document.querySelectorAll('.gallery .img-gallery, .gallery-item img, app-articulo .gallery img, app-articulo img.img-gallery, .contenedor-card .gallery img'));
+                        const galleryImgs = Array.from(container.querySelectorAll('.gallery .img-gallery, .gallery-item img, img.img-gallery, .gallery img'));
                         const galleryUrls = galleryImgs.map(img => img.getAttribute('src') || img.getAttribute('data-src') || img.src || '').filter(s => s && !s.startsWith('data:'));
 
                         return {
@@ -401,14 +425,26 @@ def scraping_product(driver, max_retries=3, wait_time=10):
 
                         if inner_gallery:
                             galeria_urls = inner_gallery
+
+                        if inner_crumbs or inner_gallery:
+                            print(Fore.MAGENTA + f"   🔍 [Detalle {code}] Breadcrumb: {' > '.join(inner_crumbs)} | Fotos: {len(galeria_urls)}" + Style.RESET_ALL)
                     except Exception:
                         pass
                     finally:
+                        # 3. Regresar a la grilla de productos
                         try:
                             driver.execute_script("window.history.back();")
-                            WebDriverWait(driver, 4).until(
-                                lambda d: d.find_elements(By.CSS_SELECTOR, ".col-art .card-product, .itemsBlock")
-                            )
+                            def en_listado_productos(d):
+                                return len(d.find_elements(By.CSS_SELECTOR, ".col-art .card-product, .itemsBlock")) > 0
+                            try:
+                                WebDriverWait(driver, 4).until(en_listado_productos)
+                            except Exception:
+                                driver.execute_script("""
+                                    const back = document.querySelector('#breadcrumb .breadcrumb-item:first-child') || 
+                                                 document.querySelector('.breadcrumb-item');
+                                    if (back) back.click();
+                                """)
+                                WebDriverWait(driver, 3).until(en_listado_productos)
                             time.sleep(0.2)
                         except Exception:
                             time.sleep(0.5)
