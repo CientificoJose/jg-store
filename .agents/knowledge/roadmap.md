@@ -313,6 +313,13 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Creado endpoint `/api/categories` y función `fetchStoreCategories()` que sincroniza dinámicamente las subcategorías creadas durante el scraping (ej. `LENCERIA`, `PANTUFLAS Y PANTUMEDIAS`) con los 24 departamentos base.
     - Conectado `ProductHierarchyFilters` y `BulkMarginToolbar` a `/api/categories` para mostrar todas las subcategorías migradas en los dropdowns de filtrado y ajuste masivo de márgenes.
     - Conectadas las rutas `/api/products` y `/api/products/[id]` al servicio real de catálogo en lugar de datos simulados `fakeProducts`.
+  - **Almacenamiento Automatizado de Imágenes en Supabase Storage (Bucket S3):**
+    - Creado bucket público `products` en Supabase Storage (`http://jg-store-bd.press-cloud.com/storage/v1/object/public/products/...`).
+    - Creado módulo helper [`src/lib/supabase-storage.ts`](file:///home/jnacio/Documentos/jg-store/jg-store/src/lib/supabase-storage.ts) para descarga sanitizada (evitando errores de backslash `\` y puerto 70) y carga con `x-upsert: true`.
+    - Script [`scripts/sync-all-images-to-supabase.ts`](file:///home/jnacio/Documentos/jg-store/jg-store/scripts/sync-all-images-to-supabase.ts): migró en lote los 342 productos existentes en Supabase reemplazando las URLs frágiles de `imgcoronel.dyndns.org:70` por URLs directas y permanentes del bucket de Supabase.
+    - Integración en `src/app/api/scraper/migrate/route.ts`: toda migración futura de productos sube automáticamente la imagen a Supabase Storage.
+    - Integración en `scraping-coronel/app/scraping_product.py`: el crawler Python ahora descarga y sube en background la imagen a Supabase Storage y almacena la URL oficial en `productos.db`.
+    - `next.config.ts` configurado con soporte de puerto 70 e imágenes remotas para compatibilidad total sin errores 500.
 - [x] **Paso 2: Sincronización de Catálogo SQLite -> Supabase Dokploy:** Implementada y validada exitosamente con upserts idempotentes y auto-creación de categorías en PostgREST.
 
 ---

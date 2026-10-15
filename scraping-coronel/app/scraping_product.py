@@ -24,15 +24,54 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from concurrent.futures import ThreadPoolExecutor
 _img_executor = ThreadPoolExecutor(max_workers=5)
 
-def _descargar_imagen_async(image_url: str, img_path: str):
+SUPABASE_STORAGE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL", "http://jg-store-bd.press-cloud.com")
+SUPABASE_SERVICE_KEY = os.getenv(
+    "SERVICE_ROLE_KEY",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A"
+)
+
+def _subir_a_supabase_storage(content: bytes, filename: str) -> str:
+    """Sube bytes de imagen directamente a Supabase Storage (bucket products)"""
+    try:
+        clean_name = filename.replace("/", "_").replace("\\", "_")
+        url = f"{SUPABASE_STORAGE_URL}/storage/v1/object/products/{clean_name}"
+        headers = {
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "Content-Type": "image/jpeg",
+            "x-upsert": "true"
+        }
+        res = requests.post(url, headers=headers, data=content, timeout=15)
+        if res.status_code in [200, 201]:
+            return f"{SUPABASE_STORAGE_URL}/storage/v1/object/public/products/{clean_name}"
+    except Exception as e:
+        print(f"[Supabase Storage] Error subiendo {filename}: {e}")
+    return ""
+
+def _descargar_imagen_async(image_url: str, img_path: str, filename: str = None, db_path: str = None):
     try:
         if not image_url or image_url.startswith("data:"):
             return
-        resp = requests.get(image_url, stream=True, verify=False, timeout=10)
+        clean_url = image_url.replace("\\", "/")
+        resp = requests.get(clean_url, stream=True, verify=False, timeout=10)
         if resp.status_code == 200:
+            content = resp.content
             with open(img_path, 'wb') as f:
-                for chunk in resp.iter_content(1024):
-                    f.write(chunk)
+                f.write(content)
+
+            # Subir a Supabase Storage
+            if filename:
+                public_url = _subir_a_supabase_storage(content, filename)
+                if public_url and db_path:
+                    try:
+                        import sqlite3
+                        with sqlite3.connect(db_path) as conn:
+                            cur = conn.cursor()
+                            code = filename.replace(".jpg", "")
+                            cur.execute("UPDATE productos SET imagen_url = ? WHERE codigo = ?", (public_url, code))
+                            conn.commit()
+                    except Exception:
+                        pass
     except Exception:
         pass
 
@@ -287,11 +326,15 @@ def scraping_product(driver, max_retries=3, wait_time=10):
         subcat_slug = generar_slug(subcategoria)
         sub_subcat_slug = generar_slug(prod_sub_sub)
 
-        # Descargar imagen en segundo plano
+        # Nombre y URL en Supabase Storage
+        supabase_img_name = f"{code}.jpg".replace("/", "_").replace("\\", "_")
+        supabase_img_url = f"{SUPABASE_STORAGE_URL}/storage/v1/object/public/products/{supabase_img_name}"
+
+        # Descargar imagen en segundo plano y subir automáticamente a Supabase
         img_name = f"{code}.jpg"
         img_path = os.path.join(img_dir, img_name)
         if DOWNLOAD_IMAGES and image_url:
-            _img_executor.submit(_descargar_imagen_async, image_url, img_path)
+            _img_executor.submit(_descargar_imagen_async, image_url, img_path, supabase_img_name, scraping_product.db_path)
 
         # Código de barras
         codigo_barra = obtener_codigo_barra(code, scraping_product.db_path) if scraping_product.db_path else ""
@@ -307,7 +350,7 @@ def scraping_product(driver, max_retries=3, wait_time=10):
             'precio_mayorista': precio_mayorista,
             'precio_venta': precio_minorista,
             'porcentaje_ganancia': margen_detal,
-            'imagen_url': image_url,
+            'imagen_url': supabase_img_url if image_url else '',
             'imagen_local': f"img-scraping/{img_name}",
             'foto': f"img-scraping/{img_name}",
             'variante': variant,

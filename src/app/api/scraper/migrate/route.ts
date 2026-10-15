@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { exec } from 'child_process';
 import path from 'path';
 import { promisify } from 'util';
+import { uploadImageToSupabaseStorage, ensureProductsBucketExists } from '@/lib/supabase-storage';
 
 const execAsync = promisify(exec);
 
@@ -161,6 +162,8 @@ export async function POST(request: NextRequest) {
     const createdSubSubcategories: string[] = [];
     let insertedProducts = 0;
     let updatedProducts = 0;
+
+    await ensureProductsBucketExists();
 
     // 3. Procesar cada producto migrando categorías y upserting
     for (const p of productsToMigrate) {
@@ -323,10 +326,20 @@ export async function POST(request: NextRequest) {
           ? Number(p.precio_mayorista)
           : Math.round(costPrice * (1 + wholesaleMargin / 100));
 
-      const imageUrl =
+      let rawImageSrc =
         p.imagen_url ||
         (p.foto ? `/api/scraper/image?file=${encodeURIComponent(p.foto)}` : null) ||
-        'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+        '';
+
+      let imageUrl = rawImageSrc;
+      if (rawImageSrc && !rawImageSrc.includes('/storage/v1/object/public/products/')) {
+        imageUrl = await uploadImageToSupabaseStorage(rawImageSrc, `${sku}.jpg`);
+      }
+
+      if (!imageUrl) {
+        imageUrl =
+          'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+      }
 
       const productPayload: Record<string, any> = {
         sku,

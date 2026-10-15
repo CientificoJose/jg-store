@@ -221,3 +221,12 @@ graph TD
   - **Filtros y Márgenes Reactivos:** `ProductHierarchyFilters` y `BulkMarginToolbar` ahora consumen `/api/categories`, permitiendo filtrar y ajustar márgenes sobre subcategorías extraídas de proveedores sin necesidad de reiniciar la app.
   - **Rutas API Conectadas:** Actualizadas `/api/products` y `/api/products/[id]` para delegar en el servicio de catálogo real de PostgreSQL.
 
+### 20. 🟢 Almacenamiento Persistente en Supabase Storage (Bucket S3) (`supabase-storage-images`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Bucket Público `products`:** Creado y validado bucket S3 público en Supabase Storage Dokploy.
+  - **Migración Masiva Realizada:** 342 productos en PostgreSQL actualizados con URLs directas de Supabase Storage en lugar del servidor externo `imgcoronel.dyndns.org:70`.
+  - **Carga en Scraper y ETL:** `_descargar_imagen_async` en Python y `/api/scraper/migrate` en Next.js suben las imágenes a Supabase Storage por defecto, garantizando independencia total de servidores externos.
+  - **Configuración Next.js Image:** Añadido soporte de puertos y dominios para optimización segura con cero errores 500.
+
+

@@ -38,6 +38,16 @@ const baseConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'imgcoronel.dyndns.org',
+        port: '70'
+      },
+      {
+        protocol: 'http',
+        hostname: 'imgcoronel.dyndns.org',
+        port: '70'
+      },
+      {
+        protocol: 'https',
         hostname: 'imgcoronel.dyndns.org'
       },
       {
