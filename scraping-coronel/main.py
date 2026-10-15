@@ -212,7 +212,10 @@ def main():
     parser_sync.add_argument("-y", "--no-prompt", action="store_true", help="No solicitar confirmación interactiva")
 
     # Subcomando stock
-    parser_stock = subparsers.add_parser("stock", help="Actualiza stock de catálogo en Tiendanube (inactiva discontinuados)")
+    parser_stock = subparsers.add_parser("stock", help="Actualiza stock de catálogo en SQLite y Supabase (inactiva discontinuados)")
+    parser_stock.add_argument("-g", "--ganancia", type=int, default=40, help="Porcentaje de ganancia minorista (ej. 40)")
+    parser_stock.add_argument("-m", "--margen-mayorista", type=int, default=18, help="Porcentaje de ganancia mayorista (ej. 18)")
+    parser_stock.add_argument("-y", "--no-prompt", action="store_true", help="No solicitar confirmación interactiva (Modo 100% automático)")
     
     # Subcomando full-run
     parser_full = subparsers.add_parser("full-run", help="Ejecuta el pipeline completo (scrape -> sync -> stock)")
@@ -237,13 +240,13 @@ def main():
     download_images = None
     margen_mayorista = getattr(args, "margen_mayorista", 18)
     
-    if args.command in ["scrape", "sync", "full-run", "scrape-sync"]:
-        if args.no_prompt:
-            ganancia = args.ganancia if args.ganancia is not None else 40
-            download_images = args.download_images if args.download_images is not None else "f"
+    if args.command in ["scrape", "sync", "full-run", "scrape-sync", "stock"]:
+        if getattr(args, "no_prompt", False):
+            ganancia = args.ganancia if getattr(args, "ganancia", None) is not None else 40
+            download_images = args.download_images if getattr(args, "download_images", None) is not None else "f"
         else:
-            ganancia = args.ganancia
-            download_images = args.download_images
+            ganancia = getattr(args, "ganancia", None)
+            download_images = getattr(args, "download_images", None)
 
     # Ejecución de comandos
     if args.command == "scrape":
@@ -263,12 +266,17 @@ def main():
         print(Fore.GREEN + "\n✓ Sincronización de productos finalizada." + Style.RESET_ALL)
         
     elif args.command == "stock":
-        print(Fore.CYAN + "\n=== [EJECUTANDO STOCK] ===" + Style.RESET_ALL)
-        success = run_stock()
+        print(Fore.CYAN + "\n=== [EJECUTANDO ACTUALIZACIÓN RÁPIDA DE STOCK] ===" + Style.RESET_ALL)
+        auto_mode = getattr(args, "no_prompt", True)
+        m_detal = float(args.ganancia if getattr(args, "ganancia", None) is not None else (ganancia or 40))
+        m_mayor = float(margen_mayorista if margen_mayorista is not None else 18)
+        success = run_stock(auto_mode=auto_mode, margen_minorista=m_detal, margen_mayorista=m_mayor)
         if success:
-            print(Fore.GREEN + "\n✓ Sincronización de stock finalizada con éxito." + Style.RESET_ALL)
+            print("[SCRAPER_STATUS:COMPLETED]", flush=True)
+            print(Fore.GREEN + "\n✓ Sincronización de stock y precios finalizada con éxito." + Style.RESET_ALL)
         else:
-            print(Fore.RED + "\n❌ Sincronización de stock falló." + Style.RESET_ALL)
+            print("[SCRAPER_STATUS:FAILED]", flush=True)
+            print(Fore.RED + "\n❌ Sincronización de stock falló." + Style.RESET_ALL, flush=True)
             sys.exit(1)
             
     elif args.command == "full-run":

@@ -198,9 +198,12 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
         cmd = [
             sys.executable,
             os.path.join(BASE_DIR, "main.py"),
-            "stock"
+            "stock",
+            "-y",
+            "-g", str(req.ganancia),
+            "-m", str(margen_mayor)
         ]
-        log_msg = "📦 [SISTEMA CLOUD] Iniciando: Solo Actualizar Stock..."
+        log_msg = f"📦 [SISTEMA CLOUD] Iniciando: Actualización Rápida de Stock & Precios (Detal: +{req.ganancia}%, Mayor: +{margen_mayor}%)..."
     elif mode == "full-run":
         cmd = [
             sys.executable,
@@ -442,4 +445,154 @@ def get_image(url: Optional[str] = None, file: Optional[str] = None):
         media_type="image/svg+xml",
         headers={"Cache-Control": "public, max-age=3600"}
     )
+
+
+# ==========================================
+# GESTOR DE CRON AUTOMÁTICO PARA STOCK
+# ==========================================
+CRON_FILE = os.path.join(BASE_DIR, "cron_config.json")
+
+class CronConfigRequest(BaseModel):
+    enabled: bool
+    interval_minutes: int = 360
+    margen_minorista: int = 40
+    margen_mayorista: int = 18
+
+class CronManager:
+    def __init__(self):
+        self.enabled = False
+        self.interval_minutes = 360
+        self.margen_minorista = 40
+        self.margen_mayorista = 18
+        self.last_run = None
+        self.next_run = None
+        self.last_status = None
+        self.last_duration = None
+        self.load()
+
+    def load(self):
+        if os.path.exists(CRON_FILE):
+            try:
+                with open(CRON_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.enabled = data.get("enabled", False)
+                    self.interval_minutes = data.get("interval_minutes", 360)
+                    self.margen_minorista = data.get("margen_minorista", 40)
+                    self.margen_mayorista = data.get("margen_mayorista", 18)
+                    self.last_run = data.get("last_run")
+                    self.next_run = data.get("next_run")
+                    self.last_status = data.get("last_status")
+                    self.last_duration = data.get("last_duration")
+            except Exception:
+                pass
+
+    def save(self):
+        try:
+            with open(CRON_FILE, "w", encoding="utf-8") as f:
+                json.dump({
+                    "enabled": self.enabled,
+                    "interval_minutes": self.interval_minutes,
+                    "margen_minorista": self.margen_minorista,
+                    "margen_mayorista": self.margen_mayorista,
+                    "last_run": self.last_run,
+                    "next_run": self.next_run,
+                    "last_status": self.last_status,
+                    "last_duration": self.last_duration
+                }, f, indent=2)
+        except Exception:
+            pass
+
+    def compute_next_run(self):
+        from datetime import datetime, timedelta
+        self.next_run = (datetime.utcnow() + timedelta(minutes=self.interval_minutes)).isoformat() + "Z"
+        self.save()
+
+cron_manager = CronManager()
+
+def trigger_stock_job(background_tasks: BackgroundTasks, ganancia: int = 40, margen_mayor: int = 18):
+    req = StartScraperRequest(
+        mode="stock",
+        ganancia=ganancia,
+        margen_mayorista=margen_mayor,
+        download_images=False
+    )
+    return start_scraper(req, background_tasks)
+
+@app.on_event("startup")
+async def start_cron_background_task():
+    async def cron_loop():
+        while True:
+            await asyncio.sleep(30)
+            if not cron_manager.enabled:
+                continue
+            
+            from datetime import datetime
+            now_iso = datetime.utcnow().isoformat() + "Z"
+            
+            if not cron_manager.next_run:
+                cron_manager.compute_next_run()
+                continue
+                
+            if now_iso >= cron_manager.next_run:
+                if state.process and state.process.poll() is None:
+                    continue
+
+                state.add_log("⏰ [CRON AUTOMÁTICO] Ejecutando actualización periódica de stock...")
+                cron_manager.last_run = now_iso
+                cron_manager.last_status = "RUNNING"
+                cron_manager.compute_next_run()
+                
+                try:
+                    bg = BackgroundTasks()
+                    trigger_stock_job(
+                        bg,
+                        ganancia=cron_manager.margen_minorista,
+                        margen_mayor=cron_manager.margen_mayorista
+                    )
+                except Exception as e:
+                    state.add_log(f"🚨 [CRON ERROR] {e}")
+                    cron_manager.last_status = f"ERROR: {e}"
+                    cron_manager.save()
+
+    asyncio.create_task(cron_loop())
+
+@app.get("/api/cron")
+def get_cron_status():
+    return {
+        "enabled": cron_manager.enabled,
+        "interval_minutes": cron_manager.interval_minutes,
+        "margen_minorista": cron_manager.margen_minorista,
+        "margen_mayorista": cron_manager.margen_mayorista,
+        "last_run": cron_manager.last_run,
+        "next_run": cron_manager.next_run,
+        "last_status": cron_manager.last_status,
+        "last_duration": cron_manager.last_duration,
+        "isRunning": state.process is not None and state.process.poll() is None
+    }
+
+@app.post("/api/cron")
+def update_cron_config(req: CronConfigRequest):
+    cron_manager.enabled = req.enabled
+    cron_manager.interval_minutes = max(5, req.interval_minutes)
+    cron_manager.margen_minorista = req.margen_minorista
+    cron_manager.margen_mayorista = req.margen_mayorista
+    if req.enabled:
+        cron_manager.compute_next_run()
+    else:
+        cron_manager.next_run = None
+    cron_manager.save()
+    state.add_log(f"⏰ [CRON CONFIG] Estado: {'ACTIVADO' if req.enabled else 'DESACTIVADO'} (Intervalo: cada {cron_manager.interval_minutes} min)")
+    return get_cron_status()
+
+@app.post("/api/cron/run")
+def run_cron_now(background_tasks: BackgroundTasks):
+    if state.process and state.process.poll() is None:
+        raise HTTPException(status_code=400, detail="El scraper ya está en ejecución.")
+    state.add_log("⚡ [MANUAL RUN] Disparando actualización de stock inmediata...")
+    return trigger_stock_job(
+        background_tasks,
+        ganancia=cron_manager.margen_minorista,
+        margen_mayor=cron_manager.margen_mayorista
+    )
+
 

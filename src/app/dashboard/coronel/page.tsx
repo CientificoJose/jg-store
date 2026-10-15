@@ -57,6 +57,14 @@ export default function CoronelScraperPage() {
   } | null>(null);
   const [scraperMode, setScraperMode] = useState<'scrape' | 'stock' | 'full-run'>('scrape');
 
+  // Estados del Programador Automático (Cron)
+  const [cronEnabled, setCronEnabled] = useState<boolean>(false);
+  const [cronInterval, setCronInterval] = useState<number>(360);
+  const [cronLastRun, setCronLastRun] = useState<string | null>(null);
+  const [cronNextRun, setCronNextRun] = useState<string | null>(null);
+  const [cronLastStatus, setCronLastStatus] = useState<string | null>(null);
+  const [cronSaving, setCronSaving] = useState<boolean>(false);
+
   // Vista previa de navegador
   const [previewTimestamp, setPreviewTimestamp] = useState<number>(Date.now());
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -122,6 +130,7 @@ export default function CoronelScraperPage() {
 
   useEffect(() => {
     fetchDbStats();
+    fetchCronStatus();
   }, []);
 
   // Conectar a Server-Sent Events (SSE) para logs en vivo
@@ -222,6 +231,91 @@ export default function CoronelScraperPage() {
       toast.success('Señal enviada a Chrome: Continuando con la extracción de productos');
     } catch (err: any) {
       toast.error(err.message || 'No se pudo enviar la señal');
+    }
+  };
+
+  // Funciones del Programador Automático (Cron)
+  const fetchCronStatus = async () => {
+    try {
+      const res = await fetch('/api/scraper/cron');
+      if (res.ok) {
+        const data = await res.json();
+        setCronEnabled(Boolean(data.enabled));
+        setCronInterval(Number(data.interval_minutes || 360));
+        setCronLastRun(data.last_run);
+        setCronNextRun(data.next_run);
+        setCronLastStatus(data.last_status);
+      }
+    } catch {}
+  };
+
+  const handleToggleCron = async (newEnabled: boolean) => {
+    setCronSaving(true);
+    try {
+      const res = await fetch('/api/scraper/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled: newEnabled,
+          interval_minutes: cronInterval,
+          margen_minorista: ganancia,
+          margen_mayorista: margenMayorista
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCronEnabled(Boolean(data.enabled));
+        setCronNextRun(data.next_run);
+        toast.success(newEnabled ? 'Cron automático ACTIVADO' : 'Cron automático DESACTIVADO');
+      }
+    } catch {
+      toast.error('Error al guardar configuración de Cron');
+    } finally {
+      setCronSaving(false);
+    }
+  };
+
+  const handleUpdateCronInterval = async (interval: number) => {
+    setCronInterval(interval);
+    setCronSaving(true);
+    try {
+      const res = await fetch('/api/scraper/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled: cronEnabled,
+          interval_minutes: interval,
+          margen_minorista: ganancia,
+          margen_mayorista: margenMayorista
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCronNextRun(data.next_run);
+        toast.success(
+          `Frecuencia actualizada: cada ${interval >= 60 ? `${interval / 60}h` : `${interval}m`}`
+        );
+      }
+    } catch {
+      toast.error('Error al actualizar intervalo');
+    } finally {
+      setCronSaving(false);
+    }
+  };
+
+  const handleRunCronNow = async () => {
+    try {
+      const res = await fetch('/api/scraper/cron?action=run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error ejecutando actualización');
+      toast.success('Actualización rápida de stock iniciada de forma 100% automática');
+      setIsRunning(true);
+      setStatus('STARTING');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al disparar actualización');
     }
   };
 
@@ -592,6 +686,125 @@ export default function CoronelScraperPage() {
                 <span>Detener</span>
               </button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* TARJETA DE PROGRAMACIÓN AUTOMÁTICA (CRON) */}
+      <div className='p-4 rounded-2xl bg-gradient-to-r from-card to-muted/40 border border-border shadow-xs'>
+        <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-4'>
+          {/* Lado Izquierdo: Info y Estado */}
+          <div className='flex items-start gap-3'>
+            <div
+              className={`p-2.5 rounded-xl border ${cronEnabled ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'}`}
+            >
+              <Icons.clock className='w-5 h-5' />
+            </div>
+            <div>
+              <div className='flex items-center gap-2'>
+                <h3 className='font-bold text-sm text-foreground'>
+                  Sincronización Automática de Stock (Cron Background)
+                </h3>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                    cronEnabled
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 animate-pulse'
+                      : 'bg-muted text-muted-foreground border-border'
+                  }`}
+                >
+                  {cronEnabled ? 'Activo' : 'En pausa'}
+                </span>
+              </div>
+              <p className='text-xs text-muted-foreground mt-0.5'>
+                Recorre periódicamente el catálogo global de Coronel para actualizar costos,
+                existencias y marcar como agotados (stock 0) los productos discontinuados en SQLite
+                y la Web.
+              </p>
+
+              {/* Fechas de ejecución */}
+              <div className='flex flex-wrap items-center gap-3 mt-2 text-[11px] text-muted-foreground'>
+                {cronLastRun && (
+                  <span>
+                    Última vez:{' '}
+                    <strong className='text-foreground'>
+                      {new Date(cronLastRun).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </strong>
+                  </span>
+                )}
+                {cronNextRun && cronEnabled && (
+                  <span>
+                    Próxima ejecución:{' '}
+                    <strong className='text-emerald-400'>
+                      {new Date(cronNextRun).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </strong>
+                  </span>
+                )}
+                <span>
+                  Modo: <strong className='text-foreground'>100% Automático (Sin esperas)</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Lado Derecho: Controles y Acciones */}
+          <div className='flex flex-wrap items-center gap-3 self-end lg:self-center'>
+            {/* Selector de Intervalo */}
+            <div className='flex items-center gap-1.5 bg-background border border-border px-2.5 py-1.5 rounded-xl text-xs'>
+              <span className='text-muted-foreground font-medium'>Frecuencia:</span>
+              <select
+                value={cronInterval}
+                onChange={(e) => handleUpdateCronInterval(Number(e.target.value))}
+                disabled={cronSaving}
+                className='bg-transparent text-foreground font-bold outline-none cursor-pointer'
+              >
+                <option value={60} className='bg-card text-foreground'>
+                  Cada 1 hora
+                </option>
+                <option value={180} className='bg-card text-foreground'>
+                  Cada 3 horas
+                </option>
+                <option value={360} className='bg-card text-foreground'>
+                  Cada 6 horas (Recomendado)
+                </option>
+                <option value={720} className='bg-card text-foreground'>
+                  Cada 12 horas
+                </option>
+                <option value={1440} className='bg-card text-foreground'>
+                  Cada 24 horas
+                </option>
+              </select>
+            </div>
+
+            {/* Switch Activar/Desactivar */}
+            <button
+              onClick={() => handleToggleCron(!cronEnabled)}
+              disabled={cronSaving}
+              className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 border shadow-xs ${
+                cronEnabled
+                  ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/20'
+                  : 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent'
+              }`}
+            >
+              <Icons.refresh className={`w-3.5 h-3.5 ${cronSaving ? 'animate-spin' : ''}`} />
+              <span>{cronEnabled ? 'Desactivar Cron' : 'Activar Cron'}</span>
+            </button>
+
+            {/* Disparo manual inmediato */}
+            <button
+              onClick={handleRunCronNow}
+              disabled={isRunning}
+              title='Ejecuta la actualización de stock completa ahora mismo de forma 100% automática'
+              className='px-3.5 py-1.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50'
+            >
+              <Icons.refresh className='w-3.5 h-3.5' />
+              <span>Ejecutar Ahora (Auto)</span>
+            </button>
           </div>
         </div>
       </div>
