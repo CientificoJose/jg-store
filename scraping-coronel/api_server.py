@@ -199,11 +199,9 @@ def start_scraper(req: StartScraperRequest, background_tasks: BackgroundTasks):
             sys.executable,
             os.path.join(BASE_DIR, "main.py"),
             "stock",
-            "-y",
-            "-g", str(req.ganancia),
-            "-m", str(margen_mayor)
+            "-y"
         ]
-        log_msg = f"📦 [SISTEMA CLOUD] Iniciando: Actualización Rápida de Stock & Precios (Detal: +{req.ganancia}%, Mayor: +{margen_mayor}%)..."
+        log_msg = "📦 [SISTEMA CLOUD] Iniciando: Actualización Rápida de Stock (Automática, respetando márgenes establecidos de cada producto)..."
     elif mode == "full-run":
         cmd = [
             sys.executable,

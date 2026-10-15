@@ -196,10 +196,10 @@ def wait_for_listing(driver, wait_time=WAIT_TIME, max_retries=MAX_RETRIES):
                 consecutive_failures = 0
 
 
-def scraping_product(driver, margen_minorista=40.0, margen_mayorista=18.0, max_retries=MAX_RETRIES, wait_time=WAIT_TIME):
+def scraping_product(driver, max_retries=MAX_RETRIES, wait_time=WAIT_TIME):
     """
     Extrae instantáneamente el SKU, variante y precio de costo actual de cada producto del listado.
-    Calcula los precios mayorista y minorista con sus márgenes respectivos.
+    No impone márgenes globales: solo recopila el costo de proveedor y estado en catálogo.
     """
     try:
         listing_ready = wait_for_listing(driver, wait_time=wait_time, max_retries=max_retries)
@@ -252,7 +252,6 @@ def scraping_product(driver, margen_minorista=40.0, margen_mayorista=18.0, max_r
     """
 
     raw_items = driver.execute_script(EXTRACTION_JS) or []
-    total_products = len(raw_items)
     products = []
 
     for item in raw_items:
@@ -267,15 +266,11 @@ def scraping_product(driver, margen_minorista=40.0, margen_mayorista=18.0, max_r
                 code = f"{code}-{v_clean}"
         
         costo = limpiar_precio_float(item.get('precio', '0'))
-        p_detal = round(costo * (1.0 + margen_minorista / 100.0), 2)
-        p_mayor = round(costo * (1.0 + margen_mayorista / 100.0), 2)
 
         products.append({
             'codigo': code,
             'categoria': categoria,
             'precio_costo': costo,
-            'precio_minorista': p_detal,
-            'precio_mayorista': p_mayor,
             'stock': 999999
         })
 
@@ -285,8 +280,11 @@ def scraping_product(driver, margen_minorista=40.0, margen_mayorista=18.0, max_r
 def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
     """
     Actualiza la base de datos local SQLite:
-    - Productos presentes en el scraping: stock = 999999 y actualización de precio costo y PVP.
-    - Productos ausentes en el scraping (discontinuados/agotados): stock = 0.
+    - Productos presentes en el scraping: stock = 999999.
+    - Si el precio de costo del proveedor CAMBIÓ: se recalculan automáticamente los precios
+      de venta utilizando los porcentajes de margen ya establecidos para ese producto en SQLite.
+    - Si el costo NO cambió: no se tocan los precios, únicamente se refresca el stock.
+    - Productos ausentes en el scraping (discontinuados): stock = 0.
     """
     t_start = time.time()
     if not base_dir:
@@ -295,12 +293,14 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
     
     if not os.path.exists(db_path):
         print(Fore.YELLOW + f"⚠ SQLite {db_path} no existe. Omitiendo actualización local." + Style.RESET_ALL)
-        return 0, 0
+        return 0, 0, 0, {}
 
     scraped_map = {p['codigo']: p for p in scraped_products}
     updated_activos = 0
     updated_discontinuados = 0
+    precios_recalculados = 0
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sqlite_items = {}
 
     try:
         with sqlite3.connect(db_path) as conn:
@@ -310,6 +310,8 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
             for col_def in [
                 ("stock", "INTEGER DEFAULT 999999"),
                 ("precio_costo", "REAL DEFAULT 0"),
+                ("margen_minorista", "REAL DEFAULT 40.0"),
+                ("margen_mayorista", "REAL DEFAULT 18.0"),
                 ("precio_minorista", "REAL DEFAULT 0"),
                 ("precio_mayorista", "REAL DEFAULT 0"),
                 ("updated_at", "TEXT")
@@ -319,22 +321,72 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
                 except Exception:
                     pass
 
+            # Cargar productos existentes con sus márgenes y costos ya establecidos
+            c.execute("SELECT codigo, precio_costo, margen_minorista, margen_mayorista, precio_minorista, precio_mayorista FROM productos")
+            for row in c.fetchall():
+                sqlite_items[row[0]] = {
+                    'costo': row[1] or 0.0,
+                    'margen_min': row[2] if row[2] is not None else 40.0,
+                    'margen_may': row[3] if row[3] is not None else 18.0,
+                    'precio_min': row[4] or 0.0,
+                    'precio_may': row[5] or 0.0
+                }
+
             # 1. Actualizar productos presentes en el scraping
             for code, p in scraped_map.items():
-                c.execute("""
-                    UPDATE productos SET 
-                        stock = 999999,
-                        precio_costo = CASE WHEN ? > 0 THEN ? ELSE precio_costo END,
-                        precio_minorista = CASE WHEN ? > 0 THEN ? ELSE precio_minorista END,
-                        precio_mayorista = CASE WHEN ? > 0 THEN ? ELSE precio_mayorista END,
-                        precio_venta = CASE WHEN ? > 0 THEN ? ELSE precio_venta END,
-                        updated_at = ?
-                    WHERE codigo = ?
-                """, (p['precio_costo'], p['precio_costo'], p['precio_minorista'], p['precio_minorista'],
-                      p['precio_mayorista'], p['precio_mayorista'], p['precio_minorista'], p['precio_minorista'],
-                      now_str, code))
-                if c.rowcount > 0:
-                    updated_activos += c.rowcount
+                nuevo_costo = p.get('precio_costo', 0.0)
+                
+                if code in sqlite_items:
+                    item = sqlite_items[code]
+                    costo_anterior = item['costo']
+                    costo_cambio = (nuevo_costo > 0 and abs(nuevo_costo - costo_anterior) > 0.01)
+
+                    if costo_cambio:
+                        # El costo cambió: hacer la cuenta matemática automática con el porcentaje establecido
+                        m_min = item['margen_min']
+                        m_may = item['margen_may']
+                        nuevo_p_min = round(nuevo_costo * (1.0 + m_min / 100.0), 2)
+                        nuevo_p_may = round(nuevo_costo * (1.0 + m_may / 100.0), 2)
+
+                        c.execute("""
+                            UPDATE productos SET 
+                                stock = 999999,
+                                precio_costo = ?,
+                                precio_minorista = ?,
+                                precio_mayorista = ?,
+                                precio_venta = ?,
+                                updated_at = ?
+                            WHERE codigo = ?
+                        """, (nuevo_costo, nuevo_p_min, nuevo_p_may, nuevo_p_min, now_str, code))
+                        precios_recalculados += 1
+                        
+                        # Actualizar en memoria para el sync de Supabase
+                        item['costo'] = nuevo_costo
+                        item['precio_min'] = nuevo_p_min
+                        item['precio_may'] = nuevo_p_may
+                    else:
+                        # El costo NO cambió: SOLO actualizamos stock
+                        c.execute("UPDATE productos SET stock = 999999, updated_at = ? WHERE codigo = ?", (now_str, code))
+                    
+                    updated_activos += 1
+                else:
+                    # Producto nuevo detectado en scraping
+                    p_min = round(nuevo_costo * 1.40, 2) if nuevo_costo > 0 else 0.0
+                    p_may = round(nuevo_costo * 1.18, 2) if nuevo_costo > 0 else 0.0
+                    c.execute("""
+                        INSERT OR REPLACE INTO productos (
+                            codigo, categoria, precio_costo, margen_minorista, margen_mayorista,
+                            precio_minorista, precio_mayorista, precio_venta, stock, updated_at
+                        ) VALUES (?, ?, ?, 40.0, 18.0, ?, ?, ?, 999999, ?)
+                    """, (code, p.get('categoria', ''), nuevo_costo, p_min, p_may, p_min, now_str))
+                    sqlite_items[code] = {
+                        'costo': nuevo_costo,
+                        'margen_min': 40.0,
+                        'margen_may': 18.0,
+                        'precio_min': p_min,
+                        'precio_may': p_may
+                    }
+                    updated_activos += 1
 
             # 2. Marcar con stock = 0 a los que ya NO existen en Coronel (discontinuados)
             c.execute("SELECT codigo FROM productos WHERE codigo NOT LIKE '%-local'")
@@ -352,17 +404,22 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
             conn.commit()
 
         dur = time.time() - t_start
-        print(Fore.GREEN + f"⏱️ [CRONÓMETRO] SQLite actualizado en {formatear_duracion(dur)}: {updated_activos} con stock activo, {updated_discontinuados} marcados como agotados (stock 0)." + Style.RESET_ALL)
-        return updated_activos, updated_discontinuados
+        print(Fore.GREEN + f"⏱️ [CRONÓMETRO] SQLite actualizado en {formatear_duracion(dur)}:" + Style.RESET_ALL)
+        print(f"  - {Fore.GREEN}{updated_activos}{Style.RESET_ALL} productos activos ({precios_recalculados} precios recalculados automáticamente por cambio de costo).")
+        print(f"  - {Fore.RED}{updated_discontinuados}{Style.RESET_ALL} productos discontinuados marcados como Agotados (stock = 0).")
+        return updated_activos, updated_discontinuados, precios_recalculados, sqlite_items
     except Exception as e:
         print(Fore.RED + f"❌ Error actualizando SQLite: {e}" + Style.RESET_ALL)
-        return 0, 0
+        return 0, 0, 0, {}
 
 
-def sync_supabase_stock_and_prices(scraped_products):
+def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None):
     """
     Sincroniza directamente con la base de datos de producción JG Store en Supabase PostgREST:
-    - Productos encontrados: stock = 999, costo y precios de venta actualizados.
+    - Productos encontrados: stock = 999.
+    - Si el costo del proveedor CAMBIÓ: recalcula el precio de venta conservando automáticamente
+      el porcentaje de margen establecido del producto.
+    - Si el costo NO cambió: NO se tocan los precios, únicamente se asegura stock = 999.
     - Productos ausentes en Coronel: stock = 0 (se muestran como Agotados / Ocultos en la web).
     """
     t_start = time.time()
@@ -396,9 +453,10 @@ def sync_supabase_stock_and_prices(scraped_products):
     now_iso = datetime.utcnow().isoformat() + "Z"
     updated_activos = 0
     updated_agotados = 0
+    precios_recalculados_web = 0
 
     def _patch_product(prod):
-        nonlocal updated_activos, updated_agotados
+        nonlocal updated_activos, updated_agotados, precios_recalculados_web
         p_id = prod['id']
         sku = prod.get('sku', '')
         if not sku or sku.endswith('-local'):
@@ -408,14 +466,36 @@ def sync_supabase_stock_and_prices(scraped_products):
         
         if sku in scraped_map:
             s_item = scraped_map[sku]
+            nuevo_costo = s_item.get('precio_costo', 0.0)
+            costo_anterior = float(prod.get('cost_price') or 0.0)
+            costo_cambio = (nuevo_costo > 0 and abs(nuevo_costo - costo_anterior) > 0.01)
+
             payload = {
                 "stock": 999,
                 "updated_at": now_iso
             }
-            if s_item.get('precio_costo', 0) > 0:
-                payload["cost_price"] = s_item['precio_costo']
-                payload["retail_price"] = s_item['precio_minorista']
-                payload["wholesale_price"] = s_item['precio_mayorista']
+
+            if costo_cambio:
+                # El costo de proveedor cambió: calcular nuevo precio con el margen establecido para ese producto
+                if costo_anterior > 0 and float(prod.get('retail_price') or 0) > 0:
+                    ratio_min = float(prod['retail_price']) / costo_anterior
+                    ratio_may = float(prod.get('wholesale_price') or prod['retail_price']) / costo_anterior
+                elif sqlite_items and sku in sqlite_items:
+                    m = sqlite_items[sku]
+                    ratio_min = 1.0 + (m.get('margen_min', 40.0) / 100.0)
+                    ratio_may = 1.0 + (m.get('margen_may', 18.0) / 100.0)
+                else:
+                    ratio_min = 1.40
+                    ratio_may = 1.18
+
+                nuevo_retail = round(nuevo_costo * ratio_min, 2)
+                nuevo_wholesale = round(nuevo_costo * ratio_may, 2)
+
+                payload["cost_price"] = nuevo_costo
+                payload["retail_price"] = nuevo_retail
+                payload["wholesale_price"] = nuevo_wholesale
+                precios_recalculados_web += 1
+
             try:
                 r = requests.patch(patch_url, headers=headers, json=payload, timeout=8)
                 if r.ok:
@@ -442,7 +522,7 @@ def sync_supabase_stock_and_prices(scraped_products):
 
     dur = time.time() - t_start
     print(Fore.GREEN + f"⏱️ [CRONÓMETRO] Sincronización Supabase completada en {formatear_duracion(dur)}:" + Style.RESET_ALL)
-    print(f"  - {Fore.GREEN}{updated_activos}{Style.RESET_ALL} productos activos actualizados con existencias y precios.")
+    print(f"  - {Fore.GREEN}{updated_activos}{Style.RESET_ALL} productos activos sincronizados ({precios_recalculados_web} precios recalculados por variación de costo).")
     print(f"  - {Fore.RED}{updated_agotados}{Style.RESET_ALL} productos discontinuados marcados como Agotados (stock = 0).")
     
     return updated_activos, updated_agotados
@@ -468,7 +548,6 @@ def update_tiendanube_stock(scraped_products):
 
         for tn_product in tiendanube_products:
             product_id = tn_product['id']
-            product_name = tn_product.get('name', {}).get('es', 'Sin nombre')
             variants = tn_product.get('variants', [])
             product_published = tn_product.get('published', True)
             product_has_stock = False
@@ -503,7 +582,7 @@ def update_tiendanube_stock(scraped_products):
         print(Fore.YELLOW + f"Aviso Tiendanube: {e}" + Style.RESET_ALL)
 
 
-def scraping_all_product(driver, margen_minorista=40.0, margen_mayorista=18.0):
+def scraping_all_product(driver):
     """
     Extrae información de productos de TODAS las páginas disponibles de Coronel Mayorista
     con cronómetro por página y acumulado.
@@ -527,7 +606,7 @@ def scraping_all_product(driver, margen_minorista=40.0, margen_mayorista=18.0):
         except Exception:
             pass
 
-        current_products, categoria = scraping_product(driver, margen_minorista=margen_minorista, margen_mayorista=margen_mayorista)
+        current_products, categoria = scraping_product(driver)
         dur_page = time.time() - t_page_start
         dur_acum = time.time() - t_inicio_barrido
         
@@ -561,23 +640,25 @@ def scraping_all_product(driver, margen_minorista=40.0, margen_mayorista=18.0):
     return all_products, categoria
 
 
-def run_stock(auto_mode: bool = True, margen_minorista: float = 40.0, margen_mayorista: float = 18.0, sync_supabase: bool = True):
+def run_stock(auto_mode: bool = True, sync_supabase: bool = True):
     """
-    Función principal para actualizar stock y precios de forma rápida y 100% automatizada.
+    Función principal para actualizar stock de forma rápida y 100% automatizada.
+    
+    - Recorre todo el catálogo de Coronel Mayorista para refrescar existencias y marcar discontinuados.
+    - Si el precio de costo del proveedor cambió, la cuenta matemática se realiza de forma automática
+      respetando el porcentaje de margen ya establecido para cada producto.
     
     Args:
         auto_mode: bool. Si es True, no espera confirmación manual de usuario en pantalla.
-        margen_minorista: float. Margen B2C (%) para cálculo de PVP detal.
-        margen_mayorista: float. Margen B2B (%) para cálculo de PVP mayor.
         sync_supabase: bool. Si es True, sincroniza existencias y precios con Supabase en la web.
     """
     t_global_start = time.time()
     driver = get_chrome_driver()
     
     print(Fore.CYAN + "="*60)
-    print(" ⚡ INICIANDO ACTUALIZACIÓN RÁPIDA DE STOCK & PRECIOS")
-    print(f"    Modo Automático: {'SÍ (Sin intervención)' if auto_mode else 'NO'}")
-    print(f"    Margen Detal (B2C): {margen_minorista}% | Margen Mayor (B2B): {margen_mayorista}%")
+    print(" ⚡ INICIANDO ACTUALIZACIÓN RÁPIDA DE STOCK (AUTOMÁTICA)")
+    print(f"    Modo Desatendido: {'SÍ (Sin intervención)' if auto_mode else 'NO'}")
+    print("    Cálculo de Precios: Automático según margen establecido de cada producto")
     print(f"    Sincronización Web (Supabase): {'ACTIVA' if sync_supabase else 'DESACTIVADA'}")
     print("="*60 + Fore.RESET)
 
@@ -596,7 +677,7 @@ def run_stock(auto_mode: bool = True, margen_minorista: float = 40.0, margen_may
 
         # 2. Barrido ultra rápido de catálogo
         print("[SCRAPER_STATUS:STOCK_UPDATING]", flush=True)
-        products, _ = scraping_all_product(driver, margen_minorista=margen_minorista, margen_mayorista=margen_mayorista)
+        products, _ = scraping_all_product(driver)
         
         try:
             driver.quit()
@@ -607,12 +688,12 @@ def run_stock(auto_mode: bool = True, margen_minorista: float = 40.0, margen_may
             print(Fore.RED + "✖ No se extrajeron productos del catálogo." + Fore.RESET)
             return False
 
-        # 3. Actualizar base de datos local SQLite
-        sync_sqlite_stock_and_prices(products)
+        # 3. Actualizar base de datos local SQLite (calcula precios automáticamente si el costo varió)
+        _, _, _, sqlite_items = sync_sqlite_stock_and_prices(products)
 
         # 4. Sincronizar existencias y precios en la web oficial (Supabase)
         if sync_supabase:
-            sync_supabase_stock_and_prices(products)
+            sync_supabase_stock_and_prices(products, sqlite_items=sqlite_items)
 
         # 5. Compatibilidad Tiendanube (si aplica)
         try:

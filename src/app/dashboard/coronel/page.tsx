@@ -642,7 +642,11 @@ export default function CoronelScraperPage() {
             ) : (
               <div className='flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg'>
                 <Icons.box className='w-3.5 h-3.5' />
-                <span>Modo rápido optimizado: No requiere descarga de imágenes pesadas</span>
+                <span>
+                  Modo de Stock: Solo actualiza existencias e inactiva agotados. Si el costo del
+                  proveedor varía, se recalcula automáticamente el precio según el margen
+                  establecido del producto.
+                </span>
               </div>
             )}
           </div>
