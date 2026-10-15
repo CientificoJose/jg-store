@@ -326,19 +326,65 @@ export async function POST(request: NextRequest) {
           ? Number(p.precio_mayorista)
           : Math.round(costPrice * (1 + wholesaleMargin / 100));
 
+      // --- PROCESAMIENTO DE GALERÍA Y FOTOS EN SUPABASE STORAGE ---
+      let gallerySources: string[] = [];
+      if (Array.isArray(p.imagenes_galeria)) {
+        gallerySources = p.imagenes_galeria;
+      } else if (typeof p.imagenes_galeria === 'string' && p.imagenes_galeria.startsWith('[')) {
+        try {
+          gallerySources = JSON.parse(p.imagenes_galeria);
+        } catch {}
+      } else if (Array.isArray(p.images)) {
+        gallerySources = p.images;
+      }
+
+      const uploadedGallery: string[] = [];
+      if (gallerySources.length > 0) {
+        for (let i = 0; i < gallerySources.length; i++) {
+          const rawSrc = gallerySources[i];
+          if (!rawSrc) continue;
+          if (rawSrc.includes('/storage/v1/object/public/products/')) {
+            uploadedGallery.push(rawSrc);
+          } else {
+            const suffix = i === 0 ? '' : `_${i}`;
+            const uploaded = await uploadImageToSupabaseStorage(rawSrc, `${sku}${suffix}.jpg`);
+            if (uploaded) uploadedGallery.push(uploaded);
+          }
+        }
+      }
+
       let rawImageSrc =
         p.imagen_url ||
         (p.foto ? `/api/scraper/image?file=${encodeURIComponent(p.foto)}` : null) ||
         '';
 
-      let imageUrl = rawImageSrc;
-      if (rawImageSrc && !rawImageSrc.includes('/storage/v1/object/public/products/')) {
-        imageUrl = await uploadImageToSupabaseStorage(rawImageSrc, `${sku}.jpg`);
+      let imageUrl = uploadedGallery[0] || '';
+      if (!imageUrl && rawImageSrc) {
+        if (!rawImageSrc.includes('/storage/v1/object/public/products/')) {
+          imageUrl = await uploadImageToSupabaseStorage(rawImageSrc, `${sku}.jpg`);
+        } else {
+          imageUrl = rawImageSrc;
+        }
+        if (imageUrl && !uploadedGallery.includes(imageUrl)) {
+          uploadedGallery.unshift(imageUrl);
+        }
       }
 
       if (!imageUrl) {
         imageUrl =
           'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+      }
+
+      // --- MARCA AUTÉNTICA (DESDE NIVEL 4 O CAMPO MARCA) ---
+      let cleanBrand = '';
+      if (p.marca && typeof p.marca === 'string' && p.marca.trim()) {
+        cleanBrand = p.marca.trim();
+      } else if (levels.length > 3 && levels[3]) {
+        cleanBrand = levels[3].trim();
+      } else if (p.brand && typeof p.brand === 'string') {
+        cleanBrand = p.brand.trim();
+      } else {
+        cleanBrand = p.variante ? `Coronel (${p.variante})` : 'Coronel';
       }
 
       const productPayload: Record<string, any> = {
@@ -359,11 +405,12 @@ export async function POST(request: NextRequest) {
         min_wholesale_qty: 6,
         stock: Number(p.stock ?? 10),
         image_url: imageUrl,
+        images: uploadedGallery.length > 0 ? uploadedGallery : [imageUrl],
         unit: 'unidad',
-        brand: p.variante ? `Coronel (${p.variante})` : 'Coronel',
+        brand: cleanBrand,
         featured: false,
         is_seasonal: false,
-        tags: [cat?.name, sub?.name, subSub?.name].filter(Boolean),
+        tags: [cat?.name, sub?.name, subSub?.name, cleanBrand].filter(Boolean),
         updated_at: new Date().toISOString()
       };
 

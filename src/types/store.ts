@@ -49,6 +49,7 @@ export interface StoreProduct {
   image_url: string;
   unit: string; // 'unidad', 'docena', 'pack', 'caja'
   brand?: string; // Marca del producto (ej. Samsung, Stanley, Acrilex)
+  images?: string[]; // Arreglo de URLs de todas las imágenes de la galería en Supabase Storage
   featured?: boolean;
   is_seasonal?: boolean;
   tags?: string[];

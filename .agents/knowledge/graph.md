@@ -229,4 +229,16 @@ graph TD
   - **Carga en Scraper y ETL:** `_descargar_imagen_async` en Python y `/api/scraper/migrate` en Next.js suben las imágenes a Supabase Storage por defecto, garantizando independencia total de servidores externos.
   - **Configuración Next.js Image:** Añadido soporte de puertos y dominios para optimización segura con cero errores 500.
 
+### 21. 🟢 Extracción en Profundidad (`app-articulo`), Galería Multi-Imagen y Marca Auténtica (`deep-scraping-gallery-and-brand`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Extracción Profunda en Selenium (`scraping_product.py`):** El scraper ahora entra a la ficha detallada (`app-articulo`) de cada producto para capturar la jerarquía auténtica del breadcrumb (`#breadcrumb .breadcrumb-item.breadcrumb2`) y todas las imágenes de la galería (`.gallery img.img-gallery, .gallery-item img`).
+  - **Jerarquía Taxonómica de 4 Niveles:** Desglose exacto en Categoría (Nivel 1), Subcategoría (Nivel 2), Línea (Nivel 3) y Marca (`brand`, Nivel 4, ej. `COCOT`).
+  - **Galería Multi-Imagen en Supabase Storage:** Descarga asíncrona de todas las fotos de cada artículo y subida persistente a Supabase Storage (`${sku}.jpg`, `${sku}_1.jpg`, etc.).
+  - **Almacenamiento Local SQLite (`productos.db`):** Columnas `imagenes_galeria` (JSON) y `marca` integradas en `asegurar_tabla_productos`, `consolidar_productos`, `export_products_json.py` y `api_server.py`.
+  - **Esquema PostgreSQL en Supabase:** Agregada columna `images jsonb DEFAULT '[]'::jsonb` a `products`.
+  - **Sincronización Web por SKU (`/api/scraper/migrate`):** Identificador maestro único por SKU: crea o actualiza (`PATCH`) taxonomía, marca, galería de Supabase Storage y precios detal/mayor sin duplicados.
+  - **UI Dashboard & Storefront:** Indicador de conteo de fotos (`+N`), badge de marca oficial, y visualización de galería real en `ProductDetailView`.
+
+
 

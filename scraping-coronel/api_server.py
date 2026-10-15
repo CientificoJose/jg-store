@@ -347,7 +347,7 @@ def get_products(category: Optional[str] = None, all_products: bool = False, lim
             SELECT codigo, codigo_barra, descripcion, categoria, subcategoria, sub_subcategoria, categoria_ruta,
                    categoria_slug, subcategoria_slug, sub_subcategoria_slug, categoria_niveles, nivel_profundidad,
                    precio, precio_costo, precio_minorista, precio_mayorista, margen_minorista, margen_mayorista,
-                   precio_venta, porcentaje_ganancia, foto, imagen_url, imagen_local, variante, stock, updated_at
+                   precio_venta, porcentaje_ganancia, foto, imagen_url, imagen_local, variante, stock, marca, imagenes_galeria, updated_at
             FROM productos
         """
         params = []

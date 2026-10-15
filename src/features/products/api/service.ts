@@ -53,6 +53,8 @@ function mapStoreProductToProduct(item: any): Product {
       item.image_url ||
       item.photo_url ||
       'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+    brand: item.brand || undefined,
+    images: Array.isArray(item.images) ? item.images : undefined,
     featured: Boolean(item.featured),
     is_seasonal: Boolean(item.is_seasonal),
     tags: item.tags || [],

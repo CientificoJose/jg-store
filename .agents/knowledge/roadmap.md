@@ -320,6 +320,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Integración en `src/app/api/scraper/migrate/route.ts`: toda migración futura de productos sube automáticamente la imagen a Supabase Storage.
     - Integración en `scraping-coronel/app/scraping_product.py`: el crawler Python ahora descarga y sube en background la imagen a Supabase Storage y almacena la URL oficial en `productos.db`.
     - `next.config.ts` configurado con soporte de puerto 70 e imágenes remotas para compatibilidad total sin errores 500.
+  - **Extracción en Profundidad (`app-articulo`), Galería Multi-Imagen y Marca Oficial:**
+    - **Navegación al Detalle en Scraping:** `scraping_product.py` ahora accede a la ficha del artículo (`app-articulo`) para obtener la fuente de verdad de cada producto.
+    - **Breadcrumbs Auténticos de 4 Niveles:** Captura `#breadcrumb .breadcrumb-item.breadcrumb2` desglosando con precisión: Categoría (Nivel 1), Subcategoría (Nivel 2), Línea (Nivel 3) y Marca (`brand`, Nivel 4, ej. `COCOT`).
+    - **Galería Completa en Supabase Storage:** Detección de todas las fotos en `.gallery .img-gallery`, subida asíncrona a Supabase Storage (`${sku}.jpg`, `${sku}_1.jpg`, etc.) y persistencia en SQLite (`imagenes_galeria`) y PostgreSQL (`products.images`).
+    - **Sincronización Web por SKU:** Actualización idempotente en `/api/scraper/migrate` usando el SKU como clave unívoca para insertar o actualizar (`PATCH`) taxonomía, marca, galería y precios.
+    - **UI Dashboard y Detalle Storefront:** Indicador numérico de fotos adicionales (`+N`) en `/dashboard/product`, badge de marca oficial y reemplazo de fotos placeholder por las imágenes reales en `ProductDetailView`.
 - [x] **Paso 2: Sincronización de Catálogo SQLite -> Supabase Dokploy:** Implementada y validada exitosamente con upserts idempotentes y auto-creación de categorías en PostgREST.
 
 ---

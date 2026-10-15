@@ -79,6 +79,8 @@ def asegurar_tabla_productos(db_path: Optional[str] = None):
             ("categoria_niveles", "TEXT"),
             ("nivel_profundidad", "INTEGER DEFAULT 1"),
             ("stock", "INTEGER DEFAULT 1"),
+            ("imagenes_galeria", "TEXT DEFAULT '[]'"),
+            ("marca", "TEXT DEFAULT ''"),
             ("updated_at", "TEXT")
         ]
 
@@ -277,6 +279,8 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                         sub_subcategoria_slug = ?,
                         categoria_niveles = ?,
                         nivel_profundidad = ?,
+                        imagenes_galeria = COALESCE(NULLIF(?, ''), imagenes_galeria),
+                        marca = COALESCE(NULLIF(?, ''), marca),
                         stock = 1,
                         updated_at = ?
                     WHERE codigo = ?
@@ -304,6 +308,8 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                     sub_subcategoria_slug,
                     categoria_niveles,
                     nivel_profundidad,
+                    producto.get('imagenes_galeria', '[]'),
+                    producto.get('marca', ''),
                     ahora,
                     codigo
                 ))

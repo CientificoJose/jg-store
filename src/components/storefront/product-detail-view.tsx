@@ -28,13 +28,11 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [selectedVariantColor, setSelectedVariantColor] = useState<string>('Estándar');
 
-  // Miniaturas simuladas (4 fotos en diferentes ángulos como Mercado Libre)
-  const galleryImages = [
-    product.image_url,
-    'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80'
-  ];
+  // Galería de imágenes reales del producto
+  const galleryImages =
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : [product.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'];
 
   // Cálculos de precios (B2B vs B2C)
   const isOutOfStock = product.stock <= 0;

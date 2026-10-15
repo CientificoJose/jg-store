@@ -27,7 +27,7 @@ def main():
                    margen_minorista, margen_mayorista, precio_venta, porcentaje_ganancia, imagen_url, foto,
                    categoria, subcategoria, sub_subcategoria, categoria_ruta,
                    categoria_slug, subcategoria_slug, sub_subcategoria_slug,
-                   categoria_niveles, nivel_profundidad, stock
+                   categoria_niveles, nivel_profundidad, stock, marca, imagenes_galeria
             FROM productos
         """
         params = []

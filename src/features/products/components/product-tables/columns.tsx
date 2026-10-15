@@ -19,9 +19,15 @@ export const columns: ColumnDef<Product>[] = [
       const src =
         row.getValue<string>('photo_url') ||
         'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+      const imagesCount = row.original.images?.length || 1;
       return (
         <div className='relative w-12 h-12 rounded-lg overflow-hidden border border-border/80 bg-muted/40 shrink-0'>
           <Image src={src} alt={row.getValue('name')} fill sizes='48px' className='object-cover' />
+          {imagesCount > 1 && (
+            <span className='absolute bottom-0.5 right-0.5 text-[9px] font-bold bg-black/75 text-white px-1 py-0.2 rounded shadow'>
+              +{imagesCount - 1}
+            </span>
+          )}
         </div>
       );
     }
@@ -52,9 +58,16 @@ export const columns: ColumnDef<Product>[] = [
     ),
     cell: ({ row }) => (
       <div className='flex flex-col max-w-xs'>
-        <span className='font-semibold text-foreground text-sm line-clamp-1'>
-          {row.original.name}
-        </span>
+        <div className='flex items-center gap-1.5'>
+          {row.original.brand && (
+            <span className='text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50 shrink-0'>
+              {row.original.brand}
+            </span>
+          )}
+          <span className='font-semibold text-foreground text-sm line-clamp-1'>
+            {row.original.name}
+          </span>
+        </div>
         <span className='text-xs text-[#6C757D] line-clamp-1'>{row.original.description}</span>
       </div>
     ),
@@ -71,16 +84,28 @@ export const columns: ColumnDef<Product>[] = [
     accessorKey: 'category',
     enableSorting: false,
     header: ({ column }: { column: Column<Product, unknown> }) => (
-      <DataTableColumnHeader column={column} title='Rubro / Departamento' />
+      <DataTableColumnHeader column={column} title='Rubro / Jerarquía' />
     ),
     cell: ({ row }) => {
       return (
-        <Badge
-          variant='outline'
-          className='text-xs font-semibold border-[#E63946]/30 text-[#E63946] bg-[#E63946]/5'
-        >
-          {row.original.category_name}
-        </Badge>
+        <div className='flex flex-wrap items-center gap-1'>
+          <Badge
+            variant='outline'
+            className='text-xs font-semibold border-[#E63946]/30 text-[#E63946] bg-[#E63946]/5'
+          >
+            {row.original.category_name}
+          </Badge>
+          {row.original.subcategory_name && (
+            <span className='text-[11px] text-muted-foreground font-medium'>
+              &gt; {row.original.subcategory_name}
+            </span>
+          )}
+          {row.original.sub_subcategory_name && (
+            <span className='text-[10px] text-muted-foreground/80'>
+              &gt; {row.original.sub_subcategory_name}
+            </span>
+          )}
+        </div>
       );
     },
     enableColumnFilter: true,

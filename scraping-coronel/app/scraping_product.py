@@ -30,6 +30,9 @@ SUPABASE_SERVICE_KEY = os.getenv(
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A"
 )
 
+# Control para extracción en profundidad (entrar a app-articulo para breadcrumb y galería)
+DEEP_SCRAPE_PRODUCTS = os.getenv("DEEP_SCRAPE_PRODUCTS", "true").lower() in ["true", "1", "t", "s"]
+
 def _subir_a_supabase_storage(content: bytes, filename: str) -> str:
     """Sube bytes de imagen directamente a Supabase Storage (bucket products)"""
     try:
@@ -47,6 +50,53 @@ def _subir_a_supabase_storage(content: bytes, filename: str) -> str:
     except Exception as e:
         print(f"[Supabase Storage] Error subiendo {filename}: {e}")
     return ""
+
+def _descargar_galeria_async(imagenes_urls: list, code: str, img_dir: str, db_path: str = None):
+    """
+    Descarga en segundo plano todas las imágenes de la galería del producto,
+    las sube a Supabase Storage con nombres normalizados (${code}.jpg, ${code}_1.jpg, etc.)
+    y actualiza SQLite con la lista de URLs públicas.
+    """
+    if not imagenes_urls:
+        return
+    try:
+        supabase_urls = []
+        for i, img_url in enumerate(imagenes_urls):
+            if not img_url or img_url.startswith("data:"):
+                continue
+            clean_url = img_url.replace("\\", "/")
+            suffix = "" if i == 0 else f"_{i}"
+            img_filename = f"{code}{suffix}.jpg".replace("/", "_").replace("\\", "_")
+            local_path = os.path.join(img_dir, img_filename)
+
+            try:
+                resp = requests.get(clean_url, stream=True, verify=False, timeout=10)
+                if resp.status_code == 200:
+                    content = resp.content
+                    with open(local_path, 'wb') as f:
+                        f.write(content)
+                    public_url = _subir_a_supabase_storage(content, img_filename)
+                    if public_url:
+                        supabase_urls.append(public_url)
+                    else:
+                        supabase_urls.append(clean_url)
+            except Exception as err:
+                print(f"[Galeria Storage] Error descargando {clean_url}: {err}")
+
+        if supabase_urls and db_path:
+            try:
+                import sqlite3
+                with sqlite3.connect(db_path) as conn:
+                    cur = conn.cursor()
+                    cur.execute(
+                        "UPDATE productos SET imagenes_galeria = ?, imagen_url = ? WHERE codigo = ?",
+                        (json.dumps(supabase_urls, ensure_ascii=False), supabase_urls[0], code)
+                    )
+                    conn.commit()
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[Galeria Storage] Excepción en galería de {code}: {e}")
 
 def _descargar_imagen_async(image_url: str, img_path: str, filename: str = None, db_path: str = None):
     try:
@@ -303,8 +353,74 @@ def scraping_product(driver, max_retries=3, wait_time=10):
         precio_minorista = round(precio_costo * (1.0 + margen_detal / 100.0), 2)
         precio_mayorista = round(precio_costo * (1.0 + margen_mayor / 100.0), 2)
 
-        # Determinar línea (Nivel 3)
+        # Valores por defecto desde el listado
+        prod_cat = categoria_principal
+        prod_sub = subcategoria
         prod_sub_sub = sub_subcategoria
+        prod_marca = ""
+        galeria_urls = [image_url] if image_url else []
+
+        # --- EXTRACCIÓN EN PROFUNDIDAD (app-articulo) ---
+        # Entra a la ficha de cada producto para leer el breadcrumb exacto y la galería de fotos
+        if DEEP_SCRAPE_PRODUCTS:
+            try:
+                cards = driver.find_elements(By.CSS_SELECTOR, '.col-art .card-product')
+                if index < len(cards):
+                    target_card = cards[index]
+                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_card)
+                    time.sleep(0.15)
+                    driver.execute_script("arguments[0].click();", target_card)
+
+                    try:
+                        WebDriverWait(driver, 4).until(
+                            lambda d: d.find_elements(By.TAG_NAME, "app-articulo") or d.find_elements(By.ID, "breadcrumb")
+                        )
+                        time.sleep(0.3)
+
+                        DETALLE_JS = """
+                        const crumbSpans = Array.from(document.querySelectorAll('#breadcrumb .breadcrumb-item.breadcrumb2, app-breadcrumbs .breadcrumb-item.breadcrumb2'));
+                        const crumbs = crumbSpans.map(s => s.textContent.trim().toUpperCase()).filter(Boolean);
+
+                        const galleryImgs = Array.from(document.querySelectorAll('.gallery .img-gallery, .gallery-item img, app-articulo .gallery img, app-articulo img.img-gallery, .contenedor-card .gallery img'));
+                        const galleryUrls = galleryImgs.map(img => img.getAttribute('src') || img.getAttribute('data-src') || img.src || '').filter(s => s && !s.startsWith('data:'));
+
+                        return {
+                            crumbs: crumbs,
+                            gallery: Array.from(new Set(galleryUrls))
+                        };
+                        """
+                        detalle = driver.execute_script(DETALLE_JS) or {}
+                        inner_crumbs = detalle.get('crumbs') or []
+                        inner_gallery = detalle.get('gallery') or []
+
+                        if inner_crumbs:
+                            if len(inner_crumbs) > 0: prod_cat = inner_crumbs[0]
+                            if len(inner_crumbs) > 1: prod_sub = inner_crumbs[1]
+                            if len(inner_crumbs) > 2: prod_sub_sub = inner_crumbs[2]
+                            if len(inner_crumbs) > 3: prod_marca = inner_crumbs[3]
+
+                        if inner_gallery:
+                            galeria_urls = inner_gallery
+                    except Exception:
+                        pass
+                    finally:
+                        try:
+                            driver.execute_script("window.history.back();")
+                            WebDriverWait(driver, 4).until(
+                                lambda d: d.find_elements(By.CSS_SELECTOR, ".col-art .card-product, .itemsBlock")
+                            )
+                            time.sleep(0.2)
+                        except Exception:
+                            time.sleep(0.5)
+            except Exception as e:
+                try:
+                    if "articulo" in driver.current_url.lower():
+                        driver.execute_script("window.history.back();")
+                        time.sleep(0.5)
+                except Exception:
+                    pass
+
+        # Determinar línea (Nivel 3) si no vino del breadcrumb
         if not prod_sub_sub and lineas_sidebar:
             desc_upper = description.upper()
             for l in lineas_sidebar:
@@ -313,27 +429,35 @@ def scraping_product(driver, max_retries=3, wait_time=10):
                     prod_sub_sub = l
                     break
 
-        # Jerarquía arbitraria: incorporar línea detectada si no está en la lista de breadcrumbs
-        niveles_producto = list(categorias_lista)
-        if prod_sub_sub and prod_sub_sub not in niveles_producto:
-            niveles_producto.append(prod_sub_sub)
-
-        categoria_ruta = " > ".join(niveles_producto) if niveles_producto else categoria_principal
+        # Construir jerarquía completa
+        niveles_producto = [p for p in [prod_cat, prod_sub, prod_sub_sub, prod_marca] if p]
+        categoria_ruta = " > ".join(niveles_producto) if niveles_producto else prod_cat
         categoria_niveles_json = json.dumps(niveles_producto, ensure_ascii=False)
         nivel_profundidad = len(niveles_producto)
 
-        cat_slug = generar_slug(categoria_principal)
-        subcat_slug = generar_slug(subcategoria)
+        cat_slug = generar_slug(prod_cat)
+        subcat_slug = generar_slug(prod_sub)
         sub_subcat_slug = generar_slug(prod_sub_sub)
 
-        # Nombre y URL en Supabase Storage
+        # URLs públicas de Supabase Storage para portada y galería
         supabase_img_name = f"{code}.jpg".replace("/", "_").replace("\\", "_")
         supabase_img_url = f"{SUPABASE_STORAGE_URL}/storage/v1/object/public/products/{supabase_img_name}"
 
-        # Descargar imagen en segundo plano y subir automáticamente a Supabase
-        img_name = f"{code}.jpg"
-        img_path = os.path.join(img_dir, img_name)
-        if DOWNLOAD_IMAGES and image_url:
+        supabase_galeria = []
+        for i, g_url in enumerate(galeria_urls):
+            suf = "" if i == 0 else f"_{i}"
+            s_name = f"{code}{suf}.jpg".replace("/", "_").replace("\\", "_")
+            supabase_galeria.append(f"{SUPABASE_STORAGE_URL}/storage/v1/object/public/products/{s_name}")
+
+        if not supabase_galeria and image_url:
+            supabase_galeria = [supabase_img_url]
+
+        # Descarga y subida asíncrona a Supabase Storage
+        if DOWNLOAD_IMAGES and galeria_urls:
+            _img_executor.submit(_descargar_galeria_async, galeria_urls, code, img_dir, scraping_product.db_path)
+        elif DOWNLOAD_IMAGES and image_url:
+            img_name = f"{code}.jpg"
+            img_path = os.path.join(img_dir, img_name)
             _img_executor.submit(_descargar_imagen_async, image_url, img_path, supabase_img_name, scraping_product.db_path)
 
         # Código de barras
@@ -350,13 +474,15 @@ def scraping_product(driver, max_retries=3, wait_time=10):
             'precio_mayorista': precio_mayorista,
             'precio_venta': precio_minorista,
             'porcentaje_ganancia': margen_detal,
-            'imagen_url': supabase_img_url if image_url else '',
-            'imagen_local': f"img-scraping/{img_name}",
-            'foto': f"img-scraping/{img_name}",
+            'imagen_url': supabase_img_url if (image_url or galeria_urls) else '',
+            'imagen_local': f"img-scraping/{code}.jpg",
+            'foto': f"img-scraping/{code}.jpg",
             'variante': variant,
+            'marca': prod_marca,
+            'imagenes_galeria': json.dumps(supabase_galeria, ensure_ascii=False),
             'codigo_de_barras': codigo_barra,
-            'categoria': categoria_principal,
-            'subcategoria': subcategoria,
+            'categoria': prod_cat,
+            'subcategoria': prod_sub,
             'sub_subcategoria': prod_sub_sub,
             'categoria_ruta': categoria_ruta,
             'categoria_niveles': categoria_niveles_json,
@@ -368,6 +494,8 @@ def scraping_product(driver, max_retries=3, wait_time=10):
         products.append(product_data)
 
         # Resumen formateado en consola
-        print(f"{Fore.GREEN}⚡ [{index + 1}/{total_products}]{Style.RESET_ALL} {Fore.CYAN}{code}{Style.RESET_ALL} | {description[:30]} | Costo: ${precio_costo:,.2f} | Detal (+{int(margen_detal)}%): ${precio_minorista:,.2f} | Mayor (+{int(margen_mayor)}%): ${precio_mayorista:,.2f}")
+        marca_label = f" | Marca: {prod_marca}" if prod_marca else ""
+        fotos_count = len(galeria_urls)
+        print(f"{Fore.GREEN}⚡ [{index + 1}/{total_products}]{Style.RESET_ALL} {Fore.CYAN}{code}{Style.RESET_ALL} | {description[:25]}...{marca_label} | {categoria_ruta} | {fotos_count} foto(s) | Costo: ${precio_costo:,.2f} | Detal: ${precio_minorista:,.2f} | Mayor: ${precio_mayorista:,.2f}")
 
     return products, categoria_ruta, scraping_product.db_path

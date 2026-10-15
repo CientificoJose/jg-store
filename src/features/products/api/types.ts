@@ -25,6 +25,8 @@ export interface Product {
   stock: number;
   unit: string;
   photo_url: string;
+  brand?: string;
+  images?: string[];
   featured?: boolean;
   is_seasonal?: boolean;
   tags?: string[];
