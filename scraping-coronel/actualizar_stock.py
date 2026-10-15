@@ -277,10 +277,96 @@ def scraping_product(driver, max_retries=MAX_RETRIES, wait_time=WAIT_TIME):
     return products, categoria
 
 
-def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
+def cargar_mapa_excel(base_dir=None):
+    """
+    Busca la lista de precios oficial más reciente descargada en productos_coronel/
+    y construye un mapa indexado por código/SKU para enriquecer con:
+      - Código de barras oficial EAN-13 (C.Barra)
+      - Precio de costo base de proveedor (Precio)
+      - Código de proveedor original
+    """
+    if not base_dir:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    excel_dir = os.path.join(base_dir, 'productos_coronel')
+    if not os.path.exists(excel_dir):
+        return {}
+
+    excel_files = glob.glob(os.path.join(excel_dir, '*.xlsx')) + glob.glob(os.path.join(excel_dir, '*.xls'))
+    if not excel_files:
+        return {}
+
+    latest_excel = max(excel_files, key=os.path.getmtime)
+    print(Fore.CYAN + f"\n📊 Indexando códigos de barra y costos desde {os.path.basename(latest_excel)}..." + Style.RESET_ALL)
+
+    try:
+        df = pd.read_excel(latest_excel)
+        excel_map = {}
+        for _, row in df.iterrows():
+            cod = str(row.get('Codigo', '')).strip()
+            if not cod or cod == 'nan':
+                continue
+            
+            cbarra_raw = str(row.get('C.Barra', '')).strip()
+            cbarra = cbarra_raw if (cbarra_raw and cbarra_raw != 'nan' and re.match(r'^\d{8,14}$', cbarra_raw)) else None
+            
+            try:
+                precio = float(row.get('Precio', 0))
+            except Exception:
+                precio = 0.0
+
+            desc = str(row.get('Descripcion del Articulo', '')).strip()
+            item_data = {
+                'barcode': cbarra,
+                'costo': precio,
+                'descripcion': desc,
+                'codigo_original': cod
+            }
+
+            excel_map[cod] = item_data
+            excel_map[cod.upper()] = item_data
+            excel_map[cod.replace('-', '').upper()] = item_data
+            
+            nums = re.sub(r'[^\d]', '', cod)
+            if nums and nums not in excel_map:
+                excel_map[nums] = item_data
+
+        print(Fore.GREEN + f"✔ {len(excel_map)} códigos indexados con códigos de barra oficiales EAN-13." + Style.RESET_ALL)
+        return excel_map
+    except Exception as e:
+        print(Fore.YELLOW + f"⚠ No se pudo procesar el Excel de precios ({e}). Se continuará con datos web." + Style.RESET_ALL)
+        return {}
+
+
+def buscar_en_excel_map(sku, excel_map):
+    """
+    Encuentra con máxima tolerancia y precisión un SKU en el mapa extraído del Excel.
+    """
+    if not excel_map or not sku:
+        return None
+    if sku in excel_map:
+        return excel_map[sku]
+    clean = sku.replace('-', '').upper()
+    if clean in excel_map:
+        return excel_map[clean]
+    parts = sku.split('-')
+    if len(parts) > 1:
+        combo = (parts[0] + parts[1]).upper()
+        if combo in excel_map:
+            return excel_map[combo]
+        if parts[1] in excel_map:
+            return excel_map[parts[1]]
+    nums = re.sub(r'[^\d]', '', sku)
+    if nums and nums in excel_map:
+        return excel_map[nums]
+    return None
+
+
+def sync_sqlite_stock_and_prices(scraped_products, base_dir=None, excel_map=None):
     """
     Actualiza la base de datos local SQLite:
+    - Si el archivo productos.db no existe, se crea automáticamente la tabla para el contenedor Docker.
     - Productos presentes en el scraping: stock = 999999.
+    - Asigna el código de barras oficial desde el Excel si está disponible.
     - Si el precio de costo del proveedor CAMBIÓ: se recalculan automáticamente los precios
       de venta utilizando los porcentajes de margen ya establecidos para ese producto en SQLite.
     - Si el costo NO cambió: no se tocan los precios, únicamente se refresca el stock.
@@ -291,9 +377,32 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
         base_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(base_dir, 'productos.db')
     
+    # Crear SQLite y tabla si no existe (evita omisión en Docker)
     if not os.path.exists(db_path):
-        print(Fore.YELLOW + f"⚠ SQLite {db_path} no existe. Omitiendo actualización local." + Style.RESET_ALL)
-        return 0, 0, 0, {}
+        print(Fore.CYAN + f"ℹ️ Inicializando base de datos local SQLite en {db_path}..." + Style.RESET_ALL)
+        try:
+            with sqlite3.connect(db_path) as init_conn:
+                init_c = init_conn.cursor()
+                init_c.execute("""
+                    CREATE TABLE IF NOT EXISTS productos (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        codigo TEXT UNIQUE,
+                        codigo_barra TEXT,
+                        descripcion TEXT,
+                        categoria TEXT,
+                        precio_costo REAL DEFAULT 0,
+                        margen_minorista REAL DEFAULT 40.0,
+                        margen_mayorista REAL DEFAULT 18.0,
+                        precio_minorista REAL DEFAULT 0,
+                        precio_mayorista REAL DEFAULT 0,
+                        precio_venta REAL DEFAULT 0,
+                        stock INTEGER DEFAULT 999999,
+                        updated_at TEXT
+                    )
+                """)
+                init_conn.commit()
+        except Exception as e_init:
+            print(Fore.YELLOW + f"⚠ Error creando SQLite inicial ({e_init})." + Style.RESET_ALL)
 
     scraped_map = {p['codigo']: p for p in scraped_products}
     updated_activos = 0
@@ -309,6 +418,7 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
             # Garantizar columnas necesarias
             for col_def in [
                 ("stock", "INTEGER DEFAULT 999999"),
+                ("codigo_barra", "TEXT"),
                 ("precio_costo", "REAL DEFAULT 0"),
                 ("margen_minorista", "REAL DEFAULT 40.0"),
                 ("margen_mayorista", "REAL DEFAULT 18.0"),
@@ -322,19 +432,27 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
                     pass
 
             # Cargar productos existentes con sus márgenes y costos ya establecidos
-            c.execute("SELECT codigo, precio_costo, margen_minorista, margen_mayorista, precio_minorista, precio_mayorista FROM productos")
+            c.execute("SELECT codigo, precio_costo, margen_minorista, margen_mayorista, precio_minorista, precio_mayorista, codigo_barra FROM productos")
             for row in c.fetchall():
                 sqlite_items[row[0]] = {
                     'costo': row[1] or 0.0,
                     'margen_min': row[2] if row[2] is not None else 40.0,
                     'margen_may': row[3] if row[3] is not None else 18.0,
                     'precio_min': row[4] or 0.0,
-                    'precio_may': row[5] or 0.0
+                    'precio_may': row[5] or 0.0,
+                    'barcode': row[6] or None
                 }
 
             # 1. Actualizar productos presentes en el scraping
             for code, p in scraped_map.items():
                 nuevo_costo = p.get('precio_costo', 0.0)
+                barcode_val = None
+                if excel_map:
+                    m_ex = buscar_en_excel_map(code, excel_map)
+                    if m_ex:
+                        barcode_val = m_ex.get('barcode')
+                        if nuevo_costo == 0 and m_ex.get('costo'):
+                            nuevo_costo = m_ex['costo']
                 
                 if code in sqlite_items:
                     item = sqlite_items[code]
@@ -355,18 +473,21 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
                                 precio_minorista = ?,
                                 precio_mayorista = ?,
                                 precio_venta = ?,
+                                codigo_barra = COALESCE(?, codigo_barra),
                                 updated_at = ?
                             WHERE codigo = ?
-                        """, (nuevo_costo, nuevo_p_min, nuevo_p_may, nuevo_p_min, now_str, code))
+                        """, (nuevo_costo, nuevo_p_min, nuevo_p_may, nuevo_p_min, barcode_val, now_str, code))
                         precios_recalculados += 1
                         
                         # Actualizar en memoria para el sync de Supabase
                         item['costo'] = nuevo_costo
                         item['precio_min'] = nuevo_p_min
                         item['precio_may'] = nuevo_p_may
+                        if barcode_val:
+                            item['barcode'] = barcode_val
                     else:
-                        # El costo NO cambió: SOLO actualizamos stock
-                        c.execute("UPDATE productos SET stock = 999999, updated_at = ? WHERE codigo = ?", (now_str, code))
+                        # El costo NO cambió: SOLO actualizamos stock (y barcode si faltaba)
+                        c.execute("UPDATE productos SET stock = 999999, codigo_barra = COALESCE(?, codigo_barra), updated_at = ? WHERE codigo = ?", (barcode_val, now_str, code))
                     
                     updated_activos += 1
                 else:
@@ -375,16 +496,17 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
                     p_may = round(nuevo_costo * 1.18, 2) if nuevo_costo > 0 else 0.0
                     c.execute("""
                         INSERT OR REPLACE INTO productos (
-                            codigo, categoria, precio_costo, margen_minorista, margen_mayorista,
+                            codigo, codigo_barra, categoria, precio_costo, margen_minorista, margen_mayorista,
                             precio_minorista, precio_mayorista, precio_venta, stock, updated_at
-                        ) VALUES (?, ?, ?, 40.0, 18.0, ?, ?, ?, 999999, ?)
-                    """, (code, p.get('categoria', ''), nuevo_costo, p_min, p_may, p_min, now_str))
+                        ) VALUES (?, ?, ?, ?, 40.0, 18.0, ?, ?, ?, 999999, ?)
+                    """, (code, barcode_val, p.get('categoria', ''), nuevo_costo, p_min, p_may, p_min, now_str))
                     sqlite_items[code] = {
                         'costo': nuevo_costo,
                         'margen_min': 40.0,
                         'margen_may': 18.0,
                         'precio_min': p_min,
-                        'precio_may': p_may
+                        'precio_may': p_may,
+                        'barcode': barcode_val
                     }
                     updated_activos += 1
 
@@ -413,17 +535,18 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None):
         return 0, 0, 0, {}
 
 
-def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None):
+def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None, excel_map=None):
     """
     Sincroniza directamente con la base de datos de producción JG Store en Supabase PostgREST:
     - Productos encontrados: stock = 999.
+    - Enriquecimiento con código de barras oficial EAN-13 desde el Excel si está disponible.
     - Si el costo del proveedor CAMBIÓ: recalcula el precio de venta conservando automáticamente
       el porcentaje de margen establecido del producto.
     - Si el costo NO cambió: NO se tocan los precios, únicamente se asegura stock = 999.
     - Productos ausentes en Coronel: stock = 0 (se muestran como Agotados / Ocultos en la web).
     """
     t_start = time.time()
-    print(Fore.CYAN + "\n🌐 Sincronizando existencias y precios con Supabase PostgREST..." + Style.RESET_ALL)
+    print(Fore.CYAN + "\n🌐 Sincronizando existencias, códigos de barra y precios con Supabase PostgREST..." + Style.RESET_ALL)
     
     headers = {
         "apikey": SUPABASE_KEY,
@@ -436,11 +559,15 @@ def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None):
     
     # 1. Obtener todos los productos registrados en Supabase
     try:
-        url = f"{SUPABASE_URL}/rest/v1/products?select=id,sku,stock,cost_price,retail_price,wholesale_price"
+        url = f"{SUPABASE_URL}/rest/v1/products?select=id,sku,stock,cost_price,retail_price,wholesale_price,barcode"
         res = requests.get(url, headers=headers, timeout=20)
         if not res.ok:
-            print(Fore.YELLOW + f"⚠ Supabase respondió {res.status_code}: {res.text}. Omitiendo sync web." + Style.RESET_ALL)
-            return 0, 0
+            print(Fore.YELLOW + f"⚠ Supabase respondió {res.status_code}: {res.text}. Intentando consulta simplificada..." + Style.RESET_ALL)
+            url_fallback = f"{SUPABASE_URL}/rest/v1/products?select=id,sku,stock,retail_price,wholesale_price"
+            res = requests.get(url_fallback, headers=headers, timeout=20)
+            if not res.ok:
+                print(Fore.RED + f"✖ Error definitivo conectando a Supabase ({res.status_code}): {res.text}. Omitiendo sync web." + Style.RESET_ALL)
+                return 0, 0
         db_products = res.json()
     except Exception as e:
         print(Fore.YELLOW + f"⚠ No se pudo conectar a Supabase PostgREST ({e})." + Style.RESET_ALL)
@@ -454,9 +581,10 @@ def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None):
     updated_activos = 0
     updated_agotados = 0
     precios_recalculados_web = 0
+    barcodes_enriquecidos = 0
 
     def _patch_product(prod):
-        nonlocal updated_activos, updated_agotados, precios_recalculados_web
+        nonlocal updated_activos, updated_agotados, precios_recalculados_web, barcodes_enriquecidos
         p_id = prod['id']
         sku = prod.get('sku', '')
         if not sku or sku.endswith('-local'):
@@ -474,6 +602,19 @@ def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None):
                 "stock": 999,
                 "updated_at": now_iso
             }
+
+            # Enriquecer con código de barras y costo desde Excel si aplica
+            if excel_map:
+                m_ex = buscar_en_excel_map(sku, excel_map)
+                if m_ex:
+                    b_ex = m_ex.get('barcode')
+                    if b_ex and (not prod.get('barcode') or prod.get('barcode') != b_ex):
+                        payload["barcode"] = b_ex
+                        barcodes_enriquecidos += 1
+                    if (not prod.get('cost_price') or float(prod.get('cost_price')) == 0) and m_ex.get('costo'):
+                        if nuevo_costo == 0:
+                            nuevo_costo = m_ex['costo']
+                        payload["cost_price"] = m_ex['costo']
 
             if costo_cambio:
                 # El costo de proveedor cambió: calcular nuevo precio con el margen establecido para ese producto
@@ -522,7 +663,11 @@ def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None):
 
     dur = time.time() - t_start
     print(Fore.GREEN + f"⏱️ [CRONÓMETRO] Sincronización Supabase completada en {formatear_duracion(dur)}:" + Style.RESET_ALL)
-    print(f"  - {Fore.GREEN}{updated_activos}{Style.RESET_ALL} productos activos sincronizados ({precios_recalculados_web} precios recalculados por variación de costo).")
+    print(f"  - {Fore.GREEN}{updated_activos}{Style.RESET_ALL} productos activos sincronizados (stock = 999).")
+    if barcodes_enriquecidos > 0:
+        print(f"  - {Fore.CYAN}{barcodes_enriquecidos}{Style.RESET_ALL} productos enriquecidos con código de barras oficial EAN-13.")
+    if precios_recalculados_web > 0:
+        print(f"  - {Fore.YELLOW}{precios_recalculados_web}{Style.RESET_ALL} precios recalculados por variación de costo.")
     print(f"  - {Fore.RED}{updated_agotados}{Style.RESET_ALL} productos discontinuados marcados como Agotados (stock = 0).")
     
     return updated_activos, updated_agotados
@@ -688,12 +833,15 @@ def run_stock(auto_mode: bool = True, sync_supabase: bool = True):
             print(Fore.RED + "✖ No se extrajeron productos del catálogo." + Fore.RESET)
             return False
 
-        # 3. Actualizar base de datos local SQLite (calcula precios automáticamente si el costo varió)
-        _, _, _, sqlite_items = sync_sqlite_stock_and_prices(products)
+        # 3. Indexar códigos de barra y costos desde el Excel oficial descargado
+        excel_map = cargar_mapa_excel()
 
-        # 4. Sincronizar existencias y precios en la web oficial (Supabase)
+        # 4. Actualizar base de datos local SQLite (calcula precios automáticamente si el costo varió)
+        _, _, _, sqlite_items = sync_sqlite_stock_and_prices(products, excel_map=excel_map)
+
+        # 5. Sincronizar existencias, códigos de barra y precios en la web oficial (Supabase)
         if sync_supabase:
-            sync_supabase_stock_and_prices(products, sqlite_items=sqlite_items)
+            sync_supabase_stock_and_prices(products, sqlite_items=sqlite_items, excel_map=excel_map)
 
         # 5. Compatibilidad Tiendanube (si aplica)
         try:

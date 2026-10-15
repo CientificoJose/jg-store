@@ -3,6 +3,7 @@ import {
   IconAlertCircle,
   IconAlertTriangle,
   IconArrowRight,
+  IconBarcode,
   IconBell,
   IconBold,
   IconBox,
@@ -266,6 +267,7 @@ export const Icons = {
 
   // E-commerce & Storefront
   cart: IconShoppingCart,
+  barcode: IconBarcode,
   whatsapp: IconBrandWhatsapp,
   filter: IconFilter,
   tags: IconTags,

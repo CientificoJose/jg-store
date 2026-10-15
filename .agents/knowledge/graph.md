@@ -251,5 +251,16 @@ graph TD
   - **Programador Cron en Background:** `CronManager` integrado en `api_server.py` con persistencia en `cron_config.json`, loop asíncrono y endpoints de gestión (`/api/cron`, `/api/cron/run`).
   - **Panel de Control Web (`/dashboard/coronel`):** Módulo interactivo con switch para habilitar/deshabilitar cron, selector de intervalo (1h, 3h, 6h, 12h, 24h), monitoreo de última y próxima corrida, y botón para ejecución inmediata.
 
-
-
+### 23. 🟢 Códigos de Barra Oficiales EAN-13 (Excel Coronel) y Migración Schema (`barcode-excel-enrichment`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Migración de Base de Datos en Supabase Dokploy:** Agregadas formalmente las columnas `cost_price NUMERIC(14, 2) DEFAULT 0.00`, `barcode VARCHAR(100)` y `supplier_code VARCHAR(100)` a la tabla `public.products`.
+  - **Sincronización Inmediata con Excel de Coronel:** Mapeo de los 346 productos existentes en Supabase contra la lista de precios oficial (`lista-precios-*.xlsx` con 23.208 artículos): 318 productos enriquecidos exitosamente con su código de barra numérico auténtico EAN-13 (8 a 14 dígitos) y su precio de costo base.
+  - **Robustecimiento de `actualizar_stock.py`:**
+    - Auto-creación de `/app/productos.db` (SQLite) y su tabla `productos` si no existe en el contenedor Docker, eliminando la advertencia de omisión local.
+    - Módulos `cargar_mapa_excel()` y `buscar_en_excel_map()` para leer el último Excel descargado en cada corrida y vincular automáticamente `barcode` y `cost_price`.
+    - Resiliencia en consultas PostgREST con selección de campos segura y actualización en paralelo.
+  - **Interfaz de Usuario y Visualización:**
+    - Componente de icono centralizado `Icons.barcode` (`IconBarcode` de `@tabler/icons-react`).
+    - Columna SKU en el panel administrativo (`/dashboard/product`) muestra el badge del código de barra EAN-13.
+    - Vista de detalle de producto en la tienda (`ProductDetailView`) exhibe el código EAN junto al SKU y la categoría.

@@ -340,6 +340,14 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - `CronManager` integrado en `api_server.py` con persistencia en `cron_config.json` y loop en asyncio cada 30s.
     - Endpoints de control `/api/cron` (GET/POST) y `/api/cron/run` (POST) con proxy en `src/app/api/scraper/cron/route.ts`.
     - Tarjeta de control en la interfaz web con switch de activación, selector de frecuencia (1h, 3h, 6h, 12h, 24h), badges de estado, fecha de última/próxima ejecución y botón de disparo manual inmediato.
+- [x] **Enriquecimiento Oficial con Códigos de Barra EAN-13 (Excel Coronel) y Migración Schema en Supabase:**
+  - Migración ejecutada en Supabase PostgreSQL: añadidas columnas `cost_price NUMERIC(14, 2) DEFAULT 0.00`, `barcode VARCHAR(100)` y `supplier_code VARCHAR(100)` a la tabla `public.products`.
+  - Vinculación inmediata: 318 productos existentes en Supabase enriquecidos con su código de barra EAN-13 oficial argentino y costo de proveedor a partir de `lista-precios-*.xlsx` (23.208 artículos).
+  - Actualización de `actualizar_stock.py`:
+    - Auto-creación e inicialización de la tabla `productos` en SQLite si `/app/productos.db` no existe en el contenedor Docker (evita el mensaje de omisión).
+    - Módulo `cargar_mapa_excel()` y `buscar_en_excel_map()` para indexar y asociar códigos de barra y costos de forma automática en cada corrida.
+    - Sincronización PostgREST en Supabase de `barcode`, `cost_price` y `stock = 999` para activos, y `stock = 0` para discontinuados.
+  - UI Storefront y Dashboard: Badge con icono de código de barra oficial (`IconBarcode`) en la tabla de productos del dashboard (`/dashboard/product`) y en la vista de detalle de la tienda (`ProductDetailView`).
 
 ---
 

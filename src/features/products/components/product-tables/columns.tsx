@@ -39,9 +39,20 @@ export const columns: ColumnDef<Product>[] = [
       <DataTableColumnHeader column={column} title='SKU' />
     ),
     cell: ({ row }) => (
-      <span className='font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted text-foreground border border-border/60'>
-        {row.original.sku}
-      </span>
+      <div className='flex flex-col gap-1 items-start'>
+        <span className='font-mono text-xs font-semibold px-2 py-0.5 rounded bg-muted text-foreground border border-border/60'>
+          {row.original.sku}
+        </span>
+        {row.original.barcode && (
+          <span
+            title={`Código de barra EAN: ${row.original.barcode}`}
+            className='inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40'
+          >
+            <Icons.barcode className='w-3.5 h-3.5 text-muted-foreground/80 shrink-0' />
+            {row.original.barcode}
+          </span>
+        )}
+      </div>
     ),
     meta: {
       label: 'SKU',
