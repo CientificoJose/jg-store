@@ -256,8 +256,10 @@ graph TD
 * **Detalles:**
   - **Migración de Base de Datos en Supabase Dokploy:** Agregadas formalmente las columnas `cost_price NUMERIC(14, 2) DEFAULT 0.00`, `barcode VARCHAR(100)` y `supplier_code VARCHAR(100)` a la tabla `public.products`.
   - **Sincronización Inmediata con Excel de Coronel:** Mapeo de los 346 productos existentes en Supabase contra la lista de precios oficial (`lista-precios-*.xlsx` con 23.208 artículos): 318 productos enriquecidos exitosamente con su código de barra numérico auténtico EAN-13 (8 a 14 dígitos) y su precio de costo base.
-  - **Robustecimiento de `actualizar_stock.py`:**
-    - Auto-creación de `/app/productos.db` (SQLite) y su tabla `productos` si no existe en el contenedor Docker, eliminando la advertencia de omisión local.
+  - **Robustecimiento de `actualizar_stock.py` y Auto-migración Canónica de SQLite (`asegurar_tabla_productos`):**
+    - Delegación de la inicialización y migración de SQLite a `asegurar_tabla_productos()`, eliminando esquemas fragmentados.
+    - Ampliado el chequeo de PRAGMA a las 33 columnas completas de la tabla (incluyendo `precio`, `codigo_barra`, `imagen_url`, `imagen_local`, `variante`, `subcategoria`, etc.) con ejecución automática de `ALTER TABLE productos ADD COLUMN` para garantizar compatibilidad hacia atrás en cualquier base preexistente.
+    - Resuelve el error `no such column: precio` durante la consolidación de productos en `scraping_coronel.py` y previene el fallo secundario `object of type 'bool' has no len()`.
     - Módulos `cargar_mapa_excel()` y `buscar_en_excel_map()` para leer el último Excel descargado en cada corrida y vincular automáticamente `barcode` y `cost_price`.
     - Resiliencia en consultas PostgREST con selección de campos segura y actualización en paralelo.
   - **Interfaz de Usuario y Visualización:**

@@ -343,8 +343,8 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
 - [x] **Enriquecimiento Oficial con Códigos de Barra EAN-13 (Excel Coronel) y Migración Schema en Supabase:**
   - Migración ejecutada en Supabase PostgreSQL: añadidas columnas `cost_price NUMERIC(14, 2) DEFAULT 0.00`, `barcode VARCHAR(100)` y `supplier_code VARCHAR(100)` a la tabla `public.products`.
   - Vinculación inmediata: 318 productos existentes en Supabase enriquecidos con su código de barra EAN-13 oficial argentino y costo de proveedor a partir de `lista-precios-*.xlsx` (23.208 artículos).
-  - Actualización de `actualizar_stock.py`:
-    - Auto-creación e inicialización de la tabla `productos` en SQLite si `/app/productos.db` no existe en el contenedor Docker (evita el mensaje de omisión).
+  - Actualización de `actualizar_stock.py` y Auto-migración Canónica de SQLite:
+    - Delegación total de esquema a `asegurar_tabla_productos()` con verificación de las 33 columnas de la base de datos (incluyendo `precio`, `codigo_barra`, `variante`, `imagen_url`, etc.) vía `ALTER TABLE`, resolviendo el error `no such column: precio` al consolidar y previniendo caídas en `scraping_coronel.py`.
     - Módulo `cargar_mapa_excel()` y `buscar_en_excel_map()` para indexar y asociar códigos de barra y costos de forma automática en cada corrida.
     - Sincronización PostgREST en Supabase de `barcode`, `cost_price` y `stock = 999` para activos, y `stock = 0` para discontinuados.
   - UI Storefront y Dashboard: Badge con icono de código de barra oficial (`IconBarcode`) en la tabla de productos del dashboard (`/dashboard/product`) y en la vista de detalle de la tienda (`ProductDetailView`).
