@@ -377,32 +377,12 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None, excel_map=None
         base_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(base_dir, 'productos.db')
     
-    # Crear SQLite y tabla si no existe (evita omisión en Docker)
-    if not os.path.exists(db_path):
-        print(Fore.CYAN + f"ℹ️ Inicializando base de datos local SQLite en {db_path}..." + Style.RESET_ALL)
-        try:
-            with sqlite3.connect(db_path) as init_conn:
-                init_c = init_conn.cursor()
-                init_c.execute("""
-                    CREATE TABLE IF NOT EXISTS productos (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        codigo TEXT UNIQUE,
-                        codigo_barra TEXT,
-                        descripcion TEXT,
-                        categoria TEXT,
-                        precio_costo REAL DEFAULT 0,
-                        margen_minorista REAL DEFAULT 40.0,
-                        margen_mayorista REAL DEFAULT 18.0,
-                        precio_minorista REAL DEFAULT 0,
-                        precio_mayorista REAL DEFAULT 0,
-                        precio_venta REAL DEFAULT 0,
-                        stock INTEGER DEFAULT 999999,
-                        updated_at TEXT
-                    )
-                """)
-                init_conn.commit()
-        except Exception as e_init:
-            print(Fore.YELLOW + f"⚠ Error creando SQLite inicial ({e_init})." + Style.RESET_ALL)
+    # Asegurar base de datos SQLite y esquema completo canónico (evita tablas incompletas en Docker)
+    try:
+        from app.core.db import asegurar_tabla_productos
+        asegurar_tabla_productos(db_path)
+    except Exception as e_init:
+        print(Fore.YELLOW + f"⚠ Error asegurando esquema SQLite ({e_init})." + Style.RESET_ALL)
 
     scraped_map = {p['codigo']: p for p in scraped_products}
     updated_activos = 0
@@ -414,22 +394,6 @@ def sync_sqlite_stock_and_prices(scraped_products, base_dir=None, excel_map=None
     try:
         with sqlite3.connect(db_path) as conn:
             c = conn.cursor()
-            
-            # Garantizar columnas necesarias
-            for col_def in [
-                ("stock", "INTEGER DEFAULT 999999"),
-                ("codigo_barra", "TEXT"),
-                ("precio_costo", "REAL DEFAULT 0"),
-                ("margen_minorista", "REAL DEFAULT 40.0"),
-                ("margen_mayorista", "REAL DEFAULT 18.0"),
-                ("precio_minorista", "REAL DEFAULT 0"),
-                ("precio_mayorista", "REAL DEFAULT 0"),
-                ("updated_at", "TEXT")
-            ]:
-                try:
-                    c.execute(f"ALTER TABLE productos ADD COLUMN {col_def[0]} {col_def[1]}")
-                except Exception:
-                    pass
 
             # Cargar productos existentes con sus márgenes y costos ya establecidos
             c.execute("SELECT codigo, precio_costo, margen_minorista, margen_mayorista, precio_minorista, precio_mayorista, codigo_barra FROM productos")

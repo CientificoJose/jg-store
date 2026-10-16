@@ -50,6 +50,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "productos.db")
 SIGNAL_FILE = os.path.join(BASE_DIR, ".scraper_continue")
 
+# Asegurar que la base de datos y todas sus columnas existan siempre
+try:
+    from app.core.db import asegurar_tabla_productos
+    asegurar_tabla_productos(DB_PATH)
+except Exception:
+    pass
+
 class ProcessState:
     def __init__(self):
         self.process: Optional[subprocess.Popen] = None
@@ -334,6 +341,8 @@ def get_products(category: Optional[str] = None, all_products: bool = False, lim
         }
 
     try:
+        from app.core.db import asegurar_tabla_productos
+        asegurar_tabla_productos(DB_PATH)
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()

@@ -55,7 +55,10 @@ def run_scrape(ganancia=None, download_images=None, margen_mayorista=None):
         
         # 2. Consolidar Todo en BD
         todos_los_productos = consolidar_todo_en_base_de_datos(todos_los_productos_sin_dimensiones)
-        
+        if not todos_los_productos:
+            print(Fore.RED + "✖ Error consolidando productos en la base de datos local." + Fore.RESET)
+            return False, ganancia, download_images
+
         print(Fore.GREEN + "\n" + "="*50)
         print(f" SCRAPING COMPLETADO - {len(todos_los_productos)} PRODUCTOS ENCONTRADOS ")
         print("="*50 + Fore.RESET)
