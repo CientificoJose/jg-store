@@ -348,6 +348,17 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Módulo `cargar_mapa_excel()` y `buscar_en_excel_map()` para indexar y asociar códigos de barra y costos de forma automática en cada corrida.
     - Sincronización PostgREST en Supabase de `barcode`, `cost_price` y `stock = 999` para activos, y `stock = 0` para discontinuados.
   - UI Storefront y Dashboard: Badge con icono de código de barra oficial (`IconBarcode`) en la tabla de productos del dashboard (`/dashboard/product`) y en la vista de detalle de la tienda (`ProductDetailView`).
+- [x] **Arquitectura Modular por Pestañas y Monitor Especializado de Stock en `/dashboard/coronel`:**
+  - **Depuración de Modo Manual:** Eliminadas las opciones redundantes *"Solo Actualizar Stock"* y *"Pipeline Completo"* del selector manual; el modo manual ahora se enfoca estrictamente en *"Extraer Catálogo"* con sus fotos a disco y márgenes comerciales B2C/B2B.
+  - **Pestaña 1: Extracción Manual de Catálogo:** Visor remoto interactivo noVNC con controles de escala, terminal en vivo y Centro de Migración ETL hacia Supabase con auto-creación recursiva de categorías.
+  - **Pestaña 2: Sincronización Automática de Stock (Cron & Existencias):**
+    - Panel de control de Cron con selector de frecuencia (1h a 24h), switch de activación y ejecución inmediata (`/api/cron/run`).
+    - Guía pedagógica de 4 pilares: barrido desatendido de ~726 páginas, preservación matemática de márgenes, marcado automático de discontinuados con stock = 0 y cruce de códigos EAN-13 desde Excel.
+    - Cuadrícula de métricas en tiempo real: Total escaneado (~23.176), activos con stock (999), discontinuados (stock = 0), precios recalculados por costo y códigos EAN-13 vinculados.
+    - Barra de salud y estado de sincronización web al 100% con cronómetro formateado.
+    - Historial de auditoría de sincronizaciones persistido en `stock_sync_stats.json`.
+    - Terminal en vivo enfocada en el progreso de stock.
+    - **Monitor de Existencias y Discontinuados en la Web:** Sustituye el ETL de categorías en la pestaña de stock por una vista de auditoría de políticas de existencias activas (stock = 999) vs discontinuados (stock = 0) en Supabase con enlace directo a `/dashboard/product`.
 
 ---
 

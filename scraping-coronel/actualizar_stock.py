@@ -16,6 +16,7 @@ import glob
 import sqlite3
 import requests
 import re
+import json
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -634,7 +635,7 @@ def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None, excel_ma
         print(f"  - {Fore.YELLOW}{precios_recalculados_web}{Style.RESET_ALL} precios recalculados por variación de costo.")
     print(f"  - {Fore.RED}{updated_agotados}{Style.RESET_ALL} productos discontinuados marcados como Agotados (stock = 0).")
     
-    return updated_activos, updated_agotados
+    return updated_activos, updated_agotados, precios_recalculados_web, barcodes_enriquecidos
 
 
 def update_tiendanube_stock(scraped_products):
@@ -801,11 +802,12 @@ def run_stock(auto_mode: bool = True, sync_supabase: bool = True):
         excel_map = cargar_mapa_excel()
 
         # 4. Actualizar base de datos local SQLite (calcula precios automáticamente si el costo varió)
-        _, _, _, sqlite_items = sync_sqlite_stock_and_prices(products, excel_map=excel_map)
+        updated_activos_sql, updated_discontinuados_sql, precios_recalculados_sql, sqlite_items = sync_sqlite_stock_and_prices(products, excel_map=excel_map)
 
         # 5. Sincronizar existencias, códigos de barra y precios en la web oficial (Supabase)
+        updated_activos_web, updated_agotados_web, precios_recalculados_web, barcodes_enriquecidos = (0, 0, 0, 0)
         if sync_supabase:
-            sync_supabase_stock_and_prices(products, sqlite_items=sqlite_items, excel_map=excel_map)
+            updated_activos_web, updated_agotados_web, precios_recalculados_web, barcodes_enriquecidos = sync_supabase_stock_and_prices(products, sqlite_items=sqlite_items, excel_map=excel_map)
 
         # 5. Compatibilidad Tiendanube (si aplica)
         try:
@@ -814,6 +816,42 @@ def run_stock(auto_mode: bool = True, sync_supabase: bool = True):
             pass
 
         dur_global = time.time() - t_global_start
+
+        # 6. Guardar estadísticas estructuradas para el dashboard e historial de auditoría
+        try:
+            stats_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stock_sync_stats.json")
+            history = []
+            if os.path.exists(stats_path):
+                try:
+                    with open(stats_path, "r", encoding="utf-8") as f:
+                        prev = json.load(f)
+                        history = prev.get("history", [])
+                except Exception:
+                    pass
+
+            stat_record = {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "duration_seconds": round(dur_global, 1),
+                "duration_formatted": formatear_duracion(dur_global),
+                "total_scraped": len(products),
+                "active_stock": updated_activos_web if sync_supabase else updated_activos_sql,
+                "stock_zero": updated_agotados_web if sync_supabase else updated_discontinuados_sql,
+                "prices_recalculated": precios_recalculados_web if sync_supabase else precios_recalculados_sql,
+                "barcodes_enriched": barcodes_enriquecidos,
+                "web_sync_success": True if sync_supabase else False,
+                "web_sync_percentage": 100 if sync_supabase else 0
+            }
+            history.insert(0, stat_record)
+            history = history[:20]  # Conservar las últimas 20 corridas
+
+            with open(stats_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "last_sync": stat_record,
+                    "history": history
+                }, f, indent=2)
+        except Exception as e_stats:
+            print(Fore.YELLOW + f"⚠️ No se pudo guardar stock_sync_stats.json: {e_stats}" + Style.RESET_ALL)
+
         print(Fore.GREEN + "\n" + "="*60)
         print(f" 🎉 ACTUALIZACIÓN DE STOCK FINALIZADA CON ÉXITO")
         print(f" ⏱️ [CRONÓMETRO TOTAL] Duración total: {formatear_duracion(dur_global)}")

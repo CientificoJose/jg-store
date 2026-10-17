@@ -266,3 +266,18 @@ graph TD
     - Componente de icono centralizado `Icons.barcode` (`IconBarcode` de `@tabler/icons-react`).
     - Columna SKU en el panel administrativo (`/dashboard/product`) muestra el badge del código de barra EAN-13.
     - Vista de detalle de producto en la tienda (`ProductDetailView`) exhibe el código EAN junto al SKU y la categoría.
+
+### 24. 🟢 Arquitectura de Pestañas Modulares y Monitor Especializado de Stock (`coronel-tabbed-dashboard-and-stock-monitor`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Reorganización en Pestañas Dedicadas (`/dashboard/coronel`):**
+    - **Pestaña 1: "Extracción Manual de Catálogo":** Enfocada exclusivamente en la extracción de nuevos productos y categorías con controles interactivos noVNC (escalado, zoom 50%-125%, pantalla completa), terminal colapsable en vivo, selectores de margen inicial y el ETL masivo *"CENTRO DE MIGRACIÓN & PUBLICACIÓN AL CATÁLOGO WEB"*. Se ocultaron los modos redundantes ("Solo Actualizar Stock" y "Pipeline Completo") para evitar confusiones operativas.
+    - **Pestaña 2: "Sincronización Automática de Stock (Cron & Existencias)":** Módulo autónomo con guía conceptual de 4 pilares (barrido de ~726 páginas, preservación de márgenes, detección de productos discontinuados con `stock = 0`, y enriquecimiento con códigos EAN-13 del Excel).
+  - **Métricas Ejecutivas y Auditoría en Tiempo Real:**
+    - Tarjetas de conteo: Total escaneado, Activos con stock, Discontinuados (`stock = 0`), Precios recalculados automáticamente y Códigos EAN-13 vinculados.
+    - Banner de confirmación de salud: `✓ 100% Sincronizado con Supabase PostgREST` y duración total del proceso.
+    - Tabla histórica de auditoría (últimas 20 ejecuciones) con marca de tiempo, modo, métricas resultantes, tiempo transcurrido y estado.
+  - **Monitor de Existencias y Discontinuados en la Web:**
+    - Reemplazo especializado de la sección inferior en la pestaña de stock, mostrando contadores en vivo de la base de datos Supabase Dokploy (Total, Activos con stock, Agotados/Discontinuados, Sincronizados con EAN-13), políticas de stock y enlaces directos al catálogo.
+  - **Persistencia de Auditoría:** `stock_sync_stats.json` gestionado por `actualizar_stock.py` y expuesto por `api_server.py` (`GET /api/cron`) con fallback automático a métricas de SQLite si no existe registro previo.
+

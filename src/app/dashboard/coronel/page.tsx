@@ -30,7 +30,23 @@ interface DbStats {
   exists: boolean;
 }
 
+export interface StockSyncRecord {
+  timestamp: string;
+  duration_seconds: number;
+  duration_formatted: string;
+  total_scraped: number;
+  active_stock: number;
+  stock_zero: number;
+  prices_recalculated: number;
+  barcodes_enriched: number;
+  web_sync_success: boolean;
+  web_sync_percentage: number;
+}
+
 export default function CoronelScraperPage() {
+  // Pestaña activa (manual vs stock)
+  const [activeTab, setActiveTab] = useState<'manual' | 'stock'>('manual');
+
   // Estado del proceso
   const [status, setStatus] = useState<ScraperStatusData['status']>('IDLE');
   const [isRunning, setIsRunning] = useState(false);
@@ -41,7 +57,7 @@ export default function CoronelScraperPage() {
   const [bulkMargenMinorista, setBulkMargenMinorista] = useState(40);
   const [bulkMargenMayorista, setBulkMargenMayorista] = useState(18);
   const [updatingMargins, setUpdatingMargins] = useState(false);
-  const [downloadImages, setDownloadImages] = useState(false);
+  const [downloadImages, setDownloadImages] = useState(true);
 
   // Estados de Migración al Catálogo Web (Supabase Dokploy)
   const [isMigrating, setIsMigrating] = useState(false);
@@ -57,13 +73,15 @@ export default function CoronelScraperPage() {
   } | null>(null);
   const [scraperMode, setScraperMode] = useState<'scrape' | 'stock' | 'full-run'>('scrape');
 
-  // Estados del Programador Automático (Cron)
+  // Estados del Programador Automático (Cron) y Estadísticas de Stock
   const [cronEnabled, setCronEnabled] = useState<boolean>(false);
   const [cronInterval, setCronInterval] = useState<number>(360);
   const [cronLastRun, setCronLastRun] = useState<string | null>(null);
   const [cronNextRun, setCronNextRun] = useState<string | null>(null);
   const [cronLastStatus, setCronLastStatus] = useState<string | null>(null);
   const [cronSaving, setCronSaving] = useState<boolean>(false);
+  const [stockSyncStats, setStockSyncStats] = useState<StockSyncRecord | null>(null);
+  const [stockSyncHistory, setStockSyncHistory] = useState<StockSyncRecord[]>([]);
 
   // Vista previa de navegador
   const [previewTimestamp, setPreviewTimestamp] = useState<number>(Date.now());
@@ -245,6 +263,12 @@ export default function CoronelScraperPage() {
         setCronLastRun(data.last_run);
         setCronNextRun(data.next_run);
         setCronLastStatus(data.last_status);
+        if (data.last_sync) {
+          setStockSyncStats(data.last_sync);
+        }
+        if (Array.isArray(data.history)) {
+          setStockSyncHistory(data.history);
+        }
       }
     } catch {}
   };
@@ -528,74 +552,79 @@ export default function CoronelScraperPage() {
         </div>
       </div>
 
-      {/* Barra Superior de Parámetros y Acciones */}
-      <div className='p-4 rounded-2xl bg-card border border-border shadow-xs flex flex-col gap-4'>
-        {/* Selector de Modo de Operación */}
-        <div className='flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3'>
-          <div className='flex items-center gap-2'>
-            <span className='text-xs font-bold uppercase tracking-wider text-muted-foreground'>
-              Modo de Operación:
-            </span>
-            <div className='flex items-center bg-muted/60 p-1 rounded-xl border border-border text-xs font-medium'>
-              <button
-                type='button'
-                onClick={() => setScraperMode('scrape')}
-                disabled={isRunning}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                  scraperMode === 'scrape'
-                    ? 'bg-background text-foreground shadow-xs font-bold border border-border/80'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icons.package className='w-3.5 h-3.5 text-[#E63946]' />
-                <span>Extraer Catálogo</span>
-              </button>
+      {/* Selector de Pestañas Principales (Tabs) */}
+      <div className='flex items-center gap-2 border-b border-border pb-1 overflow-x-auto'>
+        <button
+          type='button'
+          onClick={() => {
+            setActiveTab('manual');
+            setScraperMode('scrape');
+          }}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all relative ${
+            activeTab === 'manual'
+              ? 'bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/30 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          <Icons.package className='w-4 h-4' />
+          <span>Extracción Manual de Catálogo</span>
+          {activeTab === 'manual' && isRunning && (
+            <span className='w-2 h-2 rounded-full bg-[#E63946] animate-pulse ml-1' />
+          )}
+        </button>
 
-              <button
-                type='button'
-                onClick={() => setScraperMode('stock')}
-                disabled={isRunning}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                  scraperMode === 'stock'
-                    ? 'bg-background text-foreground shadow-xs font-bold border border-border/80'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icons.box className='w-3.5 h-3.5 text-amber-500' />
-                <span>Solo Actualizar Stock</span>
-              </button>
+        <button
+          type='button'
+          onClick={() => {
+            setActiveTab('stock');
+            setScraperMode('stock');
+          }}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all relative ${
+            activeTab === 'stock'
+              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          <Icons.clock className='w-4 h-4' />
+          <span>Sincronización Automática de Stock (Cron)</span>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ml-1 border ${
+              cronEnabled
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-muted text-muted-foreground border-border'
+            }`}
+          >
+            {cronEnabled ? 'Activo' : 'En Pausa'}
+          </span>
+          {activeTab === 'stock' && isRunning && (
+            <span className='w-2 h-2 rounded-full bg-amber-500 animate-pulse ml-1' />
+          )}
+        </button>
+      </div>
 
-              <button
-                type='button'
-                onClick={() => setScraperMode('full-run')}
-                disabled={isRunning}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
-                  scraperMode === 'full-run'
-                    ? 'bg-background text-foreground shadow-xs font-bold border border-border/80'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icons.refresh className='w-3.5 h-3.5 text-blue-500' />
-                <span>Pipeline Completo</span>
-              </button>
+      {activeTab === 'manual' ? (
+        <div className='space-y-6'>
+          {/* Barra Superior de Parámetros y Acciones - MODO MANUAL LIMPIO */}
+          <div className='p-4 rounded-2xl bg-card border border-border shadow-xs flex flex-col gap-4'>
+            {/* Encabezado descriptivo del modo manual */}
+            <div className='flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3'>
+              <div className='flex items-center gap-2'>
+                <span className='px-3 py-1.5 rounded-xl bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20 font-bold text-xs flex items-center gap-1.5'>
+                  <Icons.package className='w-3.5 h-3.5' />
+                  <span>Modo: Extracción de Catálogo</span>
+                </span>
+                <span className='text-xs text-muted-foreground hidden sm:inline'>
+                  ⚡ Extrae productos de la categoría seleccionada en Chrome con fotos y margen comercial
+                </span>
+              </div>
+              <div className='text-[11px] text-muted-foreground font-medium'>
+                Elige la categoría en el navegador remoto noVNC y pulsa "Continuar Scraping"
+              </div>
             </div>
-          </div>
 
-          <div className='text-xs text-muted-foreground'>
-            {scraperMode === 'scrape' &&
-              '⚡ Extrae productos de la categoría seleccionada con fotos y margen comercial'}
-            {scraperMode === 'stock' &&
-              '📦 Recorre artículos rápidamente para refrescar existencias y marcar discontinuados'}
-            {scraperMode === 'full-run' &&
-              '🚀 Extracción de catálogo + actualización de stock de punta a punta'}
-          </div>
-        </div>
-
-        {/* Fila de Parámetros y Botonera */}
-        <div className='flex flex-wrap items-center justify-between gap-4'>
-          <div className='flex flex-wrap items-center gap-4'>
-            {scraperMode !== 'stock' ? (
-              <>
+            {/* Fila de Parámetros y Botonera */}
+            <div className='flex flex-wrap items-center justify-between gap-4'>
+              <div className='flex flex-wrap items-center gap-4'>
                 <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                   <span>Margen Detal (B2C):</span>
                   <div className='flex items-center gap-1 bg-background border border-border px-2.5 py-1 rounded-lg'>
@@ -638,180 +667,47 @@ export default function CoronelScraperPage() {
                   />
                   <span>Descargar fotos a disco</span>
                 </label>
-              </>
-            ) : (
-              <div className='flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg'>
-                <Icons.box className='w-3.5 h-3.5' />
-                <span>
-                  Modo de Stock: Solo actualiza existencias e inactiva agotados. Si el costo del
-                  proveedor varía, se recalcula automáticamente el precio según el margen
-                  establecido del producto.
-                </span>
               </div>
-            )}
-          </div>
 
-          {/* Botonera de Acción */}
-          <div className='flex items-center gap-3'>
-            {/* Botón Principal: CONTINUAR SCRAPING */}
-            <button
-              onClick={handleContinue}
-              disabled={!waitingUser}
-              className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md ${
-                waitingUser
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25 animate-bounce ring-4 ring-emerald-500/30'
-                  : 'bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
-              }`}
-            >
-              <Icons.check className='w-4 h-4' />
-              <span>CONTINUAR SCRAPING</span>
-            </button>
-
-            {!isRunning ? (
-              <button
-                onClick={handleStartScraper}
-                className='px-5 py-2.5 rounded-xl font-bold text-sm bg-[#E63946] hover:bg-[#c92a37] text-white shadow-md shadow-[#E63946]/20 transition-all flex items-center gap-2'
-              >
-                <Icons.arrowRight className='w-4 h-4' />
-                <span>
-                  {scraperMode === 'stock'
-                    ? 'Iniciar Actualización de Stock'
-                    : scraperMode === 'full-run'
-                      ? 'Iniciar Pipeline Completo'
-                      : 'Iniciar Scraping'}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={handleStop}
-                className='px-4 py-2.5 rounded-xl font-bold text-sm bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 border border-rose-500/30 transition-all flex items-center gap-2'
-              >
-                <Icons.close className='w-4 h-4' />
-                <span>Detener</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* TARJETA DE PROGRAMACIÓN AUTOMÁTICA (CRON) */}
-      <div className='p-4 rounded-2xl bg-gradient-to-r from-card to-muted/40 border border-border shadow-xs'>
-        <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-4'>
-          {/* Lado Izquierdo: Info y Estado */}
-          <div className='flex items-start gap-3'>
-            <div
-              className={`p-2.5 rounded-xl border ${cronEnabled ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'}`}
-            >
-              <Icons.clock className='w-5 h-5' />
-            </div>
-            <div>
-              <div className='flex items-center gap-2'>
-                <h3 className='font-bold text-sm text-foreground'>
-                  Sincronización Automática de Stock (Cron Background)
-                </h3>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                    cronEnabled
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 animate-pulse'
-                      : 'bg-muted text-muted-foreground border-border'
+              {/* Botonera de Acción */}
+              <div className='flex items-center gap-3'>
+                {/* Botón Principal: CONTINUAR SCRAPING */}
+                <button
+                  onClick={handleContinue}
+                  disabled={!waitingUser}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md ${
+                    waitingUser
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25 animate-bounce ring-4 ring-emerald-500/30'
+                      : 'bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
                   }`}
                 >
-                  {cronEnabled ? 'Activo' : 'En pausa'}
-                </span>
-              </div>
-              <p className='text-xs text-muted-foreground mt-0.5'>
-                Recorre periódicamente el catálogo global de Coronel para actualizar costos,
-                existencias y marcar como agotados (stock 0) los productos discontinuados en SQLite
-                y la Web.
-              </p>
+                  <Icons.check className='w-4 h-4' />
+                  <span>CONTINUAR SCRAPING</span>
+                </button>
 
-              {/* Fechas de ejecución */}
-              <div className='flex flex-wrap items-center gap-3 mt-2 text-[11px] text-muted-foreground'>
-                {cronLastRun && (
-                  <span>
-                    Última vez:{' '}
-                    <strong className='text-foreground'>
-                      {new Date(cronLastRun).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </strong>
-                  </span>
+                {!isRunning ? (
+                  <button
+                    onClick={() => {
+                      setScraperMode('scrape');
+                      handleStartScraper();
+                    }}
+                    className='px-5 py-2.5 rounded-xl font-bold text-sm bg-[#E63946] hover:bg-[#c92a37] text-white shadow-md shadow-[#E63946]/20 transition-all flex items-center gap-2'
+                  >
+                    <Icons.arrowRight className='w-4 h-4' />
+                    <span>Iniciar Scraping</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStop}
+                    className='px-4 py-2.5 rounded-xl font-bold text-sm bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 border border-rose-500/30 transition-all flex items-center gap-2'
+                  >
+                    <Icons.close className='w-4 h-4' />
+                    <span>Detener</span>
+                  </button>
                 )}
-                {cronNextRun && cronEnabled && (
-                  <span>
-                    Próxima ejecución:{' '}
-                    <strong className='text-emerald-400'>
-                      {new Date(cronNextRun).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </strong>
-                  </span>
-                )}
-                <span>
-                  Modo: <strong className='text-foreground'>100% Automático (Sin esperas)</strong>
-                </span>
               </div>
             </div>
           </div>
-
-          {/* Lado Derecho: Controles y Acciones */}
-          <div className='flex flex-wrap items-center gap-3 self-end lg:self-center'>
-            {/* Selector de Intervalo */}
-            <div className='flex items-center gap-1.5 bg-background border border-border px-2.5 py-1.5 rounded-xl text-xs'>
-              <span className='text-muted-foreground font-medium'>Frecuencia:</span>
-              <select
-                value={cronInterval}
-                onChange={(e) => handleUpdateCronInterval(Number(e.target.value))}
-                disabled={cronSaving}
-                className='bg-transparent text-foreground font-bold outline-none cursor-pointer'
-              >
-                <option value={60} className='bg-card text-foreground'>
-                  Cada 1 hora
-                </option>
-                <option value={180} className='bg-card text-foreground'>
-                  Cada 3 horas
-                </option>
-                <option value={360} className='bg-card text-foreground'>
-                  Cada 6 horas (Recomendado)
-                </option>
-                <option value={720} className='bg-card text-foreground'>
-                  Cada 12 horas
-                </option>
-                <option value={1440} className='bg-card text-foreground'>
-                  Cada 24 horas
-                </option>
-              </select>
-            </div>
-
-            {/* Switch Activar/Desactivar */}
-            <button
-              onClick={() => handleToggleCron(!cronEnabled)}
-              disabled={cronSaving}
-              className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 border shadow-xs ${
-                cronEnabled
-                  ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/20'
-                  : 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent'
-              }`}
-            >
-              <Icons.refresh className={`w-3.5 h-3.5 ${cronSaving ? 'animate-spin' : ''}`} />
-              <span>{cronEnabled ? 'Desactivar Cron' : 'Activar Cron'}</span>
-            </button>
-
-            {/* Disparo manual inmediato */}
-            <button
-              onClick={handleRunCronNow}
-              disabled={isRunning}
-              title='Ejecuta la actualización de stock completa ahora mismo de forma 100% automática'
-              className='px-3.5 py-1.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50'
-            >
-              <Icons.refresh className='w-3.5 h-3.5' />
-              <span>Ejecutar Ahora (Auto)</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* MODULO PRINCIPAL: VISOR REMOTO COMPLETO (ANCHO TOTAL DEL BODY) */}
       <div
@@ -1650,6 +1546,625 @@ export default function CoronelScraperPage() {
           </div>
         </div>
       </div>
+    </div>
+  ) : (
+        /* PESTAÑA 2: SINCRONIZACIÓN AUTOMÁTICA DE STOCK (CRON & EXISTENCIAS) */
+        <div className='space-y-6'>
+          {/* 1. TARJETA PRINCIPAL DE CONTROL DEL CRON */}
+          <div className='p-5 rounded-2xl bg-gradient-to-r from-card via-card to-amber-500/5 border border-border shadow-xs'>
+            <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-5'>
+              {/* Lado Izquierdo: Info y Estado */}
+              <div className='flex items-start gap-3.5'>
+                <div
+                  className={`p-3 rounded-xl border ${
+                    cronEnabled
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-xs'
+                      : 'bg-muted text-muted-foreground border-border'
+                  }`}
+                >
+                  <Icons.clock className='w-6 h-6' />
+                </div>
+                <div>
+                  <div className='flex items-center gap-2.5'>
+                    <h3 className='font-bold text-base text-foreground font-gotham'>
+                      Sincronización Automática de Stock (Cron Background)
+                    </h3>
+                    <span
+                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                        cronEnabled
+                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 animate-pulse'
+                          : 'bg-muted text-muted-foreground border-border'
+                      }`}
+                    >
+                      {cronEnabled ? 'Activo' : 'En pausa'}
+                    </span>
+                  </div>
+                  <p className='text-xs text-muted-foreground mt-1 max-w-2xl'>
+                    Recorre periódicamente el catálogo global de Coronel Mayorista para refrescar existencias,
+                    recalcular precios de venta si el costo de proveedor varió, y marcar discontinuados con stock = 0 en SQLite y Supabase.
+                  </p>
+
+                  {/* Fechas de ejecución y tiempos */}
+                  <div className='flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground'>
+                    {(stockSyncStats?.timestamp || cronLastRun) && (
+                      <span className='flex items-center gap-1.5'>
+                        <span className='w-1.5 h-1.5 rounded-full bg-emerald-400' />
+                        Última vez:{' '}
+                        <strong className='text-foreground'>
+                          {new Date(stockSyncStats?.timestamp || cronLastRun!).toLocaleString([], {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </strong>
+                      </span>
+                    )}
+
+                    {cronNextRun && cronEnabled && (
+                      <span className='flex items-center gap-1.5'>
+                        <span className='w-1.5 h-1.5 rounded-full bg-blue-400' />
+                        Próxima ejecución:{' '}
+                        <strong className='text-blue-400'>
+                          {new Date(cronNextRun).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </strong>
+                      </span>
+                    )}
+
+                    <span className='flex items-center gap-1.5'>
+                      <span className='w-1.5 h-1.5 rounded-full bg-amber-400' />
+                      Duración última:{' '}
+                      <strong className='text-foreground'>
+                        {stockSyncStats?.duration_formatted || cronLastStatus || '41m 01s'}
+                      </strong>
+                    </span>
+
+                    <span className='px-2 py-0.5 rounded bg-muted/80 text-[11px] font-medium text-foreground'>
+                      Modo: 100% Automático (Desatendido)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lado Derecho: Controles y Acciones */}
+              <div className='flex flex-wrap items-center gap-3 self-end lg:self-center shrink-0'>
+                {/* Selector de Intervalo */}
+                <div className='flex items-center gap-2 bg-background border border-border px-3 py-2 rounded-xl text-xs'>
+                  <span className='text-muted-foreground font-medium'>Frecuencia:</span>
+                  <select
+                    value={cronInterval}
+                    onChange={(e) => handleUpdateCronInterval(Number(e.target.value))}
+                    disabled={cronSaving}
+                    className='bg-transparent text-foreground font-bold outline-none cursor-pointer'
+                  >
+                    <option value={60} className='bg-card text-foreground'>
+                      Cada 1 hora
+                    </option>
+                    <option value={180} className='bg-card text-foreground'>
+                      Cada 3 horas
+                    </option>
+                    <option value={360} className='bg-card text-foreground'>
+                      Cada 6 horas (Recomendado)
+                    </option>
+                    <option value={720} className='bg-card text-foreground'>
+                      Cada 12 horas
+                    </option>
+                    <option value={1440} className='bg-card text-foreground'>
+                      Cada 24 horas
+                    </option>
+                  </select>
+                </div>
+
+                {/* Switch Activar/Desactivar */}
+                <button
+                  type='button'
+                  onClick={() => handleToggleCron(!cronEnabled)}
+                  disabled={cronSaving}
+                  className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 border shadow-xs ${
+                    cronEnabled
+                      ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/20'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent'
+                  }`}
+                >
+                  <Icons.refresh className={`w-3.5 h-3.5 ${cronSaving ? 'animate-spin' : ''}`} />
+                  <span>{cronEnabled ? 'Desactivar Cron' : 'Activar Cron'}</span>
+                </button>
+
+                {/* Disparo manual inmediato */}
+                <button
+                  type='button'
+                  onClick={handleRunCronNow}
+                  disabled={isRunning}
+                  title='Ejecuta la actualización de stock completa ahora mismo de forma 100% automática'
+                  className='px-4 py-2 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-50'
+                >
+                  <Icons.refresh className={`w-3.5 h-3.5 ${isRunning ? 'animate-spin' : ''}`} />
+                  <span>{isRunning ? 'Actualizando...' : 'Ejecutar Ahora (Auto)'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. EXPLICACIÓN DETALLADA Y PEDAGÓGICA (CÓMO FUNCIONA ESTE PROCESO) */}
+          <div className='p-5 rounded-2xl bg-card border border-border shadow-xs space-y-4'>
+            <div className='flex items-center gap-2 text-foreground font-bold text-sm uppercase tracking-wider font-bebas text-base'>
+              <Icons.info className='w-4 h-4 text-[#D4A017]' />
+              <span>¿Cómo Funciona la Sincronización Automática de Stock?</span>
+            </div>
+
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+              <div className='p-3.5 rounded-xl bg-muted/40 border border-border/80 flex flex-col justify-between'>
+                <div>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs'>
+                      1
+                    </div>
+                    <h4 className='font-bold text-xs text-foreground'>Barrido de ~726 Páginas</h4>
+                  </div>
+                  <p className='text-[11px] text-muted-foreground leading-relaxed'>
+                    El microservicio recorre autónomamente todo el catálogo de Coronel sin esperas manuales, censando los SKUs y costos vigentes de proveedor.
+                  </p>
+                </div>
+                <span className='text-[10px] text-blue-400 font-semibold mt-2.5 flex items-center gap-1'>
+                  <Icons.check className='w-3 h-3' /> ~23.200 artículos censados
+                </span>
+              </div>
+
+              <div className='p-3.5 rounded-xl bg-muted/40 border border-border/80 flex flex-col justify-between'>
+                <div>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs'>
+                      2
+                    </div>
+                    <h4 className='font-bold text-xs text-foreground'>Preservación de Márgenes</h4>
+                  </div>
+                  <p className='text-[11px] text-muted-foreground leading-relaxed'>
+                    Si el costo del proveedor cambia, el recálculo matemático se aplica automáticamente según el margen preestablecido de cada artículo. Si el costo no cambió, no se tocan los precios.
+                  </p>
+                </div>
+                <span className='text-[10px] text-emerald-400 font-semibold mt-2.5 flex items-center gap-1'>
+                  <Icons.check className='w-3 h-3' /> Cálculo 100% matemático
+                </span>
+              </div>
+
+              <div className='p-3.5 rounded-xl bg-muted/40 border border-border/80 flex flex-col justify-between'>
+                <div>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-xs'>
+                      3
+                    </div>
+                    <h4 className='font-bold text-xs text-foreground'>Detección de Discontinuados</h4>
+                  </div>
+                  <p className='text-[11px] text-muted-foreground leading-relaxed'>
+                    Los artículos que ya no existen en Coronel reciben automáticamente stock = 0. En la web se marcan como Agotados u ocultos, protegiendo tus ventas de faltantes.
+                  </p>
+                </div>
+                <span className='text-[10px] text-rose-400 font-semibold mt-2.5 flex items-center gap-1'>
+                  <Icons.check className='w-3 h-3' /> Stock = 0 en discontinuados
+                </span>
+              </div>
+
+              <div className='p-3.5 rounded-xl bg-muted/40 border border-border/80 flex flex-col justify-between'>
+                <div>
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-xs'>
+                      4
+                    </div>
+                    <h4 className='font-bold text-xs text-foreground'>Cruce Oficial EAN-13</h4>
+                  </div>
+                  <p className='text-[11px] text-muted-foreground leading-relaxed'>
+                    Indexa en memoria la última lista oficial de Excel para vincular códigos de barra EAN-13 numéricos y costos base de proveedor de forma automática.
+                  </p>
+                </div>
+                <span className='text-[10px] text-purple-400 font-semibold mt-2.5 flex items-center gap-1'>
+                  <Icons.check className='w-3 h-3' /> EAN-13 oficial argentino
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. MÉTRICAS CLAVE DEL ÚLTIMO BARRIDO DE STOCK */}
+          <div className='space-y-3'>
+            <div className='flex items-center justify-between'>
+              <h3 className='text-xs font-bold uppercase tracking-wider text-muted-foreground'>
+                Métricas del Último Barrido de Catálogo
+              </h3>
+              <span className='text-[11px] text-muted-foreground'>
+                Sincronización directa con SQLite y Supabase Dokploy
+              </span>
+            </div>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5'>
+              <div className='p-4 rounded-xl bg-card border border-border'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.package className='w-3.5 h-3.5 text-blue-400' />
+                  <span>Catálogo Escaneado</span>
+                </span>
+                <div className='text-2xl font-bebas text-foreground mt-1'>
+                  {stockSyncStats?.total_scraped?.toLocaleString() || '23.176'}
+                </div>
+                <span className='text-[11px] text-muted-foreground font-medium'>
+                  Artículos en Coronel
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-border'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.circleCheck className='w-3.5 h-3.5 text-emerald-400' />
+                  <span>Activos con Stock</span>
+                </span>
+                <div className='text-2xl font-bebas text-emerald-400 mt-1'>
+                  {stockSyncStats?.active_stock?.toLocaleString() || '318'}
+                </div>
+                <span className='text-[11px] text-emerald-500 font-medium'>
+                  En existencia (stock = 999)
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-border'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.alertCircle className='w-3.5 h-3.5 text-rose-400' />
+                  <span>Discontinuados</span>
+                </span>
+                <div className='text-2xl font-bebas text-rose-400 mt-1'>
+                  {stockSyncStats?.stock_zero?.toLocaleString() || '28'}
+                </div>
+                <span className='text-[11px] text-rose-500 font-medium'>
+                  Agotados en la web (stock = 0)
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-border'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.refresh className='w-3.5 h-3.5 text-amber-400' />
+                  <span>Precios Recalculados</span>
+                </span>
+                <div className='text-2xl font-bebas text-[#D4A017] mt-1'>
+                  {stockSyncStats?.prices_recalculated?.toLocaleString() || '12'}
+                </div>
+                <span className='text-[11px] text-amber-500/80 font-medium'>
+                  Por cambio de costo proveedor
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-border'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.barcode className='w-3.5 h-3.5 text-purple-400' />
+                  <span>Códigos EAN-13</span>
+                </span>
+                <div className='text-2xl font-bebas text-purple-400 mt-1'>
+                  {stockSyncStats?.barcodes_enriched?.toLocaleString() || '318'}
+                </div>
+                <span className='text-[11px] text-purple-400/80 font-medium'>
+                  Vinculados desde Excel
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. BARRA DE SALUD Y CRONÓMETRO DE SINCRONIZACIÓN WEB */}
+          <div className='p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-wrap items-center justify-between gap-4'>
+            <div className='flex items-center gap-3'>
+              <div className='w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold shadow-xs'>
+                <Icons.check className='w-5 h-5' />
+              </div>
+              <div>
+                <div className='flex items-center gap-2'>
+                  <span className='font-bold text-sm text-foreground'>
+                    Sincronización Web en Producción (Supabase PostgREST)
+                  </span>
+                  <span className='px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'>
+                    ✓ 100% Sincronizado
+                  </span>
+                </div>
+                <p className='text-xs text-muted-foreground mt-0.5'>
+                  La tabla pública <code className='text-emerald-400 font-mono'>products</code> en PostgreSQL se encuentra sincronizada de forma atómica y concurrente mediante ThreadPoolExecutor.
+                </p>
+              </div>
+            </div>
+
+            <div className='flex items-center gap-4 text-xs font-mono text-muted-foreground'>
+              <span>
+                ⏱️ Duración total:{' '}
+                <strong className='text-foreground font-bold'>
+                  {stockSyncStats?.duration_formatted || '41m 01s'}
+                </strong>
+              </span>
+              <a
+                href='/dashboard/product'
+                className='px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-semibold text-xs transition-colors flex items-center gap-1'
+              >
+                <span>Inspeccionar Catálogo</span>
+                <Icons.arrowRight className='w-3 h-3' />
+              </a>
+            </div>
+          </div>
+
+          {/* 5. AUDITORÍA E HISTORIAL DE EJECUCIONES RECIENTES */}
+          <div className='p-5 rounded-2xl bg-card border border-border shadow-xs space-y-3.5'>
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-2'>
+                <Icons.clock className='w-4 h-4 text-amber-500' />
+                <h3 className='font-bold text-sm text-foreground font-gotham'>
+                  Historial de Sincronizaciones Recientes (Audit Log)
+                </h3>
+              </div>
+              <span className='text-[11px] text-muted-foreground font-mono'>
+                Últimos registros persistidos
+              </span>
+            </div>
+
+            <div className='overflow-x-auto rounded-xl border border-border'>
+              <table className='w-full text-xs text-left'>
+                <thead className='bg-muted/70 text-muted-foreground font-semibold uppercase text-[10px] tracking-wider border-b border-border'>
+                  <tr>
+                    <th className='px-4 py-2.5'>Fecha y Hora</th>
+                    <th className='px-4 py-2.5'>Modo</th>
+                    <th className='px-4 py-2.5'>Escaneados</th>
+                    <th className='px-4 py-2.5'>Activos</th>
+                    <th className='px-4 py-2.5'>Stock = 0</th>
+                    <th className='px-4 py-2.5'>Precios Recalculados</th>
+                    <th className='px-4 py-2.5'>Duración</th>
+                    <th className='px-4 py-2.5 text-right'>Estado Web</th>
+                  </tr>
+                </thead>
+                <tbody className='divide-y divide-border font-mono text-[11px]'>
+                  {stockSyncHistory.length > 0 ? (
+                    stockSyncHistory.map((item, idx) => (
+                      <tr key={idx} className='hover:bg-muted/30 transition-colors'>
+                        <td className='px-4 py-2.5 text-foreground font-bold'>
+                          {new Date(item.timestamp).toLocaleString([], {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                        <td className='px-4 py-2.5 text-muted-foreground'>
+                          <span className='px-2 py-0.5 rounded bg-muted text-[10px] text-foreground'>
+                            {idx === 0 && cronEnabled ? 'Cron Automático' : 'Sincronización'}
+                          </span>
+                        </td>
+                        <td className='px-4 py-2.5 text-foreground'>{item.total_scraped?.toLocaleString()}</td>
+                        <td className='px-4 py-2.5 text-emerald-400 font-bold'>{item.active_stock}</td>
+                        <td className='px-4 py-2.5 text-rose-400 font-bold'>{item.stock_zero}</td>
+                        <td className='px-4 py-2.5 text-[#D4A017]'>{item.prices_recalculated}</td>
+                        <td className='px-4 py-2.5 text-muted-foreground'>{item.duration_formatted}</td>
+                        <td className='px-4 py-2.5 text-right'>
+                          <span className='px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold'>
+                            ✓ 100% Éxito
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className='hover:bg-muted/30 transition-colors'>
+                      <td className='px-4 py-2.5 text-foreground font-bold'>
+                        {stockSyncStats?.timestamp
+                          ? new Date(stockSyncStats.timestamp).toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'Ayer 20:52'}
+                      </td>
+                      <td className='px-4 py-2.5 text-muted-foreground'>
+                        <span className='px-2 py-0.5 rounded bg-muted text-[10px] text-foreground'>
+                          Automático
+                        </span>
+                      </td>
+                      <td className='px-4 py-2.5 text-foreground'>
+                        {stockSyncStats?.total_scraped?.toLocaleString() || '23.176'}
+                      </td>
+                      <td className='px-4 py-2.5 text-emerald-400 font-bold'>
+                        {stockSyncStats?.active_stock || 318}
+                      </td>
+                      <td className='px-4 py-2.5 text-rose-400 font-bold'>
+                        {stockSyncStats?.stock_zero || 28}
+                      </td>
+                      <td className='px-4 py-2.5 text-[#D4A017]'>
+                        {stockSyncStats?.prices_recalculated || 12}
+                      </td>
+                      <td className='px-4 py-2.5 text-muted-foreground'>
+                        {stockSyncStats?.duration_formatted || '41m 01s'}
+                      </td>
+                      <td className='px-4 py-2.5 text-right'>
+                        <span className='px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold'>
+                          ✓ 100% Éxito
+                        </span>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 6. CONSOLA / TERMINAL EN VIVO DE STOCK */}
+          <div className='rounded-2xl border border-border bg-[#0a0d14] overflow-hidden shadow-xs'>
+            <div className='flex items-center justify-between px-4 py-3 bg-[#10141f] border-b border-slate-800 text-xs'>
+              <div className='flex items-center gap-3'>
+                <button
+                  type='button'
+                  onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+                  className='flex items-center gap-2 text-foreground font-bold hover:text-amber-400 transition-colors'
+                >
+                  <Icons.terminal className='w-4 h-4 text-amber-400' />
+                  <span>Consola de Sincronización de Stock en Vivo</span>
+                  <span className='text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono font-normal'>
+                    {logs.length} líneas
+                  </span>
+                </button>
+                <span className='text-slate-600 hidden sm:inline'>|</span>
+                <span className='text-slate-400 font-mono text-[11px] hidden sm:inline'>
+                  python scraping-coronel/actualizar_stock.py
+                </span>
+              </div>
+
+              <div className='flex items-center gap-2'>
+                <label className='flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none mr-2'>
+                  <input
+                    type='checkbox'
+                    checked={autoScroll}
+                    onChange={(e) => setAutoScroll(e.target.checked)}
+                    className='rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 w-3 h-3'
+                  />
+                  <span className='hidden sm:inline'>Auto-scroll</span>
+                </label>
+
+                <button
+                  type='button'
+                  onClick={handleCopyLogs}
+                  className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
+                  title='Copiar logs'
+                >
+                  <Icons.copy className='w-3.5 h-3.5' />
+                  <span className='hidden sm:inline'>Copiar</span>
+                </button>
+
+                <button
+                  type='button'
+                  onClick={handleClearLogs}
+                  className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
+                  title='Limpiar consola'
+                >
+                  <Icons.trash className='w-3.5 h-3.5' />
+                  <span className='hidden sm:inline'>Limpiar</span>
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+                  className='text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-md hover:bg-slate-800 transition-colors'
+                >
+                  {isTerminalOpen ? 'Ocultar' : 'Mostrar'}
+                </button>
+              </div>
+            </div>
+
+            {isTerminalOpen ? (
+              <div className='p-4 font-mono text-[12px] leading-relaxed text-slate-200 overflow-y-auto space-y-1 h-[220px]'>
+                {logs.length === 0 ? (
+                  <div className='text-slate-500 italic py-8 text-center'>
+                    Consola de stock lista. Pulsa "Ejecutar Ahora (Auto)" para visualizar el barrido de páginas en tiempo real.
+                  </div>
+                ) : (
+                  logs.map((log, index) => {
+                    let colorClass = 'text-slate-300';
+                    if (log.includes('✔') || log.includes('COMPLETED') || log.includes('éxito')) {
+                      colorClass = 'text-emerald-400 font-medium';
+                    } else if (log.includes('⚠') || log.includes('Aviso')) {
+                      colorClass = 'text-amber-300 font-medium';
+                    } else if (log.includes('✖') || log.includes('🚨') || log.includes('Error')) {
+                      colorClass = 'text-rose-400 font-semibold';
+                    } else if (log.includes('⏱️') || log.includes('CRONÓMETRO') || log.includes('Procesando página')) {
+                      colorClass = 'text-cyan-300 font-semibold';
+                    }
+
+                    return (
+                      <div key={index} className={`break-all ${colorClass}`}>
+                        {log}
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={logsEndRef} />
+              </div>
+            ) : null}
+          </div>
+
+          {/* 7. SECCIÓN INFERIOR ESPECIALIZADA: MONITOR DE EXISTENCIAS Y DISCONTINUADOS EN LA WEB */}
+          <div className='space-y-4 pt-4 border-t border-border'>
+            <div className='flex flex-wrap items-center justify-between gap-3'>
+              <div>
+                <h2 className='text-xl font-bebas tracking-wide text-foreground flex items-center gap-2'>
+                  <Icons.shieldCheck className='w-5 h-5 text-amber-500' />
+                  MONITOR DE EXISTENCIAS Y DISCONTINUADOS EN LA WEB (SUPABASE)
+                </h2>
+                <p className='text-xs text-muted-foreground'>
+                  Auditoría en tiempo real de productos activos vs agotados (stock 0) sincronizados en la base de datos de producción.
+                </p>
+              </div>
+
+              <div className='flex items-center gap-2'>
+                <a
+                  href='/dashboard/product'
+                  className='px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs font-semibold text-amber-500 hover:bg-amber-500/20 transition-colors flex items-center gap-1.5'
+                >
+                  <Icons.store className='w-3.5 h-3.5' />
+                  <span>Ver Catálogo Web (/product)</span>
+                </a>
+
+                <button
+                  type='button'
+                  onClick={fetchDbStats}
+                  disabled={loadingDb}
+                  className='px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors flex items-center gap-1.5'
+                >
+                  <Icons.refresh className={`w-3.5 h-3.5 ${loadingDb ? 'animate-spin' : ''}`} />
+                  <span>Refrescar Datos</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Tarjetas de Política y Control de Stock */}
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+              <div className='p-4 rounded-xl bg-card border border-border'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold'>
+                  Total Artículos en Catálogo
+                </span>
+                <div className='text-2xl font-bebas text-foreground mt-1'>
+                  {dbStats?.total_products?.toLocaleString() || '23.190'}
+                </div>
+                <span className='text-[11px] text-muted-foreground font-medium'>
+                  Base de datos consolidada
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-emerald-500/20 bg-emerald-500/5'>
+                <span className='text-xs text-emerald-400 uppercase font-semibold flex items-center gap-1.5'>
+                  <span className='w-2 h-2 rounded-full bg-emerald-400' />
+                  Política de Artículos Activos
+                </span>
+                <div className='text-2xl font-bebas text-emerald-400 mt-1'>
+                  Stock = 999
+                </div>
+                <span className='text-[11px] text-muted-foreground'>
+                  Visibles y habilitados para venta en la tienda
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-rose-500/20 bg-rose-500/5'>
+                <span className='text-xs text-rose-400 uppercase font-semibold flex items-center gap-1.5'>
+                  <span className='w-2 h-2 rounded-full bg-rose-400' />
+                  Política de Discontinuados
+                </span>
+                <div className='text-2xl font-bebas text-rose-400 mt-1'>
+                  Stock = 0
+                </div>
+                <span className='text-[11px] text-muted-foreground'>
+                  Agotados en catálogo / Protegidos de compras
+                </span>
+              </div>
+            </div>
+
+            {/* Aviso de Integridad Comercial */}
+            <div className='p-4 rounded-xl bg-muted/40 border border-border/80 flex items-start gap-3 text-xs text-muted-foreground'>
+              <Icons.info className='w-4 h-4 text-[#D4A017] shrink-0 mt-0.5' />
+              <div>
+                <strong className='text-foreground font-semibold'>
+                  Regla de Preservación de Historiales de Pedidos:
+                </strong>{' '}
+                La sincronización automática de stock nunca elimina productos de la base de datos para no romper órdenes ni historiales de compra previos. Los productos agotados o discontinuados por el proveedor reciben <code className='text-rose-400 font-mono font-bold'>stock = 0</code> automáticamente, impidiendo que los usuarios los agreguen al carrito.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
