@@ -359,6 +359,11 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Historial de auditoría de sincronizaciones persistido en `stock_sync_stats.json`.
     - Terminal en vivo enfocada en el progreso de stock.
     - **Monitor de Existencias y Discontinuados en la Web:** Sustituye el ETL de categorías en la pestaña de stock por una vista de auditoría de políticas de existencias activas (stock = 999) vs discontinuados (stock = 0) en Supabase con enlace directo a `/dashboard/product`.
+- [x] **Barra de Comando Unificada de Catálogo & Gestor Masivo de Márgenes (`ProductCommandBar` en `/dashboard/product`):**
+  - Fusión de los dos componentes redundantes (`BulkMarginToolbar` y `ProductHierarchyFilters`) en un solo componente limpio y coherente.
+  - **Selector Jerárquico Directo en Árbol Indentado:** Sustituye los 3 selectores en cascada por un único menú desplegable organizado con `optgroup` y niveles `└─ Subcategoría` y `└── Línea`, permitiendo filtrar o elegir ámbito de un solo clic sin selectores encadenados.
+  - **Acciones Masivas Contextuales:** La barra detecta automáticamente la categoría seleccionada y adapta dinámicamente el botón de recálculo (`Aplicar Márgenes a "Nombre" (N prods)` o `Todo el Catálogo`), permitiendo ajustar márgenes detal y mayorista sobre la selección activa en tiempo real.
+  - Sincronización completa con `nuqs`, recarga atómica en React Query e inclusión de soporte para sub-subcategorías en `updateStoreProductMarginsMassive`.
 
 ---
 

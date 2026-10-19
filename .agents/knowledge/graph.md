@@ -281,3 +281,12 @@ graph TD
     - Reemplazo especializado de la sección inferior en la pestaña de stock, mostrando contadores en vivo de la base de datos Supabase Dokploy (Total, Activos con stock, Agotados/Discontinuados, Sincronizados con EAN-13), políticas de stock y enlaces directos al catálogo.
   - **Persistencia de Auditoría:** `stock_sync_stats.json` gestionado por `actualizar_stock.py` y expuesto por `api_server.py` (`GET /api/cron`) con fallback automático a métricas de SQLite si no existe registro previo.
 
+### 25. 🟢 Barra de Comando Unificada de Catálogo & Gestor de Precios (`product-command-bar`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Fusión Arquitectónica:** Unificación de `BulkMarginToolbar` y `ProductHierarchyFilters` en un solo componente ergonómico `ProductCommandBar` en `/dashboard/product`.
+  - **Selector Jerárquico en Árbol Indentado:** Eliminación de los 3 selectores en cascada (Depto ➔ Subcat ➔ Línea) en favor de un menú desplegable directo con `optgroup` y niveles `└─ Subcategoría` y `└── Línea`.
+  - **Acciones Masivas Contextuales:** Vinculación directa entre el filtro activo de la tabla y la herramienta de márgenes, adaptando el botón de recálculo dinámicamente (`Aplicar Márgenes a "Categoría" (N prods)` o `Todo el Catálogo`).
+  - **Soporte de Profundidad en Backend:** Ampliado `updateStoreProductMarginsMassive` en `src/lib/store-service.ts` para abarcar también coincidencias sobre `sub_subcategory_slug`.
+
+

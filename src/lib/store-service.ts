@@ -409,7 +409,8 @@ export async function updateStoreProductMarginsMassive(
       !category ||
       category === 'all' ||
       prod.category_slug === category ||
-      prod.subcategory_slug === category;
+      prod.subcategory_slug === category ||
+      prod.sub_subcategory_slug === category;
 
     if (!matchesScope) return prod;
 

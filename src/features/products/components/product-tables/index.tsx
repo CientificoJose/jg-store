@@ -8,8 +8,7 @@ import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
 import { productsQueryOptions } from '../../api/queries';
 import { columns } from './columns';
-import { BulkMarginToolbar } from '../bulk-margin-toolbar';
-import { ProductHierarchyFilters } from '../product-hierarchy-filters';
+import { ProductCommandBar } from '../product-command-bar';
 
 const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
@@ -53,8 +52,7 @@ export function ProductTable() {
 
   return (
     <div className='flex flex-1 flex-col space-y-4'>
-      <BulkMarginToolbar />
-      <ProductHierarchyFilters />
+      <ProductCommandBar totalProducts={data.total_products} />
       <DataTable table={table}>
         <DataTableToolbar table={table} />
       </DataTable>
