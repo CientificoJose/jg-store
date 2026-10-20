@@ -4,7 +4,8 @@ import { updateStoreProductMarginsMassive } from '@/lib/store-service';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { scope = 'all', category, retail_margin, wholesale_margin } = body;
+    const { scope = 'all', category, ids, codigos, retail_margin, wholesale_margin } = body;
+    const targetIds = ids || codigos;
 
     const retailMarginNum = retail_margin !== undefined ? Number(retail_margin) : undefined;
     const wholesaleMarginNum =
@@ -15,6 +16,16 @@ export async function POST(request: NextRequest) {
         { error: 'Debes especificar al menos un margen a actualizar (detal o mayorista)' },
         { status: 400 }
       );
+    }
+
+    if (targetIds && Array.isArray(targetIds) && targetIds.length > 0) {
+      const { updateStoreProductsMargins } = await import('@/lib/store-service');
+      const result = await updateStoreProductsMargins(
+        targetIds,
+        retailMarginNum,
+        wholesaleMarginNum
+      );
+      return Response.json(result);
     }
 
     const result = await updateStoreProductMarginsMassive({

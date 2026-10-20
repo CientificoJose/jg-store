@@ -386,6 +386,15 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Edición inline de stock físico directamente en la celda de la tabla con guardado al presionar Enter o perder el foco.
     - Botón de eliminación individual por fila `🗑️` con confirmación.
     - Endpoints actualizados en `api_server.py`, `app.core.db` y BFF Next.js con soporte de autodetención de `.venv/bin/python`.
+- [x] **Mesa de Trabajo Interactiva en Catálogo Oficial Supabase (`/dashboard/product`):**
+  - **Selección Múltiple con Checkbox Maestro y Pinning:** Columna de selección anclada a la izquierda (`select`) con master checkbox en encabezado y selección individual por fila.
+  - **Barra Flotante / Contextual de Acciones Masivas:**
+    - 📦 *Fijar Stock Masivo*: actualización instantánea de existencias sobre los productos seleccionados en Supabase (`POST /api/products/stock`).
+    - 💲 *Fijar Márgenes Masivos*: aplicación de márgenes Detal y Mayorista y recálculo de precios según costo individual exclusivamente sobre los productos seleccionados (`POST /api/products/margins`).
+    - 🗑️ *Eliminación Masiva*: borrado en lote de productos seleccionados en Supabase con modal de confirmación `AlertModal` (`DELETE /api/products`).
+  - **Edición Inline de Stock Físico:** Cada fila cuenta con un input numérico editable inline que persiste automáticamente en Supabase al presionar Enter o perder foco (`onBlur`), con semáforo visual de stock (rojo agotado, ámbar bajo, verde disponible) e indicador de spinner al guardar.
+  - **Acción Directa de Eliminación por Fila:** Botón `🗑️` visible por fila con confirmación `AlertModal` inmediata.
+  - **Capa de Servicios y Rutas Backend:** Nuevos métodos `updateStoreProductsStock`, `deleteStoreProducts` y `updateStoreProductsMargins` en `src/lib/store-service.ts`, y rutas `POST /api/products/stock` y `DELETE /api/products`.
 
 ---
 

@@ -66,3 +66,32 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { ids, codigos } = body;
+    const targetIds = ids || codigos;
+
+    if (!targetIds || !Array.isArray(targetIds) || targetIds.length === 0) {
+      return NextResponse.json(
+        { error: 'Se requiere una lista de IDs de productos a eliminar (ids o codigos)' },
+        { status: 400 }
+      );
+    }
+
+    const { deleteStoreProducts } = await import('@/lib/store-service');
+    const result = await deleteStoreProducts(targetIds);
+
+    return NextResponse.json({
+      success: true,
+      deleted_count: result.count,
+      message: `${result.count} producto(s) eliminado(s) exitosamente`
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, message: err.message || 'Error al eliminar productos' },
+      { status: 500 }
+    );
+  }
+}

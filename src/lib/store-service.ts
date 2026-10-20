@@ -394,6 +394,167 @@ export async function deleteStoreProduct(id: string): Promise<boolean> {
   return true;
 }
 
+export async function updateStoreProductsStock(
+  ids: string[],
+  stock: number
+): Promise<{ success: boolean; count: number }> {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const idSet = new Set(ids);
+  localCatalog = localCatalog.map((p) =>
+    idSet.has(p.id) || (p.sku && idSet.has(p.sku)) ? { ...p, stock: Number(stock) } : p
+  );
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      const idFilter = ids.join(',');
+      await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
+      });
+    } catch (err) {
+      console.error('Error actualizando stock masivo en Supabase:', err);
+    }
+  }
+
+  return { success: true, count: ids.length };
+}
+
+export async function deleteStoreProducts(
+  ids: string[]
+): Promise<{ success: boolean; count: number }> {
+  if (!ids || ids.length === 0) return { success: true, count: 0 };
+
+  const idSet = new Set(ids);
+  localCatalog = localCatalog.filter((p) => !idSet.has(p.id) && (!p.sku || !idSet.has(p.sku)));
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      const idFilter = ids.join(',');
+      await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})`, {
+        method: 'DELETE',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (err) {
+      console.error('Error eliminando productos masivos en Supabase:', err);
+    }
+  }
+
+  return { success: true, count: ids.length };
+}
+
+export async function updateStoreProductsMargins(
+  ids: string[],
+  retailMargin?: number,
+  wholesaleMargin?: number
+): Promise<{ success: boolean; updated_count: number; message: string }> {
+  if (!ids || ids.length === 0) {
+    return { success: true, updated_count: 0, message: 'Ningún producto seleccionado' };
+  }
+
+  const idSet = new Set(ids);
+  let updatedCount = 0;
+
+  // 1. Actualizar memoria local
+  localCatalog = localCatalog.map((prod) => {
+    if (!idSet.has(prod.id) && (!prod.sku || !idSet.has(prod.sku))) return prod;
+
+    const cost = prod.cost_price || Math.round(prod.retail_price / 1.4);
+    const newRetailMargin =
+      retailMargin !== undefined ? retailMargin : (prod.retail_margin_pct ?? 40);
+    const newWholesaleMargin =
+      wholesaleMargin !== undefined ? wholesaleMargin : (prod.wholesale_margin_pct ?? 18);
+    const newRetailPrice =
+      retailMargin !== undefined
+        ? Math.round(cost * (1 + newRetailMargin / 100))
+        : prod.retail_price;
+    const newWholesalePrice =
+      wholesaleMargin !== undefined
+        ? Math.round(cost * (1 + newWholesaleMargin / 100))
+        : prod.wholesale_price;
+
+    updatedCount++;
+    return {
+      ...prod,
+      cost_price: cost,
+      retail_margin_pct: newRetailMargin,
+      wholesale_margin_pct: newWholesaleMargin,
+      retail_price: newRetailPrice,
+      wholesale_price: newWholesalePrice
+    };
+  });
+
+  // 2. Actualizar Supabase Dokploy
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      const idFilter = ids.join(',');
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})&select=id,cost_price,retail_price,stock`,
+        {
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (res.ok) {
+        const dbItems = await res.json();
+        if (Array.isArray(dbItems) && dbItems.length > 0) {
+          await Promise.all(
+            dbItems.map((item: any) => {
+              const cost = Number(
+                item.cost_price || Math.round(Number(item.retail_price || 0) / 1.4)
+              );
+              const newRetailMargin = retailMargin !== undefined ? retailMargin : 40;
+              const newWholesaleMargin = wholesaleMargin !== undefined ? wholesaleMargin : 18;
+              const newRetailPrice = Math.round(cost * (1 + newRetailMargin / 100));
+              const newWholesalePrice = Math.round(cost * (1 + newWholesaleMargin / 100));
+
+              return fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${item.id}`, {
+                method: 'PATCH',
+                headers: {
+                  apikey: SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'return=minimal'
+                },
+                body: JSON.stringify({
+                  retail_margin_pct: newRetailMargin,
+                  wholesale_margin_pct: newWholesaleMargin,
+                  retail_price: newRetailPrice,
+                  wholesale_price: newWholesalePrice,
+                  updated_at: new Date().toISOString()
+                })
+              });
+            })
+          );
+          updatedCount = dbItems.length;
+        }
+      }
+    } catch (err) {
+      console.error('Error actualizando márgenes específicos en Supabase:', err);
+    }
+  }
+
+  return {
+    success: true,
+    updated_count: updatedCount,
+    message: `Se actualizaron márgenes y precios en ${updatedCount} productos seleccionados.`
+  };
+}
+
 export interface UpdateMarginsOptions {
   scope: 'all' | 'category';
   category?: string;

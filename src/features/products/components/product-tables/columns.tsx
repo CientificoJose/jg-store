@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import type { Product } from '../../api/types';
@@ -9,8 +10,98 @@ import Image from 'next/image';
 import { CellAction } from './cell-action';
 import { CATEGORY_OPTIONS } from './options';
 import { formatPrice } from '@/lib/whatsapp';
+import { cn } from '@/lib/utils';
+
+function InlineStockCell({
+  product,
+  onSave,
+  isSaving
+}: {
+  product: Product;
+  onSave?: (id: string, newStock: number) => void;
+  isSaving?: boolean;
+}) {
+  const [val, setVal] = React.useState<number>(product.stock ?? 0);
+
+  React.useEffect(() => {
+    setVal(product.stock ?? 0);
+  }, [product.stock]);
+
+  const handleBlur = () => {
+    if (val !== product.stock && onSave) {
+      onSave(product.id, val);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
+  return (
+    <div className='flex items-center gap-1.5'>
+      <span
+        className={`w-2 h-2 rounded-full shrink-0 ${
+          val <= 0 ? 'bg-[#6C757D]' : val <= 10 ? 'bg-amber-500' : 'bg-emerald-500'
+        }`}
+      />
+      <input
+        type='number'
+        min='0'
+        max='99999'
+        value={val}
+        onChange={(e) => setVal(Number(e.target.value))}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          'w-16 px-1.5 py-0.5 text-center font-bold text-xs rounded border transition-all outline-none',
+          val <= 0
+            ? 'bg-red-500/10 text-red-500 border-red-500/30'
+            : val <= 10
+              ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+              : 'bg-background text-foreground border-border focus:border-[#E63946]'
+        )}
+        title='Presiona Enter o haz clic fuera para guardar stock en Supabase'
+      />
+      {isSaving && <Icons.spinner className='w-3.5 h-3.5 animate-spin text-[#E63946] shrink-0' />}
+    </div>
+  );
+}
 
 export const columns: ColumnDef<Product>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <div className='flex items-center justify-center px-1'>
+        <input
+          type='checkbox'
+          checked={table.getIsAllPageRowsSelected()}
+          ref={(input) => {
+            if (input) {
+              input.indeterminate = table.getIsSomePageRowsSelected();
+            }
+          }}
+          onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
+          className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
+          title='Seleccionar todos en esta página'
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className='flex items-center justify-center px-1'>
+        <input
+          type='checkbox'
+          checked={row.getIsSelected()}
+          onChange={(e) => row.toggleSelected(e.target.checked)}
+          className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
+        />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 36
+  },
   {
     id: 'photo_url',
     accessorKey: 'photo_url',
@@ -132,23 +223,15 @@ export const columns: ColumnDef<Product>[] = [
     header: ({ column }: { column: Column<Product, unknown> }) => (
       <DataTableColumnHeader column={column} title='Stock' />
     ),
-    cell: ({ row }) => {
-      const stock = row.original.stock;
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      const isSaving = meta?.savingStockId === row.original.id;
       return (
-        <div className='flex items-center gap-1.5'>
-          <span
-            className={`w-2 h-2 rounded-full ${
-              stock <= 0 ? 'bg-[#6C757D]' : stock <= 10 ? 'bg-[#E63946]' : 'bg-emerald-500'
-            }`}
-          />
-          <span
-            className={`text-xs font-semibold ${
-              stock <= 0 ? 'text-[#6C757D]' : stock <= 10 ? 'text-[#E63946]' : 'text-foreground'
-            }`}
-          >
-            {stock <= 0 ? 'Agotado' : `${stock} ${row.original.unit || 'u.'}`}
-          </span>
-        </div>
+        <InlineStockCell
+          product={row.original}
+          onSave={meta?.onUpdateStock}
+          isSaving={isSaving}
+        />
       );
     }
   },
@@ -207,6 +290,20 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <CellAction data={row.original} />
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      return (
+        <div className='flex items-center justify-end gap-1'>
+          <button
+            onClick={() => meta?.onDeleteSingle?.(row.original)}
+            className='p-1.5 rounded-md hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer'
+            title={`Eliminar ${row.original.name} de Supabase`}
+          >
+            <Icons.trash className='w-3.5 h-3.5' />
+          </button>
+          <CellAction data={row.original} />
+        </div>
+      );
+    }
   }
 ];

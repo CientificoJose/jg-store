@@ -312,3 +312,17 @@ graph TD
     - Input de stock físico editable inline en cada celda con persistencia automática al pulsar Enter o salir del campo.
     - Botón de eliminación individual por fila (`🗑️`) con confirmación.
     - Autodetección de `.venv/bin/python` para ejecución local resiliente en entornos Node/Next.js.
+
+### 28. 🟢 Mesa de Trabajo Interactiva en Catálogo Oficial de Supabase (`product-table-interactive-worktable`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Selección Múltiple y Pinning en TanStack Table (`/dashboard/product`):** Checkbox maestro en el encabezado para seleccionar todos los productos de la página visible, checkboxes individuales por fila, y pinning fijado a la izquierda (`select`) y a la derecha (`actions`).
+  - **Barra Flotante / Contextual de Acciones Masivas:** Se despliega con animación y sombra superior cuando hay 1 o más productos seleccionados:
+    - Contador de selección en badge rojo + botón "Deseleccionar".
+    - 📦 *Fijar Stock Masivo*: input numérico y botón para actualizar el stock físico en Supabase de todo el lote seleccionado en un solo clic (`POST /api/products/stock`).
+    - 💲 *Fijar Márgenes Masivos*: inputs de margen Detal (%) y Mayorista (%) para recalcular y aplicar precios según el costo individual de cada producto seleccionado (`POST /api/products/margins`).
+    - 🗑️ *Eliminación Masiva*: botón con conteo de seleccionados y modal de confirmación `AlertModal` para purgar los productos en lote de Supabase (`DELETE /api/products`).
+  - **Edición Inline de Stock Físico:** Celda interactiva en la columna de stock con número editable, semáforo visual (rojo = agotado, ámbar = bajo, verde = normal) y guardado automático con Enter o `onBlur` en Supabase con indicador de spinner.
+  - **Acción Directa de Eliminación:** Botón visible `🗑️` por fila con diálogo `AlertModal` para suprimir artículos individuales sin necesidad de abrir el menú desplegable.
+  - **Capa de Servicios y Rutas Backend:** Nuevos métodos `updateStoreProductsStock`, `deleteStoreProducts` y `updateStoreProductsMargins` en `src/lib/store-service.ts` con soporte para filtros `id=in.(...)` de PostgREST, y endpoints `POST /api/products/stock` y `DELETE /api/products`.
+
