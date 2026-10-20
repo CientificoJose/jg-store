@@ -65,11 +65,31 @@ export default function CoronelScraperPage() {
   const [migrationCategory, setMigrationCategory] = useState<string>('all');
   const [migrationRetailMargin, setMigrationRetailMargin] = useState<number>(40);
   const [migrationWholesaleMargin, setMigrationWholesaleMargin] = useState<number>(18);
+  const [priceStrategy, setPriceStrategy] = useState<'only_new' | 'overwrite_all' | 'stock_only'>('only_new');
+
+  // Filtros de la Tabla Interactiva de SQLite
+  const [tableSearch, setTableSearch] = useState<string>('');
+  const [tableCategory, setTableCategory] = useState<string>('all');
+  const [tableStockFilter, setTableStockFilter] = useState<'all' | 'in_stock' | 'out_of_stock'>('all');
+
+  // Selección múltiple y acciones masivas en SQLite
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [bulkStockVal, setBulkStockVal] = useState<number>(10);
+  const [bulkSelectedRetailMargin, setBulkSelectedRetailMargin] = useState<number>(40);
+  const [bulkSelectedWholesaleMargin, setBulkSelectedWholesaleMargin] = useState<number>(18);
+  const [isUpdatingBulkStock, setIsUpdatingBulkStock] = useState<boolean>(false);
+  const [isUpdatingBulkMargins, setIsUpdatingBulkMargins] = useState<boolean>(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState<boolean>(false);
+  const [savingStockCode, setSavingStockCode] = useState<string | null>(null);
+  const [stockDrafts, setStockDrafts] = useState<Record<string, number>>({});
+
   const [lastMigrationInfo, setLastMigrationInfo] = useState<{
     date: string;
     total: number;
     inserted: number;
     updated: number;
+    preserved?: number;
+    strategy?: string;
     categories: number;
   } | null>(null);
   const [scraperMode, setScraperMode] = useState<'scrape' | 'stock' | 'full-run'>('scrape');
@@ -394,7 +414,8 @@ export default function CoronelScraperPage() {
         body: JSON.stringify({
           category: migrationCategory === 'all' ? undefined : migrationCategory,
           default_retail_margin: Number(migrationRetailMargin),
-          default_wholesale_margin: Number(migrationWholesaleMargin)
+          default_wholesale_margin: Number(migrationWholesaleMargin),
+          price_strategy: priceStrategy
         })
       });
 
@@ -408,20 +429,150 @@ export default function CoronelScraperPage() {
         total: data.migrated_products,
         inserted: data.inserted_products,
         updated: data.updated_products,
+        preserved: data.preserved_prices || 0,
+        strategy: priceStrategy,
         categories:
           (data.created_categories || 0) +
           (data.created_subcategories || 0) +
           (data.created_sub_subcategories || 0)
       });
 
+      const preservedMsg = data.preserved_prices
+        ? ` (${data.preserved_prices} existentes con precios intactos)`
+        : '';
       toast.success(
-        `¡Publicación exitosa! ${data.inserted_products} productos nuevos y ${data.updated_products} actualizados en el catálogo oficial de JG Store.`
+        `¡Publicación exitosa! ${data.inserted_products} productos nuevos y ${data.updated_products} actualizados${preservedMsg} en JG Store.`
       );
       fetchDbStats();
     } catch (err: any) {
       toast.error(err.message || 'No se pudo completar la migración hacia la tienda online');
     } finally {
       setIsMigrating(false);
+    }
+  };
+
+  // Guardar stock de un solo producto
+  const handleSaveSingleStock = async (codigo: string, stockValue: number) => {
+    setSavingStockCode(codigo);
+    try {
+      const res = await fetch('/api/scraper/products/stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigos: [codigo], stock: stockValue })
+      });
+      if (!res.ok) throw new Error('Error al actualizar stock');
+
+      // Actualización optimista local
+      setDbStats((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          latest_products: prev.latest_products.map((p) =>
+            p.codigo === codigo ? { ...p, stock: stockValue } : p
+          )
+        };
+      });
+      toast.success(`Stock de ${codigo} actualizado a ${stockValue}`);
+    } catch (err: any) {
+      toast.error(err.message || 'No se pudo guardar el stock');
+    } finally {
+      setSavingStockCode(null);
+    }
+  };
+
+  // Guardar stock masivo sobre productos seleccionados
+  const handleBulkStockUpdate = async () => {
+    if (selectedCodes.length === 0) return;
+    setIsUpdatingBulkStock(true);
+    try {
+      const res = await fetch('/api/scraper/products/stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigos: selectedCodes, stock: Number(bulkStockVal) })
+      });
+      if (!res.ok) throw new Error('Error al actualizar stock masivo');
+
+      setDbStats((prev) => {
+        if (!prev) return prev;
+        const selectedSet = new Set(selectedCodes);
+        return {
+          ...prev,
+          latest_products: prev.latest_products.map((p) =>
+            selectedSet.has(p.codigo) ? { ...p, stock: Number(bulkStockVal) } : p
+          )
+        };
+      });
+      toast.success(
+        `Stock actualizado a ${bulkStockVal} unidades en ${selectedCodes.length} productos`
+      );
+      setSelectedCodes([]);
+    } catch (err: any) {
+      toast.error(err.message || 'Error actualizando stock');
+    } finally {
+      setIsUpdatingBulkStock(false);
+    }
+  };
+
+  // Guardar márgenes masivos sobre productos seleccionados
+  const handleBulkMarginsForSelected = async () => {
+    if (selectedCodes.length === 0) return;
+    setIsUpdatingBulkMargins(true);
+    try {
+      const res = await fetch('/api/scraper/products/margins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigos: selectedCodes,
+          margen_minorista: Number(bulkSelectedRetailMargin),
+          margen_mayorista: Number(bulkSelectedWholesaleMargin)
+        })
+      });
+      if (!res.ok) throw new Error('Error al actualizar márgenes');
+      toast.success(`Márgenes aplicados a ${selectedCodes.length} productos seleccionados`);
+      setSelectedCodes([]);
+      fetchDbStats();
+    } catch (err: any) {
+      toast.error(err.message || 'Error actualizando márgenes');
+    } finally {
+      setIsUpdatingBulkMargins(false);
+    }
+  };
+
+  // Eliminar productos de SQLite
+  const handleDeleteProducts = async (codigosToDelete: string[]) => {
+    if (codigosToDelete.length === 0) return;
+    const isSingle = codigosToDelete.length === 1;
+    const confirmMsg = isSingle
+      ? `¿Eliminar el producto ${codigosToDelete[0]} de la base de datos local SQLite?`
+      : `¿Eliminar los ${codigosToDelete.length} productos seleccionados de la base de datos local SQLite?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsDeletingBulk(true);
+    try {
+      const res = await fetch('/api/scraper/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigos: codigosToDelete })
+      });
+      if (!res.ok) throw new Error('Error al eliminar productos');
+
+      const deletedSet = new Set(codigosToDelete);
+      setDbStats((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          total_products: Math.max(0, prev.total_products - codigosToDelete.length),
+          latest_products: prev.latest_products.filter((p) => !deletedSet.has(p.codigo))
+        };
+      });
+
+      setSelectedCodes((prev) => prev.filter((c) => !deletedSet.has(c)));
+      toast.success(`${codigosToDelete.length} producto(s) eliminado(s) de SQLite`);
+    } catch (err: any) {
+      toast.error(err.message || 'Error al eliminar productos');
+    } finally {
+      setIsDeletingBulk(false);
     }
   };
 
@@ -492,6 +643,46 @@ export default function CoronelScraperPage() {
       aspectRatio: '16 / 10',
       transition: 'width 0.15s ease, height 0.15s ease'
     };
+  };
+
+  // Filtrado reactivo de productos SQLite
+  const filteredProducts = (dbStats?.latest_products || []).filter((p) => {
+    if (tableSearch.trim()) {
+      const q = tableSearch.toLowerCase().trim();
+      const matchCode = (p.codigo || '').toLowerCase().includes(q);
+      const matchDesc = (p.descripcion || '').toLowerCase().includes(q);
+      const matchBarcode = (p.codigo_barra || '').toLowerCase().includes(q);
+      if (!matchCode && !matchDesc && !matchBarcode) return false;
+    }
+    if (tableCategory !== 'all') {
+      if (p.categoria !== tableCategory && p.categoria_slug !== tableCategory) return false;
+    }
+    if (tableStockFilter === 'in_stock') {
+      if ((p.stock ?? 0) <= 0) return false;
+    } else if (tableStockFilter === 'out_of_stock') {
+      if ((p.stock ?? 0) > 0) return false;
+    }
+    return true;
+  });
+
+  const isAllFilteredSelected =
+    filteredProducts.length > 0 &&
+    filteredProducts.every((p) => selectedCodes.includes(p.codigo));
+
+  const toggleSelectAll = () => {
+    if (isAllFilteredSelected) {
+      const filteredSet = new Set(filteredProducts.map((p) => p.codigo));
+      setSelectedCodes((prev) => prev.filter((c) => !filteredSet.has(c)));
+    } else {
+      const filteredCodes = filteredProducts.map((p) => p.codigo);
+      setSelectedCodes((prev) => Array.from(new Set([...prev, ...filteredCodes])));
+    }
+  };
+
+  const toggleSelectProduct = (codigo: string) => {
+    setSelectedCodes((prev) =>
+      prev.includes(codigo) ? prev.filter((c) => c !== codigo) : [...prev, codigo]
+    );
   };
 
   return (
@@ -1371,13 +1562,61 @@ export default function CoronelScraperPage() {
               </button>
             </div>
           </div>
+
+          {/* Estrategia de Precios para Coincidentes */}
+          <div className='w-full pt-2.5 mt-1 border-t border-border/40 flex flex-wrap items-center justify-between gap-2 bg-muted/20 p-2.5 rounded-lg'>
+            <div className='flex items-center gap-1.5'>
+              <Icons.lock className='w-3.5 h-3.5 text-[#D4A017]' />
+              <span className='font-bold text-foreground text-[11px]'>
+                Tratamiento de Precios al Migrar:
+              </span>
+            </div>
+            <div className='flex flex-wrap items-center gap-2'>
+              <button
+                type='button'
+                onClick={() => setPriceStrategy('only_new')}
+                className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
+                  priceStrategy === 'only_new'
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
+                    : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                }`}
+                title='Si el producto ya existe en la tienda, mantiene sus precios intactos. Solo aplica nuevos márgenes a los NUEVOS.'
+              >
+                🛡️ Solo Nuevos (Respetar Precios Existentes)
+              </button>
+              <button
+                type='button'
+                onClick={() => setPriceStrategy('overwrite_all')}
+                className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
+                  priceStrategy === 'overwrite_all'
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
+                    : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                }`}
+                title='Recalcula y sobrescribe los precios de TODOS los productos, tanto nuevos como existentes.'
+              >
+                🔄 Sobrescribir Todo
+              </button>
+              <button
+                type='button'
+                onClick={() => setPriceStrategy('stock_only')}
+                className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
+                  priceStrategy === 'stock_only'
+                    ? 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold shadow-xs'
+                    : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                }`}
+                title='Solo actualiza la cantidad de stock en los productos existentes sin tocar sus precios ni descripciones.'
+              >
+                📦 Solo Stock en Existentes
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Barra Secundaria de Recálculo Masivo de Márgenes en SQLite Local */}
         <div className='p-3 rounded-xl bg-card border border-border flex flex-wrap items-center justify-between gap-3 text-xs'>
           <div className='flex items-center gap-2 text-foreground font-semibold'>
             <Icons.settings className='w-4 h-4 text-muted-foreground' />
-            <span>Recálculo en SQLite Local:</span>
+            <span>Recálculo Masivo General en SQLite:</span>
             <span className='text-[11px] font-normal text-muted-foreground hidden sm:inline'>
               (Ajusta los precios dentro del archivo local productos.db antes de publicar)
             </span>
@@ -1417,7 +1656,7 @@ export default function CoronelScraperPage() {
             <button
               onClick={handleUpdateMargins}
               disabled={updatingMargins}
-              className='px-3 py-1 rounded-lg border border-border bg-muted/60 hover:bg-muted text-foreground font-semibold transition-all flex items-center gap-1.5'
+              className='px-3 py-1 rounded-lg border border-border bg-muted/60 hover:bg-muted text-foreground font-semibold transition-all flex items-center gap-1.5 cursor-pointer'
             >
               <Icons.refresh className={`w-3 h-3 ${updatingMargins ? 'animate-spin' : ''}`} />
               <span>{updatingMargins ? 'Recalculando...' : 'Guardar en SQLite'}</span>
@@ -1425,31 +1664,189 @@ export default function CoronelScraperPage() {
           </div>
         </div>
 
-        {/* Tabla con los últimos productos guardados */}
-        <div className='rounded-xl border border-border overflow-hidden bg-card'>
-          <div className='p-3 bg-muted/40 border-b border-border text-xs font-bold text-foreground flex items-center justify-between'>
-            <span>Últimos Artículos Extraídos</span>
-            <span className='text-[11px] font-normal text-muted-foreground'>
-              Jerarquía de 3 Niveles y Precios Duales (Detal / Mayor)
-            </span>
+        {/* MESA DE TRABAJO INTERACTIVA DE ARTÍCULOS EN SQLITE */}
+        <div className='rounded-xl border border-border overflow-hidden bg-card space-y-0'>
+          {/* Barra de Filtros y Búsqueda */}
+          <div className='p-3 bg-muted/40 border-b border-border flex flex-wrap items-center justify-between gap-3 text-xs'>
+            <div className='flex flex-wrap items-center gap-2 flex-1 min-w-[280px]'>
+              <div className='relative flex-1 min-w-[180px] max-w-md'>
+                <Icons.search className='absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground' />
+                <input
+                  type='text'
+                  placeholder='Buscar por SKU, código de barras o descripción...'
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  className='w-full pl-8.5 pr-7 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-[#E63946]'
+                />
+                {tableSearch && (
+                  <button
+                    onClick={() => setTableSearch('')}
+                    className='absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer'
+                  >
+                    <Icons.close className='w-3 h-3' />
+                  </button>
+                )}
+              </div>
+
+              {/* Filtro por Categoría SQLite */}
+              <select
+                value={tableCategory}
+                onChange={(e) => setTableCategory(e.target.value)}
+                className='px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-medium outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
+              >
+                <option value='all'>
+                  Todas las Categorías ({dbStats?.total_products ?? 0})
+                </option>
+                {dbStats?.categories?.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name} ({c.count})
+                  </option>
+                ))}
+              </select>
+
+              {/* Filtro por Estado de Stock */}
+              <select
+                value={tableStockFilter}
+                onChange={(e) => setTableStockFilter(e.target.value as any)}
+                className='px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-medium outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
+              >
+                <option value='all'>Todos los Stocks</option>
+                <option value='in_stock'>Con Stock (&gt;0)</option>
+                <option value='out_of_stock'>Agotados (=0)</option>
+              </select>
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <span className='text-[11px] font-semibold text-muted-foreground'>
+                Mostrando {filteredProducts.length} de {dbStats?.total_products ?? 0}
+              </span>
+              <button
+                onClick={fetchDbStats}
+                disabled={loadingDb}
+                title='Refrescar datos SQLite'
+                className='p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer'
+              >
+                <Icons.refresh className={`w-3.5 h-3.5 ${loadingDb ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
           </div>
 
-          <div className='overflow-x-auto max-h-96'>
+          {/* Barra Flotante / Contextual de Acciones Masivas */}
+          {selectedCodes.length > 0 && (
+            <div className='p-3 bg-red-500/10 border-b-2 border-[#E63946]/50 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1'>
+              <div className='flex items-center gap-2'>
+                <span className='px-2 py-0.5 rounded-md bg-[#E63946] text-white font-bold text-[11px]'>
+                  {selectedCodes.length}
+                </span>
+                <span className='font-bold text-foreground'>
+                  {selectedCodes.length === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+                </span>
+                <button
+                  onClick={() => setSelectedCodes([])}
+                  className='text-muted-foreground hover:text-foreground text-[11px] underline ml-1 cursor-pointer'
+                >
+                  Deseleccionar
+                </button>
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2.5'>
+                {/* Fijar Stock Masivo */}
+                <div className='flex items-center gap-1.5 bg-background border border-border px-2 py-1 rounded-lg'>
+                  <span className='text-muted-foreground font-medium'>Stock:</span>
+                  <input
+                    type='number'
+                    min='0'
+                    max='9999'
+                    value={bulkStockVal}
+                    onChange={(e) => setBulkStockVal(Number(e.target.value))}
+                    className='w-12 bg-transparent text-foreground font-bold text-center outline-none'
+                  />
+                  <button
+                    onClick={handleBulkStockUpdate}
+                    disabled={isUpdatingBulkStock}
+                    className='px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all disabled:opacity-50 cursor-pointer'
+                  >
+                    {isUpdatingBulkStock ? '...' : 'Fijar'}
+                  </button>
+                </div>
+
+                {/* Fijar Márgenes Masivos */}
+                <div className='flex items-center gap-1.5 bg-background border border-border px-2 py-1 rounded-lg'>
+                  <span className='text-muted-foreground font-medium'>Márgenes:</span>
+                  <span className='text-[10px] text-muted-foreground'>D:</span>
+                  <input
+                    type='number'
+                    min='0'
+                    max='200'
+                    value={bulkSelectedRetailMargin}
+                    onChange={(e) => setBulkSelectedRetailMargin(Number(e.target.value))}
+                    className='w-9 bg-transparent text-foreground font-bold text-center outline-none'
+                  />
+                  <span className='text-muted-foreground font-semibold'>%</span>
+                  <span className='text-[10px] text-muted-foreground ml-1'>M:</span>
+                  <input
+                    type='number'
+                    min='0'
+                    max='200'
+                    value={bulkSelectedWholesaleMargin}
+                    onChange={(e) => setBulkSelectedWholesaleMargin(Number(e.target.value))}
+                    className='w-9 bg-transparent text-foreground font-bold text-center outline-none'
+                  />
+                  <span className='text-muted-foreground font-semibold'>%</span>
+                  <button
+                    onClick={handleBulkMarginsForSelected}
+                    disabled={isUpdatingBulkMargins}
+                    className='px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all disabled:opacity-50 ml-1 cursor-pointer'
+                  >
+                    {isUpdatingBulkMargins ? '...' : 'Aplicar'}
+                  </button>
+                </div>
+
+                {/* Eliminar Seleccionados */}
+                <button
+                  onClick={() => handleDeleteProducts(selectedCodes)}
+                  disabled={isDeletingBulk}
+                  className='px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer'
+                >
+                  <Icons.trash className='w-3.5 h-3.5' />
+                  <span>
+                    {isDeletingBulk ? 'Eliminando...' : `Eliminar (${selectedCodes.length})`}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tabla con Scroll */}
+          <div className='overflow-x-auto max-h-[500px]'>
             <table className='w-full text-xs text-left'>
-              <thead className='bg-muted/60 text-muted-foreground sticky top-0 uppercase tracking-wider text-[10px]'>
+              <thead className='bg-muted/60 text-muted-foreground sticky top-0 uppercase tracking-wider text-[10px] z-10'>
                 <tr>
-                  <th className='px-4 py-2.5'>Foto</th>
+                  <th className='px-3 py-2.5 w-9 text-center'>
+                    <input
+                      type='checkbox'
+                      checked={isAllFilteredSelected}
+                      onChange={toggleSelectAll}
+                      disabled={filteredProducts.length === 0}
+                      className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
+                      title='Seleccionar todos los visibles'
+                    />
+                  </th>
+                  <th className='px-3 py-2.5'>Foto</th>
                   <th className='px-4 py-2.5'>SKU / Código</th>
                   <th className='px-4 py-2.5'>Descripción</th>
                   <th className='px-4 py-2.5'>Jerarquía Completa</th>
-                  <th className='px-4 py-2.5'>Costo Coronel</th>
+                  <th className='px-4 py-2.5'>Costo</th>
                   <th className='px-4 py-2.5'>PVP Detal</th>
                   <th className='px-4 py-2.5'>PVP Mayor</th>
+                  <th className='px-4 py-2.5'>Stock Físico</th>
+                  <th className='px-3 py-2.5 text-right'>Acciones</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-border'>
-                {dbStats?.latest_products && dbStats.latest_products.length > 0 ? (
-                  dbStats.latest_products.map((p, idx) => {
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((p, idx) => {
+                    const isSelected = selectedCodes.includes(p.codigo);
                     const rawImg = p.imagen_url || p.foto || '';
                     const fotoSrc = rawImg
                       ? `/api/scraper/image?url=${encodeURIComponent(p.imagen_url || '')}&file=${encodeURIComponent(p.foto || '')}`
@@ -1470,9 +1867,28 @@ export default function CoronelScraperPage() {
                         .join(' > ') ||
                       'Sin categoría';
 
+                    const currentStock =
+                      stockDrafts[p.codigo] !== undefined ? stockDrafts[p.codigo] : (p.stock ?? 1);
+
                     return (
-                      <tr key={idx} className='hover:bg-muted/30 transition-colors'>
-                        <td className='px-4 py-2'>
+                      <tr
+                        key={p.codigo || idx}
+                        className={`transition-colors ${
+                          isSelected ? 'bg-red-500/5 hover:bg-red-500/10' : 'hover:bg-muted/30'
+                        }`}
+                      >
+                        {/* Checkbox de Selección */}
+                        <td className='px-3 py-2 text-center'>
+                          <input
+                            type='checkbox'
+                            checked={isSelected}
+                            onChange={() => toggleSelectProduct(p.codigo)}
+                            className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
+                          />
+                        </td>
+
+                        {/* Foto */}
+                        <td className='px-3 py-2'>
                           <div className='relative w-9 h-9 flex items-center justify-center bg-muted/60 rounded-md border border-border overflow-hidden'>
                             {fotoSrc ? (
                               <img
@@ -1501,12 +1917,26 @@ export default function CoronelScraperPage() {
                             </div>
                           </div>
                         </td>
+
+                        {/* SKU / Código */}
                         <td className='px-4 py-2 font-mono font-bold text-foreground'>
-                          {p.codigo}
+                          <div>{p.codigo}</div>
+                          {p.codigo_barra && (
+                            <div className='text-[10px] font-normal text-muted-foreground font-sans'>
+                              {p.codigo_barra}
+                            </div>
+                          )}
                         </td>
-                        <td className='px-4 py-2 text-foreground font-medium max-w-xs truncate'>
+
+                        {/* Descripción */}
+                        <td
+                          className='px-4 py-2 text-foreground font-medium max-w-xs truncate'
+                          title={p.descripcion}
+                        >
                           {p.descripcion}
                         </td>
+
+                        {/* Jerarquía */}
                         <td
                           className='px-4 py-2 text-muted-foreground max-w-xs truncate'
                           title={rutaStr}
@@ -1515,9 +1945,13 @@ export default function CoronelScraperPage() {
                             {rutaStr}
                           </span>
                         </td>
+
+                        {/* Costo */}
                         <td className='px-4 py-2 font-mono text-muted-foreground font-semibold'>
                           {costoStr}
                         </td>
+
+                        {/* PVP Detal */}
                         <td className='px-4 py-2 text-emerald-500 font-bold'>
                           <div>{detalStr}</div>
                           {p.margen_minorista && (
@@ -1526,6 +1960,8 @@ export default function CoronelScraperPage() {
                             </div>
                           )}
                         </td>
+
+                        {/* PVP Mayor */}
                         <td className='px-4 py-2 text-amber-500 font-bold'>
                           <div>{mayorStr}</div>
                           {p.margen_mayorista && (
@@ -1534,13 +1970,64 @@ export default function CoronelScraperPage() {
                             </div>
                           )}
                         </td>
+
+                        {/* Stock Editable Inline */}
+                        <td className='px-4 py-2'>
+                          <div className='flex items-center gap-1.5'>
+                            <input
+                              type='number'
+                              min='0'
+                              max='99999'
+                              value={currentStock}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setStockDrafts((prev) => ({ ...prev, [p.codigo]: val }));
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveSingleStock(p.codigo, currentStock);
+                                }
+                              }}
+                              onBlur={() => {
+                                if (
+                                  stockDrafts[p.codigo] !== undefined &&
+                                  stockDrafts[p.codigo] !== p.stock
+                                ) {
+                                  handleSaveSingleStock(p.codigo, stockDrafts[p.codigo]);
+                                }
+                              }}
+                              className={`w-14 px-1.5 py-0.5 text-center font-bold text-xs rounded border transition-all ${
+                                currentStock <= 0
+                                  ? 'bg-red-500/10 text-red-500 border-red-500/30 font-bold'
+                                  : 'bg-background text-foreground border-border focus:border-[#E63946]'
+                              }`}
+                              title='Presiona Enter o haz clic fuera para guardar en SQLite'
+                            />
+                            {savingStockCode === p.codigo && (
+                              <Icons.spinner className='w-3.5 h-3.5 animate-spin text-[#E63946]' />
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Acciones por Fila */}
+                        <td className='px-3 py-2 text-right'>
+                          <button
+                            onClick={() => handleDeleteProducts([p.codigo])}
+                            title={`Eliminar ${p.codigo} de SQLite`}
+                            className='p-1.5 rounded-md hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer'
+                          >
+                            <Icons.trash className='w-3.5 h-3.5' />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
-                      No hay productos registrados aún en la base de datos local.
+                    <td colSpan={10} className='px-4 py-10 text-center text-muted-foreground'>
+                      {tableSearch || tableCategory !== 'all' || tableStockFilter !== 'all'
+                        ? 'No se encontraron artículos que coincidan con los filtros aplicados.'
+                        : 'No hay productos registrados aún en la base de datos local SQLite.'}
                     </td>
                   </tr>
                 )}

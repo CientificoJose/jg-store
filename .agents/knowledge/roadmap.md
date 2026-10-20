@@ -370,6 +370,22 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Componente modal interactivo `CatalogResetDialog` con **cuenta regresiva obligatoria de 5 segundos**, barra de progreso visual, detalles explícitos de eliminación y prevención de clics accidentales.
   - Botón integrado en `/dashboard/coronel` (Centro de Migración ETL) y en `/dashboard/product` (`ProductCommandBar`).
   - Ejecución inicial completada: la base de datos de prueba ha quedado en 0 productos y 0 categorías lista para probar el flujo de scraping desde cero.
+- [x] **Mesa de Trabajo Interactiva SQLite & Estrategia de Precios en Migración (`/dashboard/coronel`):**
+  - **Estrategia de Precios para Coincidentes en Migración ETL (`/api/scraper/migrate`):**
+    - Selector tri-estado en `/dashboard/coronel`:
+      - 🛡️ *Solo Nuevos (Respetar Precios Existentes)*: protege los precios y márgenes fijados en la tienda oficial y no sobrescribe los artículos preexistentes, aplicando los nuevos márgenes exclusivamente a los productos recién descubiertos.
+      - 🔄 *Sobrescribir Todo*: recalcula y sobrescribe los precios de todo el lote.
+      - 📦 *Solo Stock en Existentes*: actualiza exclusivamente existencias en Supabase sin tocar precios ni descripciones.
+  - **Mesa de Trabajo Interactiva en SQLite (`/dashboard/coronel`):**
+    - Filtros dinámicos en vivo por Código/SKU/código de barras, categoría con conteo de productos y estado de stock (Todos, Con Stock, Agotados).
+    - Selección múltiple de artículos con checkbox maestro y checkboxes individuales.
+    - Barra flotante contextual de acciones masivas:
+      - 📦 *Fijar Stock Masivo*: actualización instantánea de existencias sobre los seleccionados (`POST /api/scraper/products/stock`).
+      - 💲 *Fijar Márgenes Masivos*: aplicación de márgenes Detal y Mayorista exclusivamente a los productos seleccionados (`POST /api/scraper/products/margins`).
+      - 🗑️ *Eliminación Masiva*: borrado de productos de SQLite y de sus fotos locales (`DELETE /api/scraper/products`).
+    - Edición inline de stock físico directamente en la celda de la tabla con guardado al presionar Enter o perder el foco.
+    - Botón de eliminación individual por fila `🗑️` con confirmación.
+    - Endpoints actualizados en `api_server.py`, `app.core.db` y BFF Next.js con soporte de autodetención de `.venv/bin/python`.
 
 ---
 

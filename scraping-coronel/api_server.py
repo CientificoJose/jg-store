@@ -106,6 +106,14 @@ class UpdateMarginsRequest(BaseModel):
     margen_mayorista: Optional[float] = None
     categoria: Optional[str] = None
     subcategoria: Optional[str] = None
+    codigos: Optional[List[str]] = None
+
+class UpdateStockRequest(BaseModel):
+    codigos: List[str]
+    stock: int = 1
+
+class DeleteProductsRequest(BaseModel):
+    codigos: List[str]
 
 @app.get("/health")
 def health():
@@ -395,11 +403,35 @@ def update_margins(req: UpdateMarginsRequest):
             margen_minorista=req.margen_minorista,
             margen_mayorista=req.margen_mayorista,
             categoria=req.categoria,
-            subcategoria=req.subcategoria
+            subcategoria=req.subcategoria,
+            codigos=req.codigos
         )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error actualizando márgenes: {str(e)}")
+
+@app.post("/api/products/stock")
+def update_stock(req: UpdateStockRequest):
+    """Actualiza masiva o selectivamente el stock de productos en SQLite."""
+    from app.core.db import actualizar_stock_productos
+    try:
+        result = actualizar_stock_productos(
+            codigos=req.codigos,
+            nuevo_stock=req.stock
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error actualizando stock: {str(e)}")
+
+@app.delete("/api/products")
+def delete_products(req: DeleteProductsRequest):
+    """Elimina uno o múltiples productos de SQLite y remueve sus imágenes locales."""
+    from app.core.db import eliminar_productos_db
+    try:
+        result = eliminar_productos_db(codigos=req.codigos)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error eliminando productos: {str(e)}")
 
 @app.post("/api/products/reset")
 def reset_products():

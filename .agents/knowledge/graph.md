@@ -297,3 +297,18 @@ graph TD
   - **Componente Modal con Cuenta Regresiva de 5s (`CatalogResetDialog`):** Diálogo interactivo con temporizador de seguridad de 5 segundos, detalles explícitos de eliminación y botón de confirmación con bloqueo temporal para evitar borrados accidentales.
   - **Integración Dual:** Disponible tanto en el Centro de Migración de `/dashboard/coronel` como en la barra de comando de `/dashboard/product`.
   - **Catálogo Limpio:** Base de datos web purgada exitosamente a 0 productos y 0 categorías para pruebas limpias de extremo a extremo.
+
+### 27. 🟢 Mesa de Trabajo Interactiva SQLite & Estrategia de Precios en Migración (`coronel-interactive-table-and-price-strategy`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Estrategia de Precios para Coincidentes (`/api/scraper/migrate`):**
+    - Selector tri-estado para el proceso de migración: `🛡️ Solo Nuevos (Respetar Precios Existentes)` [Recomendado], `🔄 Sobrescribir Todo` y `📦 Solo Stock en Existentes`.
+    - Garantiza que al extraer nuevamente una categoría de Coronel, los productos existentes en Supabase no pierdan los precios o márgenes personalizados que el comerciante ya les fijó en la tienda online.
+    - Contador de auditoría de precios preservados retornado en la respuesta JSON y en la notificación toast.
+  - **Mesa de Trabajo Interactiva SQLite en `/dashboard/coronel`:**
+    - Barra de filtros en vivo por texto (SKU, código de barras o descripción), categoría con contador individual y estado de stock (Todos, Con Stock, Agotados).
+    - Selección múltiple de productos (checkbox maestro + individuales por fila).
+    - Barra flotante contextual de acciones masivas: fijar stock masivo (`POST /api/scraper/products/stock`), aplicar márgenes a seleccionados (`POST /api/scraper/products/margins`) y eliminación en lote (`DELETE /api/scraper/products`).
+    - Input de stock físico editable inline en cada celda con persistencia automática al pulsar Enter o salir del campo.
+    - Botón de eliminación individual por fila (`🗑️`) con confirmación.
+    - Autodetección de `.venv/bin/python` para ejecución local resiliente en entornos Node/Next.js.

@@ -341,11 +341,12 @@ def actualizar_margenes_masivo(
     margen_mayorista: Optional[float] = None,
     categoria: Optional[str] = None,
     subcategoria: Optional[str] = None,
+    codigos: Optional[List[str]] = None,
     db_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Recalcula masivamente los precios de venta en base a nuevos márgenes porcentuales
-    sin necesidad de re-scrapear.
+    sin necesidad de re-scrapear. Puede aplicarse por categoría, subcategoría o lista específica de códigos.
     """
     if not db_path:
         db_path = get_default_db_path()
@@ -355,12 +356,17 @@ def actualizar_margenes_masivo(
     where_clauses = ["precio_costo IS NOT NULL", "precio_costo > 0"]
     params = []
 
-    if categoria:
-        where_clauses.append("UPPER(categoria) = ?")
-        params.append(categoria.strip().upper())
-    if subcategoria:
-        where_clauses.append("UPPER(subcategoria) = ?")
-        params.append(subcategoria.strip().upper())
+    if codigos and len(codigos) > 0:
+        placeholders = ",".join("?" for _ in codigos)
+        where_clauses.append(f"codigo IN ({placeholders})")
+        params.extend([c.strip() for c in codigos])
+    else:
+        if categoria:
+            where_clauses.append("UPPER(categoria) = ?")
+            params.append(categoria.strip().upper())
+        if subcategoria:
+            where_clauses.append("UPPER(subcategoria) = ?")
+            params.append(subcategoria.strip().upper())
 
     where_sql = " AND ".join(where_clauses)
 
@@ -397,6 +403,80 @@ def actualizar_margenes_masivo(
         affected = cursor.rowcount
         conn.commit()
         return {"updated": affected, "success": True}
+
+def actualizar_stock_productos(
+    codigos: List[str],
+    nuevo_stock: int,
+    db_path: Optional[str] = None
+) -> Dict[str, Any]:
+    """Actualiza el stock de una lista de productos en SQLite."""
+    if not codigos:
+        return {"updated": 0, "message": "No se especificaron códigos"}
+
+    if not db_path:
+        db_path = get_default_db_path()
+
+    asegurar_tabla_productos(db_path)
+
+    clean_codes = [c.strip() for c in codigos if c and c.strip()]
+    if not clean_codes:
+        return {"updated": 0, "message": "Lista de códigos vacía"}
+
+    with closing(sqlite3.connect(db_path)) as conn:
+        cursor = conn.cursor()
+        placeholders = ",".join("?" for _ in clean_codes)
+        sql = f"UPDATE productos SET stock = ?, updated_at = ? WHERE codigo IN ({placeholders})"
+        cursor.execute(sql, [int(nuevo_stock), datetime.now().isoformat()] + clean_codes)
+        affected = cursor.rowcount
+        conn.commit()
+        return {"updated": affected, "success": True, "stock": nuevo_stock}
+
+def eliminar_productos_db(
+    codigos: List[str],
+    db_path: Optional[str] = None
+) -> Dict[str, Any]:
+    """Elimina uno o múltiples productos de SQLite y remueve sus fotos locales si existen."""
+    if not codigos:
+        return {"deleted": 0, "message": "No se especificaron códigos"}
+
+    if not db_path:
+        db_path = get_default_db_path()
+
+    asegurar_tabla_productos(db_path)
+
+    clean_codes = [c.strip() for c in codigos if c and c.strip()]
+    if not clean_codes:
+        return {"deleted": 0, "message": "Lista de códigos vacía"}
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    img_dir = os.path.join(base_dir, "img-scraping")
+
+    with closing(sqlite3.connect(db_path)) as conn:
+        cursor = conn.cursor()
+        placeholders = ",".join("?" for _ in clean_codes)
+
+        # Buscar fotos locales asociadas para limpiarlas
+        try:
+            cursor.execute(f"SELECT foto, imagen_local FROM productos WHERE codigo IN ({placeholders})", clean_codes)
+            for row in cursor.fetchall():
+                for f in row:
+                    if f and os.path.exists(img_dir):
+                        fname = os.path.basename(str(f).replace("\\", "/"))
+                        local_fpath = os.path.join(img_dir, fname)
+                        if os.path.exists(local_fpath):
+                            try:
+                                os.remove(local_fpath)
+                            except Exception:
+                                pass
+        except Exception:
+            pass
+
+        # Eliminar registros
+        sql = f"DELETE FROM productos WHERE codigo IN ({placeholders})"
+        cursor.execute(sql, clean_codes)
+        affected = cursor.rowcount
+        conn.commit()
+        return {"deleted": affected, "success": True}
 
 def obtener_productos_de_db(db_path: Optional[str] = None) -> List[Dict]:
     """Obtiene todos los productos de SQLite como diccionarios con todos los atributos."""

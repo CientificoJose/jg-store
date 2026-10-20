@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { exec } from 'child_process';
+import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
@@ -15,10 +16,17 @@ function getScraperHost() {
   );
 }
 
+function getPythonBin(baseDir: string): string {
+  if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+  const venvPython = path.join(baseDir, '.venv', 'bin', 'python');
+  if (fs.existsSync(venvPython)) return venvPython;
+  return 'python3';
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { margen_minorista, margen_mayorista, categoria, subcategoria } = body;
+    const { margen_minorista, margen_mayorista, categoria, subcategoria, codigos } = body;
 
     const scraperHost = getScraperHost();
     if (scraperHost) {
@@ -34,7 +42,8 @@ export async function POST(request: NextRequest) {
             margen_minorista,
             margen_mayorista,
             categoria,
-            subcategoria
+            subcategoria,
+            codigos
           })
         });
 
@@ -47,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     // Fallback local mediante script Python
     const baseDir = path.join(process.cwd(), 'scraping-coronel');
-    const pythonBin = process.env.PYTHON_BIN || 'python3';
+    const pythonBin = getPythonBin(baseDir);
 
     const scriptCode = `
 import sys, json
@@ -56,7 +65,8 @@ res = actualizar_margenes_masivo(
     margen_minorista=${margen_minorista !== undefined ? Number(margen_minorista) : 'None'},
     margen_mayorista=${margen_mayorista !== undefined ? Number(margen_mayorista) : 'None'},
     categoria=${categoria ? JSON.stringify(categoria) : 'None'},
-    subcategoria=${subcategoria ? JSON.stringify(subcategoria) : 'None'}
+    subcategoria=${subcategoria ? JSON.stringify(subcategoria) : 'None'},
+    codigos=${codigos && Array.isArray(codigos) ? JSON.stringify(codigos) : 'None'}
 )
 print(json.dumps(res))
 `;

@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       category = 'all',
       default_retail_margin = 40,
       default_wholesale_margin = 18,
+      price_strategy = 'only_new',
       limit
     } = body;
 
@@ -122,7 +123,10 @@ export async function POST(request: NextRequest) {
         `${SUPABASE_URL}/rest/v1/sub_subcategories?select=id,subcategory_id,subcategory_slug,category_slug,slug,name`,
         { headers, cache: 'no-store' }
       ),
-      fetch(`${SUPABASE_URL}/rest/v1/products?select=id,sku`, { headers, cache: 'no-store' })
+      fetch(
+        `${SUPABASE_URL}/rest/v1/products?select=id,sku,retail_price,wholesale_price,cost_price,retail_margin_pct,wholesale_margin_pct,stock`,
+        { headers, cache: 'no-store' }
+      )
     ]);
 
     const existingCategories: any[] = catRes.ok ? await catRes.json() : [];
@@ -162,6 +166,7 @@ export async function POST(request: NextRequest) {
     const createdSubSubcategories: string[] = [];
     let insertedProducts = 0;
     let updatedProducts = 0;
+    let preservedPricesCount = 0;
 
     await ensureProductsBucketExists();
 
@@ -420,12 +425,39 @@ export async function POST(request: NextRequest) {
       // --- UPSERT EN PRODUCTOS ---
       const existing = prodBySku.get(sku);
       if (existing) {
-        // Actualización PATCH
+        // Actualización según estrategia de precios
+        let patchBody: Record<string, any>;
+
+        if (price_strategy === 'stock_only') {
+          patchBody = {
+            stock: Number(p.stock ?? 10),
+            updated_at: new Date().toISOString()
+          };
+        } else if (price_strategy === 'only_new' || price_strategy === 'keep_prices') {
+          // Respetar precios preexistentes fijados en la tienda oficial
+          patchBody = {
+            ...productPayload,
+            retail_price: Number(existing.retail_price ?? productPayload.retail_price),
+            wholesale_price: Number(existing.wholesale_price ?? productPayload.wholesale_price),
+            cost_price: Number(existing.cost_price ?? productPayload.cost_price),
+            retail_margin_pct: Number(
+              existing.retail_margin_pct ?? productPayload.retail_margin_pct ?? 40
+            ),
+            wholesale_margin_pct: Number(
+              existing.wholesale_margin_pct ?? productPayload.wholesale_margin_pct ?? 18
+            )
+          };
+          preservedPricesCount++;
+        } else {
+          // 'overwrite_all': sobrescribe precios con los calculados
+          patchBody = productPayload;
+        }
+
         try {
           const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${existing.id}`, {
             method: 'PATCH',
             headers,
-            body: JSON.stringify(productPayload)
+            body: JSON.stringify(patchBody)
           });
           if (patchRes.ok) {
             updatedProducts++;
@@ -458,11 +490,13 @@ export async function POST(request: NextRequest) {
       migrated_products: insertedProducts + updatedProducts,
       inserted_products: insertedProducts,
       updated_products: updatedProducts,
+      preserved_prices: preservedPricesCount,
+      price_strategy,
       created_categories: createdCategories.length,
       created_subcategories: createdSubcategories.length,
       created_sub_subcategories: createdSubSubcategories.length,
       categories_list: createdCategories,
-      message: `¡Migración completada! ${insertedProducts} productos nuevos registrados y ${updatedProducts} actualizados en el catálogo oficial de JG Store.`
+      message: `¡Migración completada! ${insertedProducts} nuevos registrados, ${updatedProducts} actualizados (${preservedPricesCount} con precios protegidos).`
     });
   } catch (error: any) {
     console.error('Error durante la migración de productos:', error);

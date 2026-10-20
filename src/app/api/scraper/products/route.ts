@@ -1,4 +1,5 @@
 import { exec } from 'child_process';
+import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
@@ -12,6 +13,13 @@ function getScraperHost() {
     process.env.SCRAPER_SERVICE_URL ||
     (process.env.NODE_ENV === 'production' ? 'https://coronel.press-cloud.com' : undefined)
   );
+}
+
+function getPythonBin(baseDir: string): string {
+  if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+  const venvPython = path.join(baseDir, '.venv', 'bin', 'python');
+  if (fs.existsSync(venvPython)) return venvPython;
+  return 'python3';
 }
 
 export async function GET() {
@@ -35,7 +43,7 @@ export async function GET() {
 
   const baseDir = path.join(process.cwd(), 'scraping-coronel');
   const scriptPath = path.join(baseDir, 'get_db_stats.py');
-  const pythonBin = process.env.PYTHON_BIN || 'python3';
+  const pythonBin = getPythonBin(baseDir);
 
   try {
     const { stdout } = await execAsync(`"${pythonBin}" "${scriptPath}"`, {
@@ -52,6 +60,63 @@ export async function GET() {
         latest_products: [],
         error: error.message
       },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { codigos } = body;
+
+    if (!codigos || !Array.isArray(codigos) || codigos.length === 0) {
+      return Response.json({ error: 'Lista de códigos vacía o inválida' }, { status: 400 });
+    }
+
+    const scraperHost = getScraperHost();
+    if (scraperHost) {
+      try {
+        const remoteUrl = `${scraperHost.replace(/\/$/, '')}/api/products`;
+        const res = await fetch(remoteUrl, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SCRAPER_AUTH_TOKEN}`
+          },
+          body: JSON.stringify({ codigos })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          return Response.json(data);
+        }
+      } catch (err: any) {
+        console.error('Error eliminando productos remotos:', err);
+      }
+    }
+
+    // Fallback local mediante script Python
+    const baseDir = path.join(process.cwd(), 'scraping-coronel');
+    const pythonBin = getPythonBin(baseDir);
+
+    const scriptCode = `
+import sys, json
+from app.core.db import eliminar_productos_db
+res = eliminar_productos_db(codigos=${JSON.stringify(codigos)})
+print(json.dumps(res))
+`;
+
+    const { stdout } = await execAsync(
+      `"${pythonBin}" -c ${JSON.stringify(scriptCode)}`,
+      { cwd: baseDir }
+    );
+
+    const result = JSON.parse(stdout.trim());
+    return Response.json(result);
+  } catch (error: any) {
+    return Response.json(
+      { error: error.message || 'Error al eliminar productos' },
       { status: 500 }
     );
   }
