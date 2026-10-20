@@ -364,6 +364,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Selector Jerárquico Directo en Árbol Indentado:** Sustituye los 3 selectores en cascada por un único menú desplegable organizado con `optgroup` y niveles `└─ Subcategoría` y `└── Línea`, permitiendo filtrar o elegir ámbito de un solo clic sin selectores encadenados.
   - **Acciones Masivas Contextuales:** La barra detecta automáticamente la categoría seleccionada y adapta dinámicamente el botón de recálculo (`Aplicar Márgenes a "Nombre" (N prods)` o `Todo el Catálogo`), permitiendo ajustar márgenes detal y mayorista sobre la selección activa en tiempo real.
   - Sincronización completa con `nuqs`, recarga atómica en React Query e inclusión de soporte para sub-subcategorías en `updateStoreProductMarginsMassive`.
+- [x] **Vaciado Seguro de Catálogo & Categorías con Confirmación de 5s (`CatalogResetDialog`):**
+  - Endpoint `POST /api/catalog/reset` que purga de forma atómica y segura todas las tablas de catálogo en Supabase PostgreSQL (`favorites`, `product_variants`, `products`, `sub_subcategories`, `subcategories`, `categories`) y recarga el esquema de PostgREST.
+  - Endpoint `/api/products/reset` en `api_server.py` para vaciar el SQLite local del scraper (`productos.db`).
+  - Componente modal interactivo `CatalogResetDialog` con **cuenta regresiva obligatoria de 5 segundos**, barra de progreso visual, detalles explícitos de eliminación y prevención de clics accidentales.
+  - Botón integrado en `/dashboard/coronel` (Centro de Migración ETL) y en `/dashboard/product` (`ProductCommandBar`).
+  - Ejecución inicial completada: la base de datos de prueba ha quedado en 0 productos y 0 categorías lista para probar el flujo de scraping desde cero.
 
 ---
 

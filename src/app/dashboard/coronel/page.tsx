@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
+import { CatalogResetDialog } from '@/components/catalog-reset-dialog';
 
 interface ScraperStatusData {
   status:
@@ -1232,6 +1233,8 @@ export default function CoronelScraperPage() {
               <Icons.refresh className={`w-3.5 h-3.5 ${loadingDb ? 'animate-spin' : ''}`} />
               <span>Refrescar SQLite</span>
             </button>
+
+            <CatalogResetDialog onSuccess={fetchDbStats} />
           </div>
         </div>
 

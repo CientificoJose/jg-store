@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { productKeys } from '../api/queries';
 import { toast } from 'sonner';
+import { CatalogResetDialog } from '@/components/catalog-reset-dialog';
 
 interface ProductCommandBarProps {
   totalProducts?: number;
@@ -371,6 +372,9 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
 
         {/* Lado Derecho: Botón de Acción Dinámico + Reset */}
         <div className='flex items-center gap-2 w-full sm:w-auto justify-end'>
+          {/* Botón de Vaciar Catálogo y Categorías con confirmación de 5s */}
+          <CatalogResetDialog compact triggerButtonText='Vaciar Catálogo' />
+
           {/* Botón Reset si hay filtros aplicados */}
           {hasActiveFilters && (
             <button

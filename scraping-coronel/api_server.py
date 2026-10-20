@@ -401,6 +401,21 @@ def update_margins(req: UpdateMarginsRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error actualizando márgenes: {str(e)}")
 
+@app.post("/api/products/reset")
+def reset_products():
+    """Vacía todos los productos registrados en SQLite productos.db para pruebas limpias."""
+    try:
+        if os.path.exists(DB_PATH):
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM productos")
+            conn.commit()
+            cursor.execute("VACUUM")
+            conn.close()
+        return {"success": True, "message": "SQLite productos.db vaciado con éxito"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error vaciando SQLite: {str(e)}")
+
 @app.get("/api/image")
 def get_image(url: Optional[str] = None, file: Optional[str] = None):
     """Sirve de proxy seguro para imágenes de productos evitando bloqueos de puerto 70 y SSL."""

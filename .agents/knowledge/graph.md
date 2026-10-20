@@ -289,4 +289,11 @@ graph TD
   - **Acciones Masivas Contextuales:** Vinculación directa entre el filtro activo de la tabla y la herramienta de márgenes, adaptando el botón de recálculo dinámicamente (`Aplicar Márgenes a "Categoría" (N prods)` o `Todo el Catálogo`).
   - **Soporte de Profundidad en Backend:** Ampliado `updateStoreProductMarginsMassive` en `src/lib/store-service.ts` para abarcar también coincidencias sobre `sub_subcategory_slug`.
 
-
+### 26. 🟢 Vaciado Seguro de Catálogo y Categorías (`catalog-reset-dialog`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Endpoint de Purgado `/api/catalog/reset`:** Limpieza atómica y segura de las tablas relacionales en PostgreSQL / Supabase Dokploy (`favorites`, `product_variants`, `products`, `sub_subcategories`, `subcategories`, `categories`) y recarga del schema de PostgREST.
+  - **Vaciado de Scraper SQLite:** Endpoint `/api/products/reset` en `api_server.py` y limpieza local de `productos.db` (`DELETE FROM productos; VACUUM;`).
+  - **Componente Modal con Cuenta Regresiva de 5s (`CatalogResetDialog`):** Diálogo interactivo con temporizador de seguridad de 5 segundos, detalles explícitos de eliminación y botón de confirmación con bloqueo temporal para evitar borrados accidentales.
+  - **Integración Dual:** Disponible tanto en el Centro de Migración de `/dashboard/coronel` como en la barra de comando de `/dashboard/product`.
+  - **Catálogo Limpio:** Base de datos web purgada exitosamente a 0 productos y 0 categorías para pruebas limpias de extremo a extremo.

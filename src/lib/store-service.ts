@@ -17,7 +17,11 @@ const SUPABASE_ANON_KEY =
   DEFAULT_SUPABASE_ANON_KEY;
 
 // Memoria local para cambios de stock en sesión cuando no esté la tabla en Supabase
-let localCatalog: StoreProduct[] = [...INITIAL_PRODUCTS];
+let localCatalog: StoreProduct[] = [];
+
+export function resetLocalCatalogMemory() {
+  localCatalog = [];
+}
 
 export interface FetchProductsOptions {
   category?: string;
@@ -50,6 +54,7 @@ export async function fetchStoreProductsWithMeta(
   } = options;
 
   let products: StoreProduct[] = [];
+  let connectedToSupabase = false;
 
   // Intento de conexión con Supabase Dokploy PostgREST
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
@@ -66,8 +71,9 @@ export async function fetchStoreProductsWithMeta(
       });
 
       if (res.ok) {
+        connectedToSupabase = true;
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           products = data.map((item: any) => ({
             id: String(item.id),
             sku: item.sku || `JG-${item.id}`,
@@ -109,10 +115,10 @@ export async function fetchStoreProductsWithMeta(
     }
   }
 
-  // Fallback si la BD aún no tiene registros o no está inicializada
-  if (products.length === 0) {
+  // Fallback solo si la BD remota no respondió o está inaccesible
+  if (!connectedToSupabase && products.length === 0) {
     products = [...localCatalog];
-  } else {
+  } else if (connectedToSupabase && localCatalog.length > 0) {
     // Si la BD tiene registros, sincronizar cualquier producto creado en memoria local
     const remoteSkus = new Set(products.map((p) => p.sku));
     const remoteIds = new Set(products.map((p) => p.id));
@@ -478,21 +484,38 @@ export async function updateStoreProductMarginsMassive(
 }
 
 export async function fetchStoreCategories(): Promise<ProductCategory[]> {
-  const categoriesMap = new Map<string, ProductCategory>(
-    PRODUCT_CATEGORIES.map((c) => [
-      c.slug,
-      {
-        ...c,
-        subcategories: (c.subcategories || []).map((sub) => ({
-          ...sub,
-          sub_subcategories: [...(sub.sub_subcategories || [])]
-        }))
-      }
-    ])
-  );
+  const categoriesMap = new Map<string, ProductCategory>();
+  let connectedToSupabase = false;
 
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
+      // 0. Obtener departamentos/categorías base de Supabase
+      const resCats = await fetch(`${SUPABASE_URL}/rest/v1/categories?select=*`, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        cache: 'no-store'
+      });
+
+      if (resCats.ok) {
+        connectedToSupabase = true;
+        const dbCats = await resCats.json();
+        if (Array.isArray(dbCats)) {
+          for (const c of dbCats) {
+            categoriesMap.set(c.slug, {
+              id: c.id,
+              slug: c.slug,
+              name: c.name,
+              description: c.description || '',
+              icon: c.icon || 'package',
+              imageUrl: c.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80',
+              subcategories: []
+            });
+          }
+        }
+      }
+
       // 1. Obtener subcategorías dinámicas de Supabase
       const res = await fetch(`${SUPABASE_URL}/rest/v1/subcategories?select=*`, {
         headers: {
@@ -569,6 +592,10 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
     } catch {
       // Fallback
     }
+  }
+
+  if (!connectedToSupabase && categoriesMap.size === 0) {
+    return PRODUCT_CATEGORIES;
   }
 
   return Array.from(categoriesMap.values());
