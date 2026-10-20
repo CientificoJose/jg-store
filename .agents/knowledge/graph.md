@@ -326,3 +326,13 @@ graph TD
   - **Acción Directa de Eliminación:** Botón visible `🗑️` por fila con diálogo `AlertModal` para suprimir artículos individuales sin necesidad de abrir el menú desplegable.
   - **Capa de Servicios y Rutas Backend:** Nuevos métodos `updateStoreProductsStock`, `deleteStoreProducts` y `updateStoreProductsMargins` en `src/lib/store-service.ts` con soporte para filtros `id=in.(...)` de PostgREST, y endpoints `POST /api/products/stock` y `DELETE /api/products`.
 
+### 29. 🟢 Simplificación del Centro de Migración ETL & Publicación (`coronel-migration-center-simplification`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Depuración y eliminación de componentes redundantes en `/dashboard/coronel`: eliminado el bloque de *"Recálculo Masivo General en SQLite"* y la tabla previa de SQLite, concentrando las facultades de edición masiva y control de existencias en el catálogo oficial de la tienda (`/dashboard/product`).
+  - Removidos de la cabecera los accesos superfluos *"[Ver Catálogo Web]"* y *"[Refrescar SQLite]"*, conservando `CatalogResetDialog`.
+  - Tarjetas métricas de conteo limpio: Total en SQLite, Productos Nuevos (por publicar por primera vez en la web) y Existentes (no nuevos, a los que se les refrescará el stock).
+  - Barra de carga visual animada y sincronizador durante el proceso de migración (`isMigrating`).
+  - Selector de ámbito por defecto en *"Todo el Catálogo"* (`all`) y selector tri-estado de tratamiento de precios (`🛡️ Solo Nuevos`, `🔄 Sobrescribir Todo`, `📦 Solo Stock`).
+
+

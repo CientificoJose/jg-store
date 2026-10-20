@@ -55,9 +55,6 @@ export default function CoronelScraperPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [ganancia, setGanancia] = useState(40);
   const [margenMayorista, setMargenMayorista] = useState(18);
-  const [bulkMargenMinorista, setBulkMargenMinorista] = useState(40);
-  const [bulkMargenMayorista, setBulkMargenMayorista] = useState(18);
-  const [updatingMargins, setUpdatingMargins] = useState(false);
   const [downloadImages, setDownloadImages] = useState(true);
 
   // Estados de Migración al Catálogo Web (Supabase Dokploy)
@@ -66,22 +63,7 @@ export default function CoronelScraperPage() {
   const [migrationRetailMargin, setMigrationRetailMargin] = useState<number>(40);
   const [migrationWholesaleMargin, setMigrationWholesaleMargin] = useState<number>(18);
   const [priceStrategy, setPriceStrategy] = useState<'only_new' | 'overwrite_all' | 'stock_only'>('only_new');
-
-  // Filtros de la Tabla Interactiva de SQLite
-  const [tableSearch, setTableSearch] = useState<string>('');
-  const [tableCategory, setTableCategory] = useState<string>('all');
-  const [tableStockFilter, setTableStockFilter] = useState<'all' | 'in_stock' | 'out_of_stock'>('all');
-
-  // Selección múltiple y acciones masivas en SQLite
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  const [bulkStockVal, setBulkStockVal] = useState<number>(10);
-  const [bulkSelectedRetailMargin, setBulkSelectedRetailMargin] = useState<number>(40);
-  const [bulkSelectedWholesaleMargin, setBulkSelectedWholesaleMargin] = useState<number>(18);
-  const [isUpdatingBulkStock, setIsUpdatingBulkStock] = useState<boolean>(false);
-  const [isUpdatingBulkMargins, setIsUpdatingBulkMargins] = useState<boolean>(false);
-  const [isDeletingBulk, setIsDeletingBulk] = useState<boolean>(false);
-  const [savingStockCode, setSavingStockCode] = useState<string | null>(null);
-  const [stockDrafts, setStockDrafts] = useState<Record<string, number>>({});
+  const [webProductCount, setWebProductCount] = useState<number>(0);
 
   const [lastMigrationInfo, setLastMigrationInfo] = useState<{
     date: string;
@@ -151,14 +133,25 @@ export default function CoronelScraperPage() {
     }
   }, []);
 
-  // Cargar estadísticas de la base de datos
+  // Cargar estadísticas de la base de datos (SQLite y Supabase)
   const fetchDbStats = async () => {
     setLoadingDb(true);
     try {
-      const res = await fetch('/api/scraper/products');
-      if (res.ok) {
-        const data = await res.json();
+      const [resSqlite, resWeb] = await Promise.all([
+        fetch('/api/scraper/products'),
+        fetch('/api/products?limit=1')
+      ]);
+
+      if (resSqlite.ok) {
+        const data = await resSqlite.json();
         setDbStats(data);
+      }
+
+      if (resWeb.ok) {
+        const dataWeb = await resWeb.json();
+        if (typeof dataWeb.total_products === 'number') {
+          setWebProductCount(dataWeb.total_products);
+        }
       }
     } catch (err) {
       console.error('Error obteniendo stats de DB:', err);
@@ -379,31 +372,6 @@ export default function CoronelScraperPage() {
     }
   };
 
-  // Recálculo masivo e instantáneo de márgenes y precios
-  const handleUpdateMargins = async () => {
-    setUpdatingMargins(true);
-    try {
-      const res = await fetch('/api/scraper/products/margins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          margen_minorista: Number(bulkMargenMinorista),
-          margen_mayorista: Number(bulkMargenMayorista)
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al actualizar márgenes');
-      toast.success(
-        `¡Márgenes actualizados! ${data.updated ?? 0} productos recalculados al instante.`
-      );
-      fetchDbStats();
-    } catch (err: any) {
-      toast.error(err.message || 'Error al recalcular precios masivos');
-    } finally {
-      setUpdatingMargins(false);
-    }
-  };
-
   // Migración masiva de productos y categorías hacia la base de datos oficial (Supabase Dokploy)
   const handleMigrateToWeb = async () => {
     setIsMigrating(true);
@@ -448,131 +416,6 @@ export default function CoronelScraperPage() {
       toast.error(err.message || 'No se pudo completar la migración hacia la tienda online');
     } finally {
       setIsMigrating(false);
-    }
-  };
-
-  // Guardar stock de un solo producto
-  const handleSaveSingleStock = async (codigo: string, stockValue: number) => {
-    setSavingStockCode(codigo);
-    try {
-      const res = await fetch('/api/scraper/products/stock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigos: [codigo], stock: stockValue })
-      });
-      if (!res.ok) throw new Error('Error al actualizar stock');
-
-      // Actualización optimista local
-      setDbStats((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          latest_products: prev.latest_products.map((p) =>
-            p.codigo === codigo ? { ...p, stock: stockValue } : p
-          )
-        };
-      });
-      toast.success(`Stock de ${codigo} actualizado a ${stockValue}`);
-    } catch (err: any) {
-      toast.error(err.message || 'No se pudo guardar el stock');
-    } finally {
-      setSavingStockCode(null);
-    }
-  };
-
-  // Guardar stock masivo sobre productos seleccionados
-  const handleBulkStockUpdate = async () => {
-    if (selectedCodes.length === 0) return;
-    setIsUpdatingBulkStock(true);
-    try {
-      const res = await fetch('/api/scraper/products/stock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigos: selectedCodes, stock: Number(bulkStockVal) })
-      });
-      if (!res.ok) throw new Error('Error al actualizar stock masivo');
-
-      setDbStats((prev) => {
-        if (!prev) return prev;
-        const selectedSet = new Set(selectedCodes);
-        return {
-          ...prev,
-          latest_products: prev.latest_products.map((p) =>
-            selectedSet.has(p.codigo) ? { ...p, stock: Number(bulkStockVal) } : p
-          )
-        };
-      });
-      toast.success(
-        `Stock actualizado a ${bulkStockVal} unidades en ${selectedCodes.length} productos`
-      );
-      setSelectedCodes([]);
-    } catch (err: any) {
-      toast.error(err.message || 'Error actualizando stock');
-    } finally {
-      setIsUpdatingBulkStock(false);
-    }
-  };
-
-  // Guardar márgenes masivos sobre productos seleccionados
-  const handleBulkMarginsForSelected = async () => {
-    if (selectedCodes.length === 0) return;
-    setIsUpdatingBulkMargins(true);
-    try {
-      const res = await fetch('/api/scraper/products/margins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          codigos: selectedCodes,
-          margen_minorista: Number(bulkSelectedRetailMargin),
-          margen_mayorista: Number(bulkSelectedWholesaleMargin)
-        })
-      });
-      if (!res.ok) throw new Error('Error al actualizar márgenes');
-      toast.success(`Márgenes aplicados a ${selectedCodes.length} productos seleccionados`);
-      setSelectedCodes([]);
-      fetchDbStats();
-    } catch (err: any) {
-      toast.error(err.message || 'Error actualizando márgenes');
-    } finally {
-      setIsUpdatingBulkMargins(false);
-    }
-  };
-
-  // Eliminar productos de SQLite
-  const handleDeleteProducts = async (codigosToDelete: string[]) => {
-    if (codigosToDelete.length === 0) return;
-    const isSingle = codigosToDelete.length === 1;
-    const confirmMsg = isSingle
-      ? `¿Eliminar el producto ${codigosToDelete[0]} de la base de datos local SQLite?`
-      : `¿Eliminar los ${codigosToDelete.length} productos seleccionados de la base de datos local SQLite?`;
-
-    if (!window.confirm(confirmMsg)) return;
-
-    setIsDeletingBulk(true);
-    try {
-      const res = await fetch('/api/scraper/products', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigos: codigosToDelete })
-      });
-      if (!res.ok) throw new Error('Error al eliminar productos');
-
-      const deletedSet = new Set(codigosToDelete);
-      setDbStats((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          total_products: Math.max(0, prev.total_products - codigosToDelete.length),
-          latest_products: prev.latest_products.filter((p) => !deletedSet.has(p.codigo))
-        };
-      });
-
-      setSelectedCodes((prev) => prev.filter((c) => !deletedSet.has(c)));
-      toast.success(`${codigosToDelete.length} producto(s) eliminado(s) de SQLite`);
-    } catch (err: any) {
-      toast.error(err.message || 'Error al eliminar productos');
-    } finally {
-      setIsDeletingBulk(false);
     }
   };
 
@@ -643,46 +486,6 @@ export default function CoronelScraperPage() {
       aspectRatio: '16 / 10',
       transition: 'width 0.15s ease, height 0.15s ease'
     };
-  };
-
-  // Filtrado reactivo de productos SQLite
-  const filteredProducts = (dbStats?.latest_products || []).filter((p) => {
-    if (tableSearch.trim()) {
-      const q = tableSearch.toLowerCase().trim();
-      const matchCode = (p.codigo || '').toLowerCase().includes(q);
-      const matchDesc = (p.descripcion || '').toLowerCase().includes(q);
-      const matchBarcode = (p.codigo_barra || '').toLowerCase().includes(q);
-      if (!matchCode && !matchDesc && !matchBarcode) return false;
-    }
-    if (tableCategory !== 'all') {
-      if (p.categoria !== tableCategory && p.categoria_slug !== tableCategory) return false;
-    }
-    if (tableStockFilter === 'in_stock') {
-      if ((p.stock ?? 0) <= 0) return false;
-    } else if (tableStockFilter === 'out_of_stock') {
-      if ((p.stock ?? 0) > 0) return false;
-    }
-    return true;
-  });
-
-  const isAllFilteredSelected =
-    filteredProducts.length > 0 &&
-    filteredProducts.every((p) => selectedCodes.includes(p.codigo));
-
-  const toggleSelectAll = () => {
-    if (isAllFilteredSelected) {
-      const filteredSet = new Set(filteredProducts.map((p) => p.codigo));
-      setSelectedCodes((prev) => prev.filter((c) => !filteredSet.has(c)));
-    } else {
-      const filteredCodes = filteredProducts.map((p) => p.codigo);
-      setSelectedCodes((prev) => Array.from(new Set([...prev, ...filteredCodes])));
-    }
-  };
-
-  const toggleSelectProduct = (codigo: string) => {
-    setSelectedCodes((prev) =>
-      prev.includes(codigo) ? prev.filter((c) => c !== codigo) : [...prev, codigo]
-    );
   };
 
   return (
@@ -1408,69 +1211,65 @@ export default function CoronelScraperPage() {
           </div>
 
           <div className='flex items-center gap-2'>
-            <a
-              href='/dashboard/product'
-              className='px-3 py-1.5 rounded-lg border border-[#E63946]/40 bg-[#E63946]/10 text-xs font-semibold text-[#E63946] hover:bg-[#E63946]/20 transition-colors flex items-center gap-1.5'
-            >
-              <Icons.store className='w-3.5 h-3.5' />
-              <span>Ver Catálogo Web (/product)</span>
-            </a>
-
-            <button
-              onClick={fetchDbStats}
-              disabled={loadingDb}
-              className='px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors flex items-center gap-1.5'
-            >
-              <Icons.refresh className={`w-3.5 h-3.5 ${loadingDb ? 'animate-spin' : ''}`} />
-              <span>Refrescar SQLite</span>
-            </button>
-
             <CatalogResetDialog onSuccess={fetchDbStats} />
           </div>
         </div>
 
-        {/* Tarjetas de Métricas de la BD */}
+        {/* Tarjetas de Métricas de Productos: Total, Nuevos, No Nuevos */}
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-          <div className='p-4 rounded-xl bg-card border border-border'>
-            <span className='text-xs text-muted-foreground uppercase font-semibold'>
-              Total en SQLite Local
+          <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
+            <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+              <Icons.package className='w-3.5 h-3.5 text-muted-foreground' />
+              Total en SQLite
             </span>
             <div className='text-2xl font-bebas text-foreground mt-1'>
               {dbStats?.total_products ?? 0}
             </div>
-            <span className='text-[11px] text-emerald-500 font-medium'>
-              Listos para migrar a la Web
+            <span className='text-[11px] text-muted-foreground'>
+              Artículos extraídos del proveedor
             </span>
           </div>
 
-          <div className='p-4 rounded-xl bg-card border border-border'>
-            <span className='text-xs text-muted-foreground uppercase font-semibold'>
-              Rubros Detectados
+          <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
+            <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+              <Icons.add className='w-3.5 h-3.5 text-emerald-500' />
+              Productos Nuevos
             </span>
-            <div className='text-2xl font-bebas text-foreground mt-1'>
-              {dbStats?.categories?.length ?? 0}
+            <div className='text-2xl font-bebas text-emerald-500 mt-1'>
+              {lastMigrationInfo
+                ? lastMigrationInfo.inserted
+                : Math.max(0, (dbStats?.total_products ?? 0) - webProductCount)}
             </div>
-            <span className='text-[11px] text-muted-foreground'>Categorías del proveedor</span>
+            <span className='text-[11px] text-emerald-500/80 font-medium'>
+              {lastMigrationInfo
+                ? 'Nuevos publicados en la última migración'
+                : 'Por publicar por primera vez en la web'}
+            </span>
           </div>
 
-          <div className='p-4 rounded-xl bg-card border border-border'>
-            <span className='text-xs text-muted-foreground uppercase font-semibold'>
-              Estado de Sincronización Web
+          <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
+            <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+              <Icons.refresh className='w-3.5 h-3.5 text-[#D4A017]' />
+              Existentes (No Nuevos)
             </span>
             <div className='text-2xl font-bebas text-[#D4A017] mt-1'>
-              {lastMigrationInfo ? `${lastMigrationInfo.total} Migrados` : 'En Espera'}
+              {lastMigrationInfo
+                ? lastMigrationInfo.updated
+                : Math.min(dbStats?.total_products ?? 0, webProductCount)}
             </div>
-            <span className='text-[11px] text-muted-foreground'>
-              {lastMigrationInfo ? `A las ${lastMigrationInfo.date}` : 'Sin migrar en esta sesión'}
+            <span className='text-[11px] text-[#D4A017]/80 font-medium'>
+              {lastMigrationInfo?.preserved
+                ? `${lastMigrationInfo.preserved} existentes con precios protegidos`
+                : 'Ya registrados (se actualizará stock)'}
             </span>
           </div>
         </div>
 
         {/* PANEL PRINCIPAL: PUBLICAR / MIGRAR A LA TIENDA WEB */}
-        <div className='p-4 rounded-xl bg-card border-2 border-[#E63946]/30 shadow-md space-y-3.5 relative overflow-hidden'>
+        <div className='p-4 sm:p-5 rounded-xl bg-card border-2 border-[#E63946]/30 shadow-md space-y-4 relative overflow-hidden'>
           <div className='flex flex-wrap items-center justify-between gap-2'>
-            <div className='flex items-center gap-2'>
-              <div className='w-7 h-7 rounded-lg bg-[#E63946] text-white flex items-center justify-center font-bold'>
+            <div className='flex items-center gap-2.5'>
+              <div className='w-8 h-8 rounded-lg bg-[#E63946] text-white flex items-center justify-center font-bold shadow-sm'>
                 <Icons.arrowRight className='w-4 h-4' />
               </div>
               <div>
@@ -1478,13 +1277,13 @@ export default function CoronelScraperPage() {
                   Sincronizador ETL: SQLite &rarr; Catálogo Web (PostgreSQL)
                 </h3>
                 <p className='text-[11px] text-muted-foreground'>
-                  Crea automáticamente las categorías y subcategorías faltantes y actualiza costos,
-                  PVP y stock sin duplicar productos.
+                  Crea automáticamente categorías recursivas y actualiza costos, PVP y stock sin
+                  duplicar productos.
                 </p>
               </div>
             </div>
 
-            {lastMigrationInfo && (
+            {lastMigrationInfo && !isMigrating && (
               <span className='px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'>
                 ✓ {lastMigrationInfo.total} sincronizados ({lastMigrationInfo.inserted} nuevos,{' '}
                 {lastMigrationInfo.updated} actualizados)
@@ -1492,15 +1291,37 @@ export default function CoronelScraperPage() {
             )}
           </div>
 
+          {/* BARRA DE CARGA / PROGRESO CUANDO SE PUBLICA O MIGRA */}
+          {isMigrating && (
+            <div className='p-4 rounded-xl bg-[#E63946]/5 border border-[#E63946]/30 space-y-2.5 animate-in fade-in duration-300'>
+              <div className='flex items-center justify-between text-xs font-bold text-foreground'>
+                <div className='flex items-center gap-2 text-[#E63946]'>
+                  <Icons.spinner className='w-4 h-4 animate-spin' />
+                  <span>Publicando y Sincronizando con Supabase...</span>
+                </div>
+                <span className='font-mono text-muted-foreground text-[11px]'>
+                  Por favor espera unos segundos
+                </span>
+              </div>
+              <div className='w-full h-2.5 bg-muted rounded-full overflow-hidden relative'>
+                <div className='h-full bg-gradient-to-r from-[#E63946] via-[#FF85A2] to-[#E63946] rounded-full animate-pulse w-full' />
+              </div>
+              <p className='text-[11px] text-muted-foreground text-center'>
+                Procesando taxonomías recursivas, optimizando imágenes e integrando precios según la
+                política seleccionada.
+              </p>
+            </div>
+          )}
+
           <div className='flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/60 text-xs'>
-            {/* Selector de Ámbito / Categoría */}
+            {/* Selector de Ámbito / Categoría (por defecto Todo el Catálogo) */}
             <div className='flex items-center gap-2'>
               <span className='text-muted-foreground font-medium'>Seleccionar:</span>
               <select
                 value={migrationCategory}
                 onChange={(e) => setMigrationCategory(e.target.value)}
                 disabled={isMigrating}
-                className='px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
+                className='px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
               >
                 <option value='all'>
                   Todo el Catálogo ({dbStats?.total_products ?? 0} artículos)
@@ -1551,7 +1372,7 @@ export default function CoronelScraperPage() {
               <button
                 onClick={handleMigrateToWeb}
                 disabled={isMigrating || (dbStats?.total_products ?? 0) === 0}
-                className='px-4 py-2 rounded-lg bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer'
+                className='px-4 py-2 rounded-lg bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95'
               >
                 <Icons.refresh className={`w-4 h-4 ${isMigrating ? 'animate-spin' : ''}`} />
                 <span>
@@ -1563,7 +1384,7 @@ export default function CoronelScraperPage() {
             </div>
           </div>
 
-          {/* Estrategia de Precios para Coincidentes */}
+          {/* Tratamiento de Precios al Migrar */}
           <div className='w-full pt-2.5 mt-1 border-t border-border/40 flex flex-wrap items-center justify-between gap-2 bg-muted/20 p-2.5 rounded-lg'>
             <div className='flex items-center gap-1.5'>
               <Icons.lock className='w-3.5 h-3.5 text-[#D4A017]' />
@@ -1609,430 +1430,6 @@ export default function CoronelScraperPage() {
                 📦 Solo Stock en Existentes
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* Barra Secundaria de Recálculo Masivo de Márgenes en SQLite Local */}
-        <div className='p-3 rounded-xl bg-card border border-border flex flex-wrap items-center justify-between gap-3 text-xs'>
-          <div className='flex items-center gap-2 text-foreground font-semibold'>
-            <Icons.settings className='w-4 h-4 text-muted-foreground' />
-            <span>Recálculo Masivo General en SQLite:</span>
-            <span className='text-[11px] font-normal text-muted-foreground hidden sm:inline'>
-              (Ajusta los precios dentro del archivo local productos.db antes de publicar)
-            </span>
-          </div>
-
-          <div className='flex flex-wrap items-center gap-3'>
-            <div className='flex items-center gap-1.5'>
-              <span className='text-muted-foreground'>Detal:</span>
-              <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
-                <input
-                  type='number'
-                  min='0'
-                  max='200'
-                  value={bulkMargenMinorista}
-                  onChange={(e) => setBulkMargenMinorista(Number(e.target.value))}
-                  className='w-10 bg-transparent text-foreground font-bold text-center outline-none'
-                />
-                <span className='text-muted-foreground font-semibold'>%</span>
-              </div>
-            </div>
-
-            <div className='flex items-center gap-1.5'>
-              <span className='text-muted-foreground'>Mayor:</span>
-              <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
-                <input
-                  type='number'
-                  min='0'
-                  max='200'
-                  value={bulkMargenMayorista}
-                  onChange={(e) => setBulkMargenMayorista(Number(e.target.value))}
-                  className='w-10 bg-transparent text-foreground font-bold text-center outline-none'
-                />
-                <span className='text-muted-foreground font-semibold'>%</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleUpdateMargins}
-              disabled={updatingMargins}
-              className='px-3 py-1 rounded-lg border border-border bg-muted/60 hover:bg-muted text-foreground font-semibold transition-all flex items-center gap-1.5 cursor-pointer'
-            >
-              <Icons.refresh className={`w-3 h-3 ${updatingMargins ? 'animate-spin' : ''}`} />
-              <span>{updatingMargins ? 'Recalculando...' : 'Guardar en SQLite'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* MESA DE TRABAJO INTERACTIVA DE ARTÍCULOS EN SQLITE */}
-        <div className='rounded-xl border border-border overflow-hidden bg-card space-y-0'>
-          {/* Barra de Filtros y Búsqueda */}
-          <div className='p-3 bg-muted/40 border-b border-border flex flex-wrap items-center justify-between gap-3 text-xs'>
-            <div className='flex flex-wrap items-center gap-2 flex-1 min-w-[280px]'>
-              <div className='relative flex-1 min-w-[180px] max-w-md'>
-                <Icons.search className='absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground' />
-                <input
-                  type='text'
-                  placeholder='Buscar por SKU, código de barras o descripción...'
-                  value={tableSearch}
-                  onChange={(e) => setTableSearch(e.target.value)}
-                  className='w-full pl-8.5 pr-7 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-[#E63946]'
-                />
-                {tableSearch && (
-                  <button
-                    onClick={() => setTableSearch('')}
-                    className='absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer'
-                  >
-                    <Icons.close className='w-3 h-3' />
-                  </button>
-                )}
-              </div>
-
-              {/* Filtro por Categoría SQLite */}
-              <select
-                value={tableCategory}
-                onChange={(e) => setTableCategory(e.target.value)}
-                className='px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-medium outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
-              >
-                <option value='all'>
-                  Todas las Categorías ({dbStats?.total_products ?? 0})
-                </option>
-                {dbStats?.categories?.map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.name} ({c.count})
-                  </option>
-                ))}
-              </select>
-
-              {/* Filtro por Estado de Stock */}
-              <select
-                value={tableStockFilter}
-                onChange={(e) => setTableStockFilter(e.target.value as any)}
-                className='px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-medium outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
-              >
-                <option value='all'>Todos los Stocks</option>
-                <option value='in_stock'>Con Stock (&gt;0)</option>
-                <option value='out_of_stock'>Agotados (=0)</option>
-              </select>
-            </div>
-
-            <div className='flex items-center gap-2'>
-              <span className='text-[11px] font-semibold text-muted-foreground'>
-                Mostrando {filteredProducts.length} de {dbStats?.total_products ?? 0}
-              </span>
-              <button
-                onClick={fetchDbStats}
-                disabled={loadingDb}
-                title='Refrescar datos SQLite'
-                className='p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer'
-              >
-                <Icons.refresh className={`w-3.5 h-3.5 ${loadingDb ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Barra Flotante / Contextual de Acciones Masivas */}
-          {selectedCodes.length > 0 && (
-            <div className='p-3 bg-red-500/10 border-b-2 border-[#E63946]/50 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1'>
-              <div className='flex items-center gap-2'>
-                <span className='px-2 py-0.5 rounded-md bg-[#E63946] text-white font-bold text-[11px]'>
-                  {selectedCodes.length}
-                </span>
-                <span className='font-bold text-foreground'>
-                  {selectedCodes.length === 1 ? 'producto seleccionado' : 'productos seleccionados'}
-                </span>
-                <button
-                  onClick={() => setSelectedCodes([])}
-                  className='text-muted-foreground hover:text-foreground text-[11px] underline ml-1 cursor-pointer'
-                >
-                  Deseleccionar
-                </button>
-              </div>
-
-              <div className='flex flex-wrap items-center gap-2.5'>
-                {/* Fijar Stock Masivo */}
-                <div className='flex items-center gap-1.5 bg-background border border-border px-2 py-1 rounded-lg'>
-                  <span className='text-muted-foreground font-medium'>Stock:</span>
-                  <input
-                    type='number'
-                    min='0'
-                    max='9999'
-                    value={bulkStockVal}
-                    onChange={(e) => setBulkStockVal(Number(e.target.value))}
-                    className='w-12 bg-transparent text-foreground font-bold text-center outline-none'
-                  />
-                  <button
-                    onClick={handleBulkStockUpdate}
-                    disabled={isUpdatingBulkStock}
-                    className='px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all disabled:opacity-50 cursor-pointer'
-                  >
-                    {isUpdatingBulkStock ? '...' : 'Fijar'}
-                  </button>
-                </div>
-
-                {/* Fijar Márgenes Masivos */}
-                <div className='flex items-center gap-1.5 bg-background border border-border px-2 py-1 rounded-lg'>
-                  <span className='text-muted-foreground font-medium'>Márgenes:</span>
-                  <span className='text-[10px] text-muted-foreground'>D:</span>
-                  <input
-                    type='number'
-                    min='0'
-                    max='200'
-                    value={bulkSelectedRetailMargin}
-                    onChange={(e) => setBulkSelectedRetailMargin(Number(e.target.value))}
-                    className='w-9 bg-transparent text-foreground font-bold text-center outline-none'
-                  />
-                  <span className='text-muted-foreground font-semibold'>%</span>
-                  <span className='text-[10px] text-muted-foreground ml-1'>M:</span>
-                  <input
-                    type='number'
-                    min='0'
-                    max='200'
-                    value={bulkSelectedWholesaleMargin}
-                    onChange={(e) => setBulkSelectedWholesaleMargin(Number(e.target.value))}
-                    className='w-9 bg-transparent text-foreground font-bold text-center outline-none'
-                  />
-                  <span className='text-muted-foreground font-semibold'>%</span>
-                  <button
-                    onClick={handleBulkMarginsForSelected}
-                    disabled={isUpdatingBulkMargins}
-                    className='px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all disabled:opacity-50 ml-1 cursor-pointer'
-                  >
-                    {isUpdatingBulkMargins ? '...' : 'Aplicar'}
-                  </button>
-                </div>
-
-                {/* Eliminar Seleccionados */}
-                <button
-                  onClick={() => handleDeleteProducts(selectedCodes)}
-                  disabled={isDeletingBulk}
-                  className='px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer'
-                >
-                  <Icons.trash className='w-3.5 h-3.5' />
-                  <span>
-                    {isDeletingBulk ? 'Eliminando...' : `Eliminar (${selectedCodes.length})`}
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Tabla con Scroll */}
-          <div className='overflow-x-auto max-h-[500px]'>
-            <table className='w-full text-xs text-left'>
-              <thead className='bg-muted/60 text-muted-foreground sticky top-0 uppercase tracking-wider text-[10px] z-10'>
-                <tr>
-                  <th className='px-3 py-2.5 w-9 text-center'>
-                    <input
-                      type='checkbox'
-                      checked={isAllFilteredSelected}
-                      onChange={toggleSelectAll}
-                      disabled={filteredProducts.length === 0}
-                      className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
-                      title='Seleccionar todos los visibles'
-                    />
-                  </th>
-                  <th className='px-3 py-2.5'>Foto</th>
-                  <th className='px-4 py-2.5'>SKU / Código</th>
-                  <th className='px-4 py-2.5'>Descripción</th>
-                  <th className='px-4 py-2.5'>Jerarquía Completa</th>
-                  <th className='px-4 py-2.5'>Costo</th>
-                  <th className='px-4 py-2.5'>PVP Detal</th>
-                  <th className='px-4 py-2.5'>PVP Mayor</th>
-                  <th className='px-4 py-2.5'>Stock Físico</th>
-                  <th className='px-3 py-2.5 text-right'>Acciones</th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-border'>
-                {filteredProducts.length > 0 ? (
-                  filteredProducts.map((p, idx) => {
-                    const isSelected = selectedCodes.includes(p.codigo);
-                    const rawImg = p.imagen_url || p.foto || '';
-                    const fotoSrc = rawImg
-                      ? `/api/scraper/image?url=${encodeURIComponent(p.imagen_url || '')}&file=${encodeURIComponent(p.foto || '')}`
-                      : '';
-                    const costoStr = p.precio_costo
-                      ? `$ ${Number(p.precio_costo).toLocaleString('es-AR')}`
-                      : p.precio || '-';
-                    const detalStr = p.precio_minorista
-                      ? `$ ${Number(p.precio_minorista).toLocaleString('es-AR')}`
-                      : p.precio || '-';
-                    const mayorStr = p.precio_mayorista
-                      ? `$ ${Number(p.precio_mayorista).toLocaleString('es-AR')}`
-                      : '-';
-                    const rutaStr =
-                      p.categoria_ruta ||
-                      [p.categoria, p.subcategoria, p.sub_subcategoria]
-                        .filter(Boolean)
-                        .join(' > ') ||
-                      'Sin categoría';
-
-                    const currentStock =
-                      stockDrafts[p.codigo] !== undefined ? stockDrafts[p.codigo] : (p.stock ?? 1);
-
-                    return (
-                      <tr
-                        key={p.codigo || idx}
-                        className={`transition-colors ${
-                          isSelected ? 'bg-red-500/5 hover:bg-red-500/10' : 'hover:bg-muted/30'
-                        }`}
-                      >
-                        {/* Checkbox de Selección */}
-                        <td className='px-3 py-2 text-center'>
-                          <input
-                            type='checkbox'
-                            checked={isSelected}
-                            onChange={() => toggleSelectProduct(p.codigo)}
-                            className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
-                          />
-                        </td>
-
-                        {/* Foto */}
-                        <td className='px-3 py-2'>
-                          <div className='relative w-9 h-9 flex items-center justify-center bg-muted/60 rounded-md border border-border overflow-hidden'>
-                            {fotoSrc ? (
-                              <img
-                                src={fotoSrc}
-                                alt={p.codigo}
-                                loading='lazy'
-                                className='w-full h-full object-cover transition-opacity duration-200'
-                                onError={(e) => {
-                                  const target = e.currentTarget;
-                                  target.style.display = 'none';
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    const fallback = parent.querySelector(
-                                      '.img-fallback'
-                                    ) as HTMLElement;
-                                    if (fallback) fallback.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className='img-fallback absolute inset-0 items-center justify-center text-[10px] text-muted-foreground font-semibold'
-                              style={{ display: fotoSrc ? 'none' : 'flex' }}
-                            >
-                              N/A
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* SKU / Código */}
-                        <td className='px-4 py-2 font-mono font-bold text-foreground'>
-                          <div>{p.codigo}</div>
-                          {p.codigo_barra && (
-                            <div className='text-[10px] font-normal text-muted-foreground font-sans'>
-                              {p.codigo_barra}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Descripción */}
-                        <td
-                          className='px-4 py-2 text-foreground font-medium max-w-xs truncate'
-                          title={p.descripcion}
-                        >
-                          {p.descripcion}
-                        </td>
-
-                        {/* Jerarquía */}
-                        <td
-                          className='px-4 py-2 text-muted-foreground max-w-xs truncate'
-                          title={rutaStr}
-                        >
-                          <span className='px-2 py-0.5 rounded bg-muted/80 text-[11px] font-medium text-foreground'>
-                            {rutaStr}
-                          </span>
-                        </td>
-
-                        {/* Costo */}
-                        <td className='px-4 py-2 font-mono text-muted-foreground font-semibold'>
-                          {costoStr}
-                        </td>
-
-                        {/* PVP Detal */}
-                        <td className='px-4 py-2 text-emerald-500 font-bold'>
-                          <div>{detalStr}</div>
-                          {p.margen_minorista && (
-                            <div className='text-[10px] text-muted-foreground font-normal'>
-                              +{p.margen_minorista}%
-                            </div>
-                          )}
-                        </td>
-
-                        {/* PVP Mayor */}
-                        <td className='px-4 py-2 text-amber-500 font-bold'>
-                          <div>{mayorStr}</div>
-                          {p.margen_mayorista && (
-                            <div className='text-[10px] text-muted-foreground font-normal'>
-                              +{p.margen_mayorista}%
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Stock Editable Inline */}
-                        <td className='px-4 py-2'>
-                          <div className='flex items-center gap-1.5'>
-                            <input
-                              type='number'
-                              min='0'
-                              max='99999'
-                              value={currentStock}
-                              onChange={(e) => {
-                                const val = Number(e.target.value);
-                                setStockDrafts((prev) => ({ ...prev, [p.codigo]: val }));
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSaveSingleStock(p.codigo, currentStock);
-                                }
-                              }}
-                              onBlur={() => {
-                                if (
-                                  stockDrafts[p.codigo] !== undefined &&
-                                  stockDrafts[p.codigo] !== p.stock
-                                ) {
-                                  handleSaveSingleStock(p.codigo, stockDrafts[p.codigo]);
-                                }
-                              }}
-                              className={`w-14 px-1.5 py-0.5 text-center font-bold text-xs rounded border transition-all ${
-                                currentStock <= 0
-                                  ? 'bg-red-500/10 text-red-500 border-red-500/30 font-bold'
-                                  : 'bg-background text-foreground border-border focus:border-[#E63946]'
-                              }`}
-                              title='Presiona Enter o haz clic fuera para guardar en SQLite'
-                            />
-                            {savingStockCode === p.codigo && (
-                              <Icons.spinner className='w-3.5 h-3.5 animate-spin text-[#E63946]' />
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Acciones por Fila */}
-                        <td className='px-3 py-2 text-right'>
-                          <button
-                            onClick={() => handleDeleteProducts([p.codigo])}
-                            title={`Eliminar ${p.codigo} de SQLite`}
-                            className='p-1.5 rounded-md hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer'
-                          >
-                            <Icons.trash className='w-3.5 h-3.5' />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={10} className='px-4 py-10 text-center text-muted-foreground'>
-                      {tableSearch || tableCategory !== 'all' || tableStockFilter !== 'all'
-                        ? 'No se encontraron artículos que coincidan con los filtros aplicados.'
-                        : 'No hay productos registrados aún en la base de datos local SQLite.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
       </div>

@@ -394,7 +394,15 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - 🗑️ *Eliminación Masiva*: borrado en lote de productos seleccionados en Supabase con modal de confirmación `AlertModal` (`DELETE /api/products`).
   - **Edición Inline de Stock Físico:** Cada fila cuenta con un input numérico editable inline que persiste automáticamente en Supabase al presionar Enter o perder foco (`onBlur`), con semáforo visual de stock (rojo agotado, ámbar bajo, verde disponible) e indicador de spinner al guardar.
   - **Acción Directa de Eliminación por Fila:** Botón `🗑️` visible por fila con confirmación `AlertModal` inmediata.
-  - **Capa de Servicios y Rutas Backend:** Nuevos métodos `updateStoreProductsStock`, `deleteStoreProducts` y `updateStoreProductsMargins` en `src/lib/store-service.ts`, y rutas `POST /api/products/stock` y `DELETE /api/products`.
+- [x] **Simplificación del Centro de Migración & Publicación al Catálogo Web (`/dashboard/coronel`):**
+  - **Remoción de Componentes Redundantes:** Eliminado el bloque de *"Recálculo Masivo General en SQLite"* y la tabla previa de SQLite situada debajo, centralizando la edición de artículos y márgenes en el catálogo oficial (`/dashboard/product`).
+  - **Cabecera Limpia:** Eliminados los botones redundantes *"[Ver Catálogo Web]"* y *"[Refrescar SQLite]"*, conservando el diálogo de vaciado seguro `CatalogResetDialog`.
+  - **Tarjetas de Conteo Inteligente:** Agregadas 3 tarjetas métricas claras:
+    1. *Total en SQLite*: Productos extraídos en la base local del scraper.
+    2. *Productos Nuevos*: Conteo de artículos que se publicarán por primera vez (o nuevos en la última migración).
+    3. *Existentes (No Nuevos)*: Conteo de productos que ya existen en la web y cuyo stock será actualizado.
+  - **Barra de Progreso y Sincronización:** Barra de carga animada con gradiente y spinner durante el proceso de migración (`isMigrating`).
+  - **Selectores de Ámbito y Estrategia:** Selector de ámbito de migración por defecto en *"Todo el Catálogo"* (`all`) y selector tri-estado de tratamiento de precios (`🛡️ Solo Nuevos`, `🔄 Sobrescribir Todo`, `📦 Solo Stock`).
 
 ---
 
