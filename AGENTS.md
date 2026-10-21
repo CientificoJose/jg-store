@@ -16,6 +16,7 @@
 > - **Flujo Git Local-First:** Todos los cambios deben realizarse y probarse estrictamente en local. PROHIBIDO hacer push automático a GitHub. Cuando el usuario solicite subir los cambios a GitHub, hacerlo en un solo comando directamente sobre la rama principal (`main`). Ver [`.agents/skills/git-local-first/SKILL.md`](./.agents/skills/git-local-first/SKILL.md).
 > - **Identidad Visual y Colores:** Respetar la paleta institucional (#E63946, #FF85A2, #D4A017, #F8F8F7, #6C757D) y tipografías (Bebas Neue Cyrillic para títulos/display y Gotham para textos/UI). Ver [`.agents/skills/brand-design-system/SKILL.md`](./.agents/skills/brand-design-system/SKILL.md).
 > - **Al finalizar cada tarea:** Actualizar `.agents/knowledge/roadmap.md` y `.agents/knowledge/graph.md` con los avances.
+> - **Prohibido Servidores Externos:** PROHIBIDO invocar bajo ninguna circunstancia los servidores MCP de `vps-lavarmicoche` o `n8n-mcp-lavarmicoche`. Toda interacción con la base de datos se realiza exclusivamente a través de la API REST de PostgREST / Supabase de JG Store.
 
 ---
 

@@ -335,4 +335,15 @@ graph TD
   - Barra de carga visual animada y sincronizador durante el proceso de migración (`isMigrating`).
   - Selector de ámbito por defecto en *"Todo el Catálogo"* (`all`) y selector tri-estado de tratamiento de precios (`🛡️ Solo Nuevos`, `🔄 Sobrescribir Todo`, `📦 Solo Stock`).
 
+### 30. 🟢 Corrección de Recálculo Masivo de Márgenes y Políticas RLS en Supabase (`massive-margins-and-rls-fix`)
+* **Estado:** Completado.
+* **Detalles:**
+  - Sustituida la llamada al RPC `recalculate_product_margins` (que daba 404 en el PostgREST cache) por mutaciones REST directas.
+  - Soporte de consulta jerárquica con `or=(category_slug.eq.${cat},subcategory_slug.eq.${cat},sub_subcategory_slug.eq.${cat})` para identificar con precisión cualquier categoría, subcategoría o línea hija como *EQUIPOS DE FUTBOL*.
+  - Implementación de `SUPABASE_SERVICE_KEY` para operaciones de mutación en backend (márgenes, stock y borrado), evitando el bloqueo silencioso de Row Level Security (RLS) en la tabla `products`.
+  - Recálculo matemático atómico de `retail_price` y `wholesale_price` según `cost_price` individual sin enviar columnas inexistentes (`retail_margin_pct`).
+  - Creación de la regla/skill `do-not-touch-external-vps` prohibiendo interactuar con entornos externos como `vps-lavarmicoche`.
+
+
+
 

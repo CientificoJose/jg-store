@@ -5,15 +5,22 @@ import { PRODUCT_CATEGORIES, ProductCategory } from '@/constants/categories';
 const DEFAULT_SUPABASE_URL = 'http://jg-store-bd.press-cloud.com';
 const DEFAULT_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.MHnaK-G4RLBfaybcOR7IOVsRj6WK5of1v3xooRJAObc';
+const DEFAULT_SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A';
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   (process.env.SUPABASE_HOST ? `http://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
 
+// Clave con privilegios de servicio para mutaciones del backend (bypasses RLS)
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SERVICE_ROLE_KEY ||
+  DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
+
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.ANON_KEY ||
-  process.env.SERVICE_ROLE_KEY ||
   DEFAULT_SUPABASE_ANON_KEY;
 
 // Memoria local para cambios de stock en sesión cuando no esté la tabla en Supabase
@@ -350,13 +357,14 @@ export async function updateStoreProduct(
         : localCatalog[index].min_wholesale_qty
   };
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
+    const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
         method: 'PATCH',
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: authKey,
+          Authorization: `Bearer ${authKey}`,
           'Content-Type': 'application/json',
           Prefer: 'return=minimal'
         },
@@ -376,13 +384,14 @@ export async function deleteStoreProduct(id: string): Promise<boolean> {
     localCatalog.splice(index, 1);
   }
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
+    const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
         method: 'DELETE',
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: authKey,
+          Authorization: `Bearer ${authKey}`,
           'Content-Type': 'application/json'
         }
       });
@@ -405,14 +414,15 @@ export async function updateStoreProductsStock(
     idSet.has(p.id) || (p.sku && idSet.has(p.sku)) ? { ...p, stock: Number(stock) } : p
   );
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
+    const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
     try {
       const idFilter = ids.join(',');
       await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})`, {
         method: 'PATCH',
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: authKey,
+          Authorization: `Bearer ${authKey}`,
           'Content-Type': 'application/json',
           Prefer: 'return=minimal'
         },
@@ -434,14 +444,15 @@ export async function deleteStoreProducts(
   const idSet = new Set(ids);
   localCatalog = localCatalog.filter((p) => !idSet.has(p.id) && (!p.sku || !idSet.has(p.sku)));
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
+    const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
     try {
       const idFilter = ids.join(',');
       await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})`, {
         method: 'DELETE',
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: authKey,
+          Authorization: `Bearer ${authKey}`,
           'Content-Type': 'application/json'
         }
       });
@@ -465,7 +476,7 @@ export async function updateStoreProductsMargins(
   const idSet = new Set(ids);
   let updatedCount = 0;
 
-  // 1. Actualizar memoria local
+  // 1. Actualizar memoria local de respaldo
   localCatalog = localCatalog.map((prod) => {
     if (!idSet.has(prod.id) && (!prod.sku || !idSet.has(prod.sku))) return prod;
 
@@ -495,17 +506,19 @@ export async function updateStoreProductsMargins(
   });
 
   // 2. Actualizar Supabase Dokploy
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
+    const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
     try {
       const idFilter = ids.join(',');
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})&select=id,cost_price,retail_price,stock`,
+        `${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})&select=id,cost_price,retail_price,wholesale_price,stock`,
         {
           headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            apikey: authKey,
+            Authorization: `Bearer ${authKey}`,
             'Content-Type': 'application/json'
-          }
+          },
+          cache: 'no-store'
         }
       );
 
@@ -515,24 +528,26 @@ export async function updateStoreProductsMargins(
           await Promise.all(
             dbItems.map((item: any) => {
               const cost = Number(
-                item.cost_price || Math.round(Number(item.retail_price || 0) / 1.4)
+                item.cost_price || (item.retail_price ? Math.round(Number(item.retail_price) / 1.4) : 0)
               );
-              const newRetailMargin = retailMargin !== undefined ? retailMargin : 40;
-              const newWholesaleMargin = wholesaleMargin !== undefined ? wholesaleMargin : 18;
-              const newRetailPrice = Math.round(cost * (1 + newRetailMargin / 100));
-              const newWholesalePrice = Math.round(cost * (1 + newWholesaleMargin / 100));
+              const newRetailPrice =
+                retailMargin !== undefined
+                  ? Math.round(cost * (1 + retailMargin / 100))
+                  : Number(item.retail_price);
+              const newWholesalePrice =
+                wholesaleMargin !== undefined
+                  ? Math.round(cost * (1 + wholesaleMargin / 100))
+                  : Number(item.wholesale_price);
 
               return fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${item.id}`, {
                 method: 'PATCH',
                 headers: {
-                  apikey: SUPABASE_ANON_KEY,
-                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                  apikey: authKey,
+                  Authorization: `Bearer ${authKey}`,
                   'Content-Type': 'application/json',
                   Prefer: 'return=minimal'
                 },
                 body: JSON.stringify({
-                  retail_margin_pct: newRetailMargin,
-                  wholesale_margin_pct: newWholesaleMargin,
                   retail_price: newRetailPrice,
                   wholesale_price: newWholesalePrice,
                   updated_at: new Date().toISOString()
@@ -569,7 +584,7 @@ export async function updateStoreProductMarginsMassive(
 
   let count = 0;
 
-  // 1. Actualizar memoria local
+  // 1. Actualizar memoria local de respaldo
   localCatalog = localCatalog.map((prod) => {
     const matchesScope =
       scope === 'all' ||
@@ -607,33 +622,64 @@ export async function updateStoreProductMarginsMassive(
     };
   });
 
-  // 2. Si hay conexión con Supabase Dokploy, ejecutar RPC o actualización
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  // 2. Si hay conexión con Supabase Dokploy, consultar y actualizar productos en PostgreSQL
+  if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
+    const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
     try {
-      const rpcEndpoint = `${SUPABASE_URL}/rest/v1/rpc/recalculate_product_margins`;
-      const res = await fetch(rpcEndpoint, {
-        method: 'POST',
+      const isGlobal = scope === 'all' || !category || category === 'all';
+      const queryUrl = isGlobal
+        ? `${SUPABASE_URL}/rest/v1/products?select=id,cost_price,retail_price,wholesale_price`
+        : `${SUPABASE_URL}/rest/v1/products?or=(category_slug.eq.${category},subcategory_slug.eq.${category},sub_subcategory_slug.eq.${category})&select=id,cost_price,retail_price,wholesale_price`;
+
+      const res = await fetch(queryUrl, {
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: authKey,
+          Authorization: `Bearer ${authKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          p_scope: scope,
-          p_category_id: category || null,
-          p_retail_margin: retailMargin ?? null,
-          p_wholesale_margin: wholesaleMargin ?? null
-        })
+        cache: 'no-store'
       });
 
       if (res.ok) {
-        const data = await res.json();
-        if (data && typeof data.updated_count === 'number') {
-          count = data.updated_count;
+        const dbItems = await res.json();
+        if (Array.isArray(dbItems) && dbItems.length > 0) {
+          await Promise.all(
+            dbItems.map((item: any) => {
+              const cost = Number(
+                item.cost_price || (item.retail_price ? Math.round(Number(item.retail_price) / 1.4) : 0)
+              );
+              const newRetailPrice =
+                retailMargin !== undefined
+                  ? Math.round(cost * (1 + retailMargin / 100))
+                  : Number(item.retail_price);
+              const newWholesalePrice =
+                wholesaleMargin !== undefined
+                  ? Math.round(cost * (1 + wholesaleMargin / 100))
+                  : Number(item.wholesale_price);
+
+              return fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${item.id}`, {
+                method: 'PATCH',
+                headers: {
+                  apikey: authKey,
+                  Authorization: `Bearer ${authKey}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'return=minimal'
+                },
+                body: JSON.stringify({
+                  retail_price: newRetailPrice,
+                  wholesale_price: newWholesalePrice,
+                  updated_at: new Date().toISOString()
+                })
+              });
+            })
+          );
+          count = dbItems.length;
+        } else {
+          count = 0;
         }
       }
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.error('Error actualizando márgenes masivos en Supabase:', err);
     }
   }
 

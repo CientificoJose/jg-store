@@ -402,7 +402,11 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     2. *Productos Nuevos*: Conteo de artículos que se publicarán por primera vez (o nuevos en la última migración).
     3. *Existentes (No Nuevos)*: Conteo de productos que ya existen en la web y cuyo stock será actualizado.
   - **Barra de Progreso y Sincronización:** Barra de carga animada con gradiente y spinner durante el proceso de migración (`isMigrating`).
-  - **Selectores de Ámbito y Estrategia:** Selector de ámbito de migración por defecto en *"Todo el Catálogo"* (`all`) y selector tri-estado de tratamiento de precios (`🛡️ Solo Nuevos`, `🔄 Sobrescribir Todo`, `📦 Solo Stock`).
+- [x] **Corrección de Recálculo Masivo de Márgenes y Políticas RLS en Supabase:**
+  - **Eliminación de Dependencia RPC Fallida:** Reemplazada la llamada al RPC inexistente `recalculate_product_margins` por mutaciones PostgREST directas y seguras.
+  - **Soporte Jerárquico Completo de Categorías:** Filtrado mediante `or=(category_slug.eq.${cat},subcategory_slug.eq.${cat},sub_subcategory_slug.eq.${cat})` para que categorías principales, subcategorías y líneas hijas (ej. *EQUIPOS DE FUTBOL*) actualicen sus productos con 100% de precisión.
+  - **Uso de Clave de Servicio (`SERVICE_ROLE_KEY`):** Las mutaciones del backend (márgenes, stock y eliminaciones) ahora emplean la clave con rol de servicio, evitando que las políticas de Row Level Security (RLS) bloqueen en silencio las actualizaciones de la tabla `products`.
+  - **Esquema Exacto de Columnas:** Eliminado el intento de enviar `retail_margin_pct` y `wholesale_margin_pct` que causaba error HTTP 400 por no existir en el esquema físico, persistiendo de forma atómica los nuevos `retail_price` y `wholesale_price` calculados matemáticamente según el costo individual.
 
 ---
 
