@@ -407,6 +407,12 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Soporte Jerárquico Completo de Categorías:** Filtrado mediante `or=(category_slug.eq.${cat},subcategory_slug.eq.${cat},sub_subcategory_slug.eq.${cat})` para que categorías principales, subcategorías y líneas hijas (ej. *EQUIPOS DE FUTBOL*) actualicen sus productos con 100% de precisión.
   - **Uso de Clave de Servicio (`SERVICE_ROLE_KEY`):** Las mutaciones del backend (márgenes, stock y eliminaciones) ahora emplean la clave con rol de servicio, evitando que las políticas de Row Level Security (RLS) bloqueen en silencio las actualizaciones de la tabla `products`.
   - **Esquema Exacto de Columnas:** Eliminado el intento de enviar `retail_margin_pct` y `wholesale_margin_pct` que causaba error HTTP 400 por no existir en el esquema físico, persistiendo de forma atómica los nuevos `retail_price` y `wholesale_price` calculados matemáticamente según el costo individual.
+- [x] **Optimización de UX en Catálogo Oficial (`/dashboard/product`) y Limpieza en Coronel (`/dashboard/coronel`):**
+  - **Limpieza de Filtros Redundantes en Tabla:** Desactivados filtros automáticos de columna en `columns.tsx` para `sku`, `name` y `category`, eliminando inputs duplicados y el desplegable estático "Rubros" generado por `DataTableToolbar`.
+  - **Buscador Fluido sin Desmonte ni Pérdida de Foco:** Reubicado `ProductCommandBar` fuera del límite `<Suspense>` en `product-listing.tsx` e implementado estado local con debounce (300ms) en el input de búsqueda, eliminando la recarga agresiva de pantalla completa y permitiendo teclear con total fluidez.
+  - **Selección Global Maestro (`isAllSelected`):** El checkbox del encabezado ahora conmuta la selección de la totalidad de productos del catálogo o filtro activo, informando en la barra flotante el total real y permitiendo deselección inmediata o selección manual por filas individuales.
+  - **Actualización Masiva de Stock Robusta:** Sincronización de stock en lotes de 50 en Supabase PostgREST con validación de estado, soporte para modo global `selectAll: true` con filtros jerárquicos e invalidación de caché reactiva inmediata.
+  - **Limpieza en Centro de Migración (`/dashboard/coronel`):** Eliminados los inputs redundantes de margen Detal/Mayorista en la publicación al catálogo web, ocultado el checkbox de "Descarga fotos en disco" (activo por defecto permanentemente) y removida la terminología "SQLite" en la interfaz para simplificar la experiencia de usuario.
 
 ---
 

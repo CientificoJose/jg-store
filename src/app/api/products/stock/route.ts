@@ -6,16 +6,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { ids, codigos, stock } = body;
-
+    const { ids, codigos, stock, selectAll, filters } = body;
     const targetIds = ids || codigos;
-
-    if (!targetIds || !Array.isArray(targetIds) || targetIds.length === 0) {
-      return NextResponse.json(
-        { error: 'Se requiere una lista de IDs de productos (ids o codigos)' },
-        { status: 400 }
-      );
-    }
 
     if (stock === undefined || stock === null || isNaN(Number(stock))) {
       return NextResponse.json(
@@ -24,7 +16,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await updateStoreProductsStock(targetIds, Number(stock));
+    if (!selectAll && (!targetIds || !Array.isArray(targetIds) || targetIds.length === 0)) {
+      return NextResponse.json(
+        { error: 'Se requiere una lista de IDs de productos o el modo selectAll' },
+        { status: 400 }
+      );
+    }
+
+    const result = await updateStoreProductsStock({
+      ids: targetIds,
+      stock: Number(stock),
+      selectAll: Boolean(selectAll),
+      filters
+    });
+
     return NextResponse.json({
       success: true,
       updated_count: result.count,

@@ -60,8 +60,6 @@ export default function CoronelScraperPage() {
   // Estados de Migración al Catálogo Web (Supabase Dokploy)
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationCategory, setMigrationCategory] = useState<string>('all');
-  const [migrationRetailMargin, setMigrationRetailMargin] = useState<number>(40);
-  const [migrationWholesaleMargin, setMigrationWholesaleMargin] = useState<number>(18);
   const [priceStrategy, setPriceStrategy] = useState<'only_new' | 'overwrite_all' | 'stock_only'>('only_new');
   const [webProductCount, setWebProductCount] = useState<number>(0);
 
@@ -381,8 +379,8 @@ export default function CoronelScraperPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: migrationCategory === 'all' ? undefined : migrationCategory,
-          default_retail_margin: Number(migrationRetailMargin),
-          default_wholesale_margin: Number(migrationWholesaleMargin),
+          default_retail_margin: Number(ganancia),
+          default_wholesale_margin: Number(margenMayorista),
           price_strategy: priceStrategy
         })
       });
@@ -506,7 +504,7 @@ export default function CoronelScraperPage() {
           </h1>
           <p className='text-sm text-muted-foreground mt-1'>
             Control de automatización remota, visor escalable a pantalla completa con zoom y
-            persistencia local en SQLite.
+            persistencia local segura.
           </p>
         </div>
 
@@ -651,17 +649,6 @@ export default function CoronelScraperPage() {
                     <span className='text-muted-foreground font-semibold'>%</span>
                   </div>
                 </div>
-
-                <label className='flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none'>
-                  <input
-                    type='checkbox'
-                    checked={downloadImages}
-                    onChange={(e) => setDownloadImages(e.target.checked)}
-                    disabled={isRunning}
-                    className='rounded border-border text-[#E63946] focus:ring-[#E63946]'
-                  />
-                  <span>Descargar fotos a disco</span>
-                </label>
               </div>
 
               {/* Botonera de Acción */}
@@ -1220,13 +1207,13 @@ export default function CoronelScraperPage() {
           <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
             <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
               <Icons.package className='w-3.5 h-3.5 text-muted-foreground' />
-              Total en SQLite
+              Total Importado
             </span>
             <div className='text-2xl font-bebas text-foreground mt-1'>
               {dbStats?.total_products ?? 0}
             </div>
             <span className='text-[11px] text-muted-foreground'>
-              Artículos extraídos del proveedor
+              Artículos listos para publicar
             </span>
           </div>
 
@@ -1274,7 +1261,7 @@ export default function CoronelScraperPage() {
               </div>
               <div>
                 <h3 className='text-sm font-bold text-foreground font-gotham'>
-                  Sincronizador ETL: SQLite &rarr; Catálogo Web (PostgreSQL)
+                  Publicación al Catálogo Web Oficial (Supabase)
                 </h3>
                 <p className='text-[11px] text-muted-foreground'>
                   Crea automáticamente categorías recursivas y actualiza costos, PVP y stock sin
@@ -1334,54 +1321,19 @@ export default function CoronelScraperPage() {
               </select>
             </div>
 
-            {/* Márgenes por Defecto para la Migración */}
-            <div className='flex flex-wrap items-center gap-3'>
-              <div className='flex items-center gap-1.5'>
-                <span className='text-muted-foreground font-medium'>Margen Detal:</span>
-                <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
-                  <input
-                    type='number'
-                    min='0'
-                    max='200'
-                    value={migrationRetailMargin}
-                    onChange={(e) => setMigrationRetailMargin(Number(e.target.value))}
-                    disabled={isMigrating}
-                    className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
-                  />
-                  <span className='text-muted-foreground font-semibold'>%</span>
-                </div>
-              </div>
-
-              <div className='flex items-center gap-1.5'>
-                <span className='text-muted-foreground font-medium'>Margen Mayor:</span>
-                <div className='flex items-center bg-background border border-border px-2 py-0.5 rounded-md'>
-                  <input
-                    type='number'
-                    min='0'
-                    max='200'
-                    value={migrationWholesaleMargin}
-                    onChange={(e) => setMigrationWholesaleMargin(Number(e.target.value))}
-                    disabled={isMigrating}
-                    className='w-11 bg-transparent text-foreground font-bold text-center outline-none'
-                  />
-                  <span className='text-muted-foreground font-semibold'>%</span>
-                </div>
-              </div>
-
-              {/* Botón Principal de Migración */}
-              <button
-                onClick={handleMigrateToWeb}
-                disabled={isMigrating || (dbStats?.total_products ?? 0) === 0}
-                className='px-4 py-2 rounded-lg bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95'
-              >
-                <Icons.refresh className={`w-4 h-4 ${isMigrating ? 'animate-spin' : ''}`} />
-                <span>
-                  {isMigrating
-                    ? 'Publicando en Catálogo Web...'
-                    : '🚀 Publicar / Migrar al Catálogo Web'}
-                </span>
-              </button>
-            </div>
+            {/* Botón Principal de Publicación al Catálogo Web */}
+            <button
+              onClick={handleMigrateToWeb}
+              disabled={isMigrating || (dbStats?.total_products ?? 0) === 0}
+              className='px-5 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95'
+            >
+              <Icons.refresh className={`w-4 h-4 ${isMigrating ? 'animate-spin' : ''}`} />
+              <span>
+                {isMigrating
+                  ? 'Publicando en Catálogo Web...'
+                  : '🚀 Publicar al Catálogo Web'}
+              </span>
+            </button>
           </div>
 
           {/* Tratamiento de Precios al Migrar */}
@@ -1468,7 +1420,7 @@ export default function CoronelScraperPage() {
                   </div>
                   <p className='text-xs text-muted-foreground mt-1 max-w-2xl'>
                     Recorre periódicamente el catálogo global de Coronel Mayorista para refrescar existencias,
-                    recalcular precios de venta si el costo de proveedor varió, y marcar discontinuados con stock = 0 en SQLite y Supabase.
+                    recalcular precios de venta si el costo de proveedor varió, y marcar discontinuados con stock = 0 en el catálogo oficial.
                   </p>
 
                   {/* Fechas de ejecución y tiempos */}
@@ -1660,7 +1612,7 @@ export default function CoronelScraperPage() {
                 Métricas del Último Barrido de Catálogo
               </h3>
               <span className='text-[11px] text-muted-foreground'>
-                Sincronización directa con SQLite y Supabase Dokploy
+                Sincronización directa con la Base de Datos Oficial
               </span>
             </div>
 

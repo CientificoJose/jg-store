@@ -9,7 +9,6 @@ import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
 import { productKeys, productsQueryOptions } from '../../api/queries';
 import { columns } from './columns';
-import { ProductCommandBar } from '../product-command-bar';
 import { Icons } from '@/components/icons';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { toast } from 'sonner';
@@ -21,6 +20,7 @@ export function ProductTable() {
   const queryClient = useQueryClient();
 
   // Estados para acciones masivas e inline
+  const [isAllSelected, setIsAllSelected] = useState<boolean>(false);
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
   const [bulkStockVal, setBulkStockVal] = useState<number>(50);
   const [bulkRetailMargin, setBulkRetailMargin] = useState<number>(40);
@@ -90,10 +90,19 @@ export function ProductTable() {
     }
   });
 
-  // Conectar callbacks con las celdas de las columnas vía meta
+  // Conectar callbacks y modo de selección global con las celdas de las columnas vía meta
   table.options.meta = {
     onUpdateStock: handleSaveSingleStock,
     savingStockId,
+    isAllSelected,
+    onToggleSelectAll: (val: boolean) => {
+      setIsAllSelected(val);
+      if (!val) {
+        table.resetRowSelection();
+      } else {
+        table.toggleAllPageRowsSelected(true);
+      }
+    },
     onDeleteSingle: (product: Product) => {
       setProductsToDelete([product]);
       setDeleteConfirmOpen(true);
@@ -101,24 +110,46 @@ export function ProductTable() {
   };
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
-  const selectedCount = selectedRows.length;
+  const hasSelection = isAllSelected || selectedRows.length > 0;
+  const selectedCount = isAllSelected ? data.total_products : selectedRows.length;
   const selectedIds = selectedRows.map((r) => r.original.id);
 
   // Fijar Stock Masivo sobre productos seleccionados
   const handleBulkStockUpdate = async () => {
-    if (selectedIds.length === 0) return;
+    if (!hasSelection) return;
     setIsUpdatingBulkStock(true);
     try {
+      const payload = isAllSelected
+        ? {
+            selectAll: true,
+            filters: {
+              category: params.category,
+              subcategory: params.subcategory,
+              sub_subcategory: params.sub_subcategory,
+              search: params.name,
+              stock_status: params.stock_status
+            },
+            stock: Number(bulkStockVal)
+          }
+        : {
+            ids: selectedIds,
+            stock: Number(bulkStockVal)
+          };
+
       const res = await fetch('/api/products/stock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: selectedIds, stock: Number(bulkStockVal) })
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('Error al actualizar stock masivo');
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        throw new Error(resData.error || 'Error al actualizar stock masivo');
+      }
 
       toast.success(
-        `Stock actualizado a ${bulkStockVal} unidades en ${selectedIds.length} productos de Supabase`
+        `Stock actualizado a ${bulkStockVal} unidades en ${resData.updated_count ?? selectedCount} productos de Supabase`
       );
+      setIsAllSelected(false);
       table.resetRowSelection();
       await queryClient.invalidateQueries({ queryKey: productKeys.all });
     } catch (err: any) {
@@ -130,21 +161,34 @@ export function ProductTable() {
 
   // Fijar Márgenes Masivos sobre productos seleccionados
   const handleBulkMarginsUpdate = async () => {
-    if (selectedIds.length === 0) return;
+    if (!hasSelection) return;
     setIsUpdatingBulkMargins(true);
     try {
+      const payload = isAllSelected
+        ? {
+            scope: params.category ? 'category' : 'all',
+            category: params.category,
+            retail_margin: Number(bulkRetailMargin),
+            wholesale_margin: Number(bulkWholesaleMargin)
+          }
+        : {
+            ids: selectedIds,
+            retail_margin: Number(bulkRetailMargin),
+            wholesale_margin: Number(bulkWholesaleMargin)
+          };
+
       const res = await fetch('/api/products/margins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ids: selectedIds,
-          retail_margin: Number(bulkRetailMargin),
-          wholesale_margin: Number(bulkWholesaleMargin)
-        })
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('Error al actualizar márgenes');
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Error al actualizar márgenes');
 
-      toast.success(`Márgenes y precios recalculados para ${selectedIds.length} productos en Supabase`);
+      toast.success(
+        `Márgenes y precios recalculados para ${resData.updated_count ?? selectedCount} productos en Supabase`
+      );
+      setIsAllSelected(false);
       table.resetRowSelection();
       await queryClient.invalidateQueries({ queryKey: productKeys.all });
     } catch (err: any) {
@@ -170,6 +214,7 @@ export function ProductTable() {
       toast.success(`${productsToDelete.length} producto(s) eliminado(s) exitosamente de Supabase`);
       setDeleteConfirmOpen(false);
       setProductsToDelete([]);
+      setIsAllSelected(false);
       table.resetRowSelection();
       await queryClient.invalidateQueries({ queryKey: productKeys.all });
     } catch (err: any) {
@@ -181,20 +226,25 @@ export function ProductTable() {
 
   return (
     <div className='flex flex-1 flex-col space-y-4'>
-      <ProductCommandBar totalProducts={data.total_products} />
-
       {/* ─── BARRA FLOTANTE / CONTEXTUAL DE ACCIONES MASIVAS ─── */}
-      {selectedCount > 0 && (
+      {hasSelection && (
         <div className='p-3 bg-red-500/10 border-2 border-[#E63946]/50 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 font-gotham shadow-md'>
           <div className='flex items-center gap-2'>
             <span className='px-2.5 py-0.5 rounded-md bg-[#E63946] text-white font-bold text-xs'>
               {selectedCount}
             </span>
             <span className='font-bold text-foreground text-sm'>
-              {selectedCount === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+              {isAllSelected
+                ? `Todos los ${data.total_products} productos seleccionados (Catálogo / Filtro actual)`
+                : selectedCount === 1
+                  ? 'producto seleccionado'
+                  : 'productos seleccionados'}
             </span>
             <button
-              onClick={() => table.resetRowSelection()}
+              onClick={() => {
+                setIsAllSelected(false);
+                table.resetRowSelection();
+              }}
               className='text-muted-foreground hover:text-foreground text-xs underline ml-1 cursor-pointer'
             >
               Deseleccionar

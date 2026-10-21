@@ -148,14 +148,31 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
     });
   };
 
+  // Estado local para input de búsqueda con debounce fluido
+  const [searchInput, setSearchInput] = useState<string>(params.name || '');
+
+  useEffect(() => {
+    setSearchInput(params.name || '');
+  }, [params.name]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const current = params.name || '';
+      if (trimmed !== current) {
+        startTransition(() => {
+          setParams({
+            name: trimmed ? trimmed : null,
+            page: 1
+          });
+        });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    startTransition(() => {
-      setParams({
-        name: val.trim() ? val : null,
-        page: 1
-      });
-    });
+    setSearchInput(e.target.value);
   };
 
   const handleStockChange = (status: string) => {
@@ -168,6 +185,7 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
   };
 
   const handleResetFilters = () => {
+    setSearchInput('');
     startTransition(() => {
       setParams({
         name: null,
@@ -229,13 +247,16 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
           <Icons.search className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
           <Input
             placeholder='Buscar por nombre, SKU, marca o palabra clave...'
-            value={params.name || ''}
+            value={searchInput}
             onChange={handleSearchChange}
             className='pl-10 h-10 text-xs bg-background rounded-xl border-border focus:ring-1 focus:ring-[#E63946]'
           />
-          {params.name && (
+          {searchInput && (
             <button
-              onClick={() => setParams({ name: null, page: 1 })}
+              onClick={() => {
+                setSearchInput('');
+                setParams({ name: null, page: 1 });
+              }}
               className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1'
               title='Limpiar búsqueda'
             >

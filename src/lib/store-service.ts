@@ -136,17 +136,18 @@ export async function fetchStoreProductsWithMeta(
       products = [...localNew, ...products];
     }
 
-    // Aplicar márgenes locales si se han ajustado en la sesión
-    const localMarginMap = new Map(localCatalog.map((p) => [p.sku, p]));
+    // Aplicar márgenes y stock locales si se han ajustado en la sesión
+    const localMap = new Map(localCatalog.map((p) => [p.sku, p]));
     products = products.map((prod) => {
-      const local = localMarginMap.get(prod.sku);
-      if (local && (local.retail_margin_pct !== undefined || local.wholesale_margin_pct !== undefined)) {
+      const local = localMap.get(prod.sku) || localCatalog.find((p) => p.id === prod.id);
+      if (local) {
         return {
           ...prod,
-          retail_margin_pct: local.retail_margin_pct,
-          wholesale_margin_pct: local.wholesale_margin_pct,
-          retail_price: local.retail_price,
-          wholesale_price: local.wholesale_price
+          ...(local.retail_margin_pct !== undefined && { retail_margin_pct: local.retail_margin_pct }),
+          ...(local.wholesale_margin_pct !== undefined && { wholesale_margin_pct: local.wholesale_margin_pct }),
+          ...(local.retail_price !== undefined && { retail_price: local.retail_price }),
+          ...(local.wholesale_price !== undefined && { wholesale_price: local.wholesale_price }),
+          ...(local.stock !== undefined && { stock: local.stock })
         };
       }
       return prod;
@@ -403,10 +404,100 @@ export async function deleteStoreProduct(id: string): Promise<boolean> {
   return true;
 }
 
+export interface UpdateStockOptions {
+  ids?: string[];
+  stock: number;
+  selectAll?: boolean;
+  filters?: {
+    category?: string | null;
+    subcategory?: string | null;
+    sub_subcategory?: string | null;
+    search?: string | null;
+    stock_status?: string | null;
+  };
+}
+
 export async function updateStoreProductsStock(
-  ids: string[],
-  stock: number
+  target: string[] | UpdateStockOptions,
+  stockArg?: number
 ): Promise<{ success: boolean; count: number }> {
+  let ids: string[] = [];
+  let stock = 0;
+  let selectAll = false;
+  let filters: UpdateStockOptions['filters'];
+
+  if (Array.isArray(target)) {
+    ids = target;
+    stock = Number(stockArg || 0);
+  } else if (typeof target === 'object' && target !== null) {
+    ids = target.ids || [];
+    stock = Number(target.stock || 0);
+    selectAll = Boolean(target.selectAll);
+    filters = target.filters;
+  }
+
+  const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
+  let updatedCount = 0;
+
+  if (selectAll && SUPABASE_URL && authKey) {
+    try {
+      // 1. Obtener IDs según filtros o catálogo global
+      let endpoint = `${SUPABASE_URL}/rest/v1/products?select=id,sku`;
+      if (filters?.sub_subcategory) {
+        endpoint += `&sub_subcategory_slug=eq.${encodeURIComponent(filters.sub_subcategory)}`;
+      } else if (filters?.subcategory) {
+        endpoint += `&subcategory_slug=eq.${encodeURIComponent(filters.subcategory)}`;
+      } else if (filters?.category && filters.category !== 'all') {
+        endpoint += `&category_slug=eq.${encodeURIComponent(filters.category)}`;
+      }
+      if (filters?.search && filters.search.trim()) {
+        const q = encodeURIComponent(filters.search.trim());
+        endpoint += `&or=(name.ilike.*${q}*,sku.ilike.*${q}*,brand.ilike.*${q}*)`;
+      }
+
+      const res = await fetch(endpoint, {
+        headers: {
+          apikey: authKey,
+          Authorization: `Bearer ${authKey}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          const allTargetIds = rows.map((r: any) => String(r.id));
+          for (let i = 0; i < allTargetIds.length; i += 50) {
+            const chunk = allTargetIds.slice(i, i + 50);
+            const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${chunk.join(',')})`, {
+              method: 'PATCH',
+              headers: {
+                apikey: authKey,
+                Authorization: `Bearer ${authKey}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal'
+              },
+              body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
+            });
+            if (patchRes.ok) {
+              updatedCount += chunk.length;
+            } else {
+              console.error('Error actualizando lote en Supabase:', await patchRes.text());
+            }
+          }
+          const idSet = new Set(allTargetIds);
+          localCatalog = localCatalog.map((p) =>
+            idSet.has(p.id) || (p.sku && idSet.has(p.sku)) ? { ...p, stock: Number(stock) } : p
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error('Error al actualizar stock global en Supabase:', err);
+    }
+    return { success: true, count: updatedCount };
+  }
+
   if (!ids || ids.length === 0) return { success: true, count: 0 };
 
   const idSet = new Set(ids);
@@ -414,26 +505,34 @@ export async function updateStoreProductsStock(
     idSet.has(p.id) || (p.sku && idSet.has(p.sku)) ? { ...p, stock: Number(stock) } : p
   );
 
-  if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
-    const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
+  if (SUPABASE_URL && authKey) {
     try {
-      const idFilter = ids.join(',');
-      await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${idFilter})`, {
-        method: 'PATCH',
-        headers: {
-          apikey: authKey,
-          Authorization: `Bearer ${authKey}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
-        },
-        body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
-      });
+      for (let i = 0; i < ids.length; i += 50) {
+        const chunk = ids.slice(i, i + 50);
+        const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${chunk.join(',')})`, {
+          method: 'PATCH',
+          headers: {
+            apikey: authKey,
+            Authorization: `Bearer ${authKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
+        });
+        if (patchRes.ok) {
+          updatedCount += chunk.length;
+        } else {
+          console.error('Error actualizando stock masivo en Supabase:', await patchRes.text());
+        }
+      }
     } catch (err) {
       console.error('Error actualizando stock masivo en Supabase:', err);
     }
+  } else {
+    updatedCount = ids.length;
   }
 
-  return { success: true, count: ids.length };
+  return { success: true, count: updatedCount || ids.length };
 }
 
 export async function deleteStoreProducts(

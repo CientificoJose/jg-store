@@ -8,7 +8,6 @@ import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
 import Image from 'next/image';
 import { CellAction } from './cell-action';
-import { CATEGORY_OPTIONS } from './options';
 import { formatPrice } from '@/lib/whatsapp';
 import { cn } from '@/lib/utils';
 
@@ -72,32 +71,53 @@ function InlineStockCell({
 export const columns: ColumnDef<Product>[] = [
   {
     id: 'select',
-    header: ({ table }) => (
-      <div className='flex items-center justify-center px-1'>
-        <input
-          type='checkbox'
-          checked={table.getIsAllPageRowsSelected()}
-          ref={(input) => {
-            if (input) {
-              input.indeterminate = table.getIsSomePageRowsSelected();
-            }
-          }}
-          onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
-          className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
-          title='Seleccionar todos en esta página'
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className='flex items-center justify-center px-1'>
-        <input
-          type='checkbox'
-          checked={row.getIsSelected()}
-          onChange={(e) => row.toggleSelected(e.target.checked)}
-          className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
-        />
-      </div>
-    ),
+    header: ({ table }) => {
+      const meta = table.options.meta as any;
+      const isAllSelected = Boolean(meta?.isAllSelected);
+      const isPageSelected = table.getIsAllPageRowsSelected();
+      const isSomeSelected = table.getIsSomePageRowsSelected();
+      return (
+        <div className='flex items-center justify-center px-1'>
+          <input
+            type='checkbox'
+            checked={isAllSelected || isPageSelected}
+            ref={(input) => {
+              if (input) {
+                input.indeterminate = !isAllSelected && isSomeSelected;
+              }
+            }}
+            onChange={(e) => {
+              if (meta?.onToggleSelectAll) {
+                meta.onToggleSelectAll(e.target.checked);
+              } else {
+                table.toggleAllPageRowsSelected(e.target.checked);
+              }
+            }}
+            className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
+            title={isAllSelected ? 'Deseleccionar todo' : 'Seleccionar todos los productos'}
+          />
+        </div>
+      );
+    },
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as any;
+      const isAllSelected = Boolean(meta?.isAllSelected);
+      return (
+        <div className='flex items-center justify-center px-1'>
+          <input
+            type='checkbox'
+            checked={isAllSelected || row.getIsSelected()}
+            onChange={(e) => {
+              if (isAllSelected && meta?.onToggleSelectAll) {
+                meta.onToggleSelectAll(false);
+              }
+              row.toggleSelected(e.target.checked);
+            }}
+            className='w-3.5 h-3.5 rounded border-border accent-[#E63946] cursor-pointer'
+          />
+        </div>
+      );
+    },
     enableSorting: false,
     enableHiding: false,
     size: 36
@@ -145,12 +165,7 @@ export const columns: ColumnDef<Product>[] = [
         )}
       </div>
     ),
-    meta: {
-      label: 'SKU',
-      placeholder: 'Filtrar por SKU...',
-      variant: 'text'
-    },
-    enableColumnFilter: true
+    enableColumnFilter: false
   },
   {
     id: 'name',
@@ -173,13 +188,7 @@ export const columns: ColumnDef<Product>[] = [
         <span className='text-xs text-[#6C757D] line-clamp-1'>{row.original.description}</span>
       </div>
     ),
-    meta: {
-      label: 'Producto',
-      placeholder: 'Buscar por nombre...',
-      variant: 'text',
-      icon: Icons.text
-    },
-    enableColumnFilter: true
+    enableColumnFilter: false
   },
   {
     id: 'category',
@@ -210,12 +219,7 @@ export const columns: ColumnDef<Product>[] = [
         </div>
       );
     },
-    enableColumnFilter: true,
-    meta: {
-      label: 'Rubros',
-      variant: 'multiSelect',
-      options: CATEGORY_OPTIONS
-    }
+    enableColumnFilter: false
   },
   {
     id: 'stock',

@@ -342,8 +342,11 @@ graph TD
   - Soporte de consulta jerárquica con `or=(category_slug.eq.${cat},subcategory_slug.eq.${cat},sub_subcategory_slug.eq.${cat})` para identificar con precisión cualquier categoría, subcategoría o línea hija como *EQUIPOS DE FUTBOL*.
   - Implementación de `SUPABASE_SERVICE_KEY` para operaciones de mutación en backend (márgenes, stock y borrado), evitando el bloqueo silencioso de Row Level Security (RLS) en la tabla `products`.
   - Recálculo matemático atómico de `retail_price` y `wholesale_price` según `cost_price` individual sin enviar columnas inexistentes (`retail_margin_pct`).
-  - Creación de la regla/skill `do-not-touch-external-vps` prohibiendo interactuar con entornos externos como `vps-lavarmicoche`.
-
-
-
-
+### 31. 🟢 Optimización de UX en Catálogo Oficial y Simplificación en Coronel (`product-table-ux-and-coronel-refinements`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Filtros Limpios:** Desactivados filtros redundantes de columna en `columns.tsx` (`sku`, `name`, `category`), suprimiendo inputs duplicados y el dropdown estático "Rubros" generado por `DataTableToolbar`.
+  - **Buscador Fluido sin Desmonte:** Reubicado `ProductCommandBar` fuera del límite `<Suspense>` e implementado debounce de 300ms con estado local para teclear con total suavidad sin perder foco ni desmontar componentes.
+  - **Selección Global Maestro (`isAllSelected`):** Selección completa de los productos filtrados o de todo el catálogo al marcar el checkbox maestro de cabecera, con contador dinámico y deselección instantánea.
+  - **Fijación de Stock Masivo Robusta:** Endpoint `/api/products/stock` y `updateStoreProductsStock` actualizados para procesar en lotes de 50 en PostgREST con validación de estado, soporte para modo global `selectAll: true` con filtros jerárquicos y sincronización de memoria local.
+  - **Refinamiento en Coronel (`/dashboard/coronel`):** Ocultado checkbox de descarga de fotos en disco (activo por defecto), eliminados inputs redundantes de margen en la sección de migración y suprimida la palabra "SQLite" en textos públicos de la UI.
