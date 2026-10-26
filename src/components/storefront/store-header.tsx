@@ -44,6 +44,9 @@ export function StoreHeader({
   }, []);
 
   const isDark = mounted && (resolvedTheme === 'dark' || theme === 'dark');
+  const safeFavoriteCount = mounted ? favoriteCount : 0;
+  const safeTotalItems = mounted ? summary.total_items : 0;
+  const safeSubtotal = mounted ? summary.subtotal : 0;
 
   // Estado local del buscador para disparar la búsqueda únicamente al presionar Enter o enviar
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -246,16 +249,16 @@ export function StoreHeader({
               title="Ver mi lista de productos favoritos"
               aria-label="Ver productos favoritos"
               className={`h-10 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                favoriteCount > 0
+                safeFavoriteCount > 0
                   ? 'bg-card hover:bg-muted border-[#FF85A2]/60 text-[#E63946]'
                   : 'bg-card hover:bg-muted border-border text-[#6C757D] hover:text-foreground'
               }`}
             >
-              <Icons.heart className={`w-3.5 h-3.5 ${favoriteCount > 0 ? 'fill-current text-[#E63946]' : ''}`} />
+              <Icons.heart className={`w-3.5 h-3.5 ${safeFavoriteCount > 0 ? 'fill-current text-[#E63946]' : ''}`} />
               <span className="hidden sm:inline">Favoritos</span>
-              {favoriteCount > 0 && (
+              {safeFavoriteCount > 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#E63946] text-white">
-                  {favoriteCount}
+                  {safeFavoriteCount}
                 </span>
               )}
             </Link>
@@ -278,12 +281,12 @@ export function StoreHeader({
             >
               <Icons.cart className="w-4 h-4" />
               <span className="hidden sm:inline font-bebas text-base tracking-wider">
-                {summary.subtotal > 0 ? formatPrice(summary.subtotal) : 'CARRITO'}
+                {safeSubtotal > 0 ? formatPrice(safeSubtotal) : 'CARRITO'}
               </span>
 
-              {summary.total_items > 0 && (
+              {safeTotalItems > 0 && (
                 <span className="w-5 h-5 rounded-full bg-[#D4A017] text-white text-[11px] font-black flex items-center justify-center animate-bounce shadow-sm">
-                  {summary.total_items}
+                  {safeTotalItems}
                 </span>
               )}
             </button>

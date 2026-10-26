@@ -16,7 +16,7 @@ describe('Gestor de Departamentos y Categorías API (`/api/categories`)', () => 
     expect(first).toHaveProperty('slug');
     expect(first).toHaveProperty('name');
     expect(first).toHaveProperty('imageUrl');
-  }, 15000);
+  });
 
   it('POST debe rechazar solicitudes con nombre vacío devolviendo código 400', async () => {
     const req = new NextRequest('http://localhost:3000/api/categories', {
