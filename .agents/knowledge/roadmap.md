@@ -414,11 +414,13 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Actualización Masiva de Stock Robusta:** Sincronización de stock en lotes de 50 en Supabase PostgREST con validación de estado, soporte para modo global `selectAll: true` con filtros jerárquicos e invalidación de caché reactiva inmediata.
   - **Limpieza en Centro de Migración (`/dashboard/coronel`):** Eliminados los inputs redundantes de margen Detal/Mayorista en la publicación al catálogo web, ocultado el checkbox de "Descarga fotos en disco" (activo por defecto permanentemente) y removida la terminología "SQLite" en la interfaz para simplificar la experiencia de usuario.
 
----
+- [x] **Reparación de Infraestructura VPS, Recuperación de Supabase y Solución noVNC / Dokploy:**
+  - **noVNC sin Desconexiones en `/dashboard/coronel`:** Solucionado el bloqueo de WebSockets por cookies de terceros e iframe (CHIPS) codificando el token de sesión dentro del parámetro `path` de la URL (`websockify?token=...`) y añadiendo validación de `$http_origin` en `scraping-coronel/nginx.conf`.
+  - **Rescate de PostgreSQL Supabase tras Reversión del VPS:**
+    - Corregidos permisos de archivos restaurados como `root` a `postgres:postgres` (`100:101`).
+    - Resueltos fallos de checkpoint y falta de segmentos `pg_subtrans` mediante placeholder `dd` y alineación LSN vía `pg_resetwal -f -x 1162500`.
+    - Eliminadas 37 relaciones huérfanas en `pg_class` y `pg_attribute` de esquemas perdidos, seguido de `VACUUM FULL` y `reindexdb` completo con 0 errores.
+    - Ejecutadas todas las migraciones pendientes: jerarquía de 3 niveles, categorías recursivas, costos, márgenes duales y tablas de órdenes.
+  - **Redespliegue Automatizado con Dokploy MCP:** Despliegue de los nuevos contenedores de `cutimage-jgstore-shop-yogyps` (JG Store Shop) y `coronel-scraper-6qhe5i` (Scraper & noVNC) directamente a través de las herramientas MCP de Dokploy y convergencia en Swarm.
 
-### ⚪ Fase 7: Expansión & Despliegue en Producción (Pospuesto intencionalmente)
-- [x] **Optimización de Build en Docker para Dokploy:** Fijación de Bun a `1.3.13` y remoción de `--frozen-lockfile` en `Dockerfile` y `Dockerfile.bun` para evitar fallos de parseo en cosmiconfig.
-- [ ] Conexión de producción con Clerk cuando el usuario proporcione credenciales activas.
-- [ ] Pasarela de pago complementaria a WhatsApp (opcional).
-- [ ] Despliegue en producción con SSL/Traefik en Dokploy.
 

@@ -350,3 +350,17 @@ graph TD
   - **Selección Global Maestro (`isAllSelected`):** Selección completa de los productos filtrados o de todo el catálogo al marcar el checkbox maestro de cabecera, con contador dinámico y deselección instantánea.
   - **Fijación de Stock Masivo Robusta:** Endpoint `/api/products/stock` y `updateStoreProductsStock` actualizados para procesar en lotes de 50 en PostgREST con validación de estado, soporte para modo global `selectAll: true` con filtros jerárquicos y sincronización de memoria local.
   - **Refinamiento en Coronel (`/dashboard/coronel`):** Ocultado checkbox de descarga de fotos en disco (activo por defecto), eliminados inputs redundantes de margen en la sección de migración y suprimida la palabra "SQLite" en textos públicos de la UI.
+
+### 32. 🟢 Solución noVNC WebSocket, Saneamiento de Base de Datos y Redespliegue Dokploy (`novnc-db-repair-and-dokploy-deploy`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **noVNC sin Desconexión en iframe:** Integrado el token de autenticación directamente dentro del path del WebSocket (`websockify?token=...`) en `src/app/dashboard/coronel/page.tsx` y mapeado `$http_origin` en `scraping-coronel/nginx.conf`, solventando la desconexión provocada por el bloqueo de cookies de terceros en iframes.
+  - **Diagnóstico y Sanación de PostgreSQL Supabase tras Reversión del VPS:**
+    - Corregida la propiedad de archivos a `100:101` (`postgres:postgres`).
+    - Subsanados errores de LSN y segmentos faltantes de `pg_subtrans` mediante `dd` y alineación con `pg_resetwal -f -x 1162500`.
+    - Purgadas 37 relaciones huérfanas en `pg_class` y `pg_attribute`, ejecutado `VACUUM FULL` y `reindexdb` completo con cero fallos.
+    - Aplicadas todas las migraciones: categorías en 3 niveles, recursividad infinita, costos, márgenes duales y órdenes.
+  - **Despliegue y Orquestación Dokploy:**
+    - Subida a GitHub (`main`) y compilación Next.js verificada con `bun`.
+    - Redespliegue de los servicios `cutimage-jgstore-shop-yogyps` (Tienda/Dashboard) y `coronel-scraper-6qhe5i` (Scraper) ejecutado vía Dokploy MCP y convergido en Swarm.
+
