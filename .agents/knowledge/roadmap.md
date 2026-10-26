@@ -422,5 +422,10 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Eliminadas 37 relaciones huérfanas en `pg_class` y `pg_attribute` de esquemas perdidos, seguido de `VACUUM FULL` y `reindexdb` completo con 0 errores.
     - Ejecutadas todas las migraciones pendientes: jerarquía de 3 niveles, categorías recursivas, costos, márgenes duales y tablas de órdenes.
   - **Redespliegue Automatizado con Dokploy MCP:** Despliegue de los nuevos contenedores de `cutimage-jgstore-shop-yogyps` (JG Store Shop) y `coronel-scraper-6qhe5i` (Scraper & noVNC) directamente a través de las herramientas MCP de Dokploy y convergencia en Swarm.
+- [x] **Solución a Inserción y Migración de Productos Coronel hacia Supabase (`/api/scraper/migrate`):**
+  - **Identificación de Causa Raíz HTTP 308 (Stripping de Cabeceras):** Se detectó que la URL de Supabase configurada con `http://` provocaba una redirección `308 Permanent Redirect` en Traefik hacia `https://`. En Node.js `fetch`, cualquier redirección de protocolo remueve automáticamente las cabeceras `Authorization` y `apikey`, degradando la petición de `service_role` a `anon` y causando que PostgREST rechazara las inserciones con error `HTTP 401 42501 (new row violates row-level security policy for table "products")`.
+  - **Normalización Forzosa a HTTPS:** Se forzó `https://` mediante `rawSupabaseUrl.replace(/^http:\/\//i, 'https://')` en `store-service.ts`, `supabase-storage.ts`, `src/app/api/scraper/migrate/route.ts`, `src/app/api/catalog/reset/route.ts` y `src/features/orders/api/service.ts`, garantizando inserciones directas sin redirecciones.
+  - **Esquema de Base de Datos (Columna `images`):** Se agregó la columna `images TEXT[] DEFAULT '{}'` en la tabla `public.products` y se recargó la caché de PostgREST (`NOTIFY pgrst, 'reload schema'`), eliminando el error `PGRST204 (Could not find the 'images' column)`.
+  - **Diagnóstico y Logging Detallado:** Se implementó captura explícita de `lastError` (`postRes.json()` / `patchRes.json()`) para exponer los detalles exactos de cualquier fallo en la respuesta HTTP 500.
 
 

@@ -364,3 +364,11 @@ graph TD
     - Subida a GitHub (`main`) y compilación Next.js verificada con `bun`.
     - Redespliegue de los servicios `cutimage-jgstore-shop-yogyps` (Tienda/Dashboard) y `coronel-scraper-6qhe5i` (Scraper) ejecutado vía Dokploy MCP y convergido en Swarm.
 
+### 33. 🟢 Reparación de Inserción y Migración de Productos Coronel a Supabase (`coronel-migration-https-fix`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Identificación de Redirección HTTP 308:** Se descubrió que la URL de Supabase con `http://` disparaba una redirección 308 de Traefik hacia `https://`, lo que por norma WHATWG en `fetch()` eliminaba las cabeceras `Authorization` y `apikey`, haciendo que PostgREST rechazara las inserciones con error `401 42501 (RLS policy violation)`.
+  - **Normalización a HTTPS:** Se forzó `https://` en todas las URLs de Supabase en `store-service.ts`, `supabase-storage.ts`, `migrate/route.ts`, `reset/route.ts` y `orders/api/service.ts`.
+  - **Columna `images` en Base de Datos:** Se añadió `images TEXT[] DEFAULT '{}'` a `public.products` y se recargó la caché de PostgREST, eliminando el error `PGRST204`.
+  - **Captura Detallada de Errores:** Se implementó `lastError` en el bucle de migración para reportar de inmediato cualquier error HTTP de PostgREST.
+

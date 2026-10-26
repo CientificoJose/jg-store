@@ -8,17 +8,25 @@ const execAsync = promisify(exec);
 
 const SCRAPER_AUTH_TOKEN = process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
 
-const SUPABASE_URL =
+const DEFAULT_SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A';
+
+const rawSupabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_PUBLIC_URL ||
   (process.env.SUPABASE_HOST
-    ? `http://${process.env.SUPABASE_HOST}`
-    : 'http://jg-store-bd.press-cloud.com');
+    ? `https://${process.env.SUPABASE_HOST}`
+    : 'https://jg-store-bd.press-cloud.com');
+
+const SUPABASE_URL = rawSupabaseUrl.replace(/^http:\/\//i, 'https://');
 
 const SUPABASE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.ANON_KEY ||
-  '';
+  DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
 
 function getScraperHost() {
   return (
@@ -185,6 +193,7 @@ export async function POST(request: NextRequest) {
     let insertedProducts = 0;
     let updatedProducts = 0;
     let preservedPricesCount = 0;
+    let lastError = '';
 
     await ensureProductsBucketExists();
 
@@ -479,8 +488,18 @@ export async function POST(request: NextRequest) {
           });
           if (patchRes.ok) {
             updatedProducts++;
+          } else {
+            const errJson = await patchRes.json().catch(() => null);
+            const errDetail =
+              errJson?.message ||
+              errJson?.hint ||
+              errJson?.details ||
+              (await patchRes.text().catch(() => `HTTP ${patchRes.status}`));
+            lastError = `PATCH ${sku} [HTTP ${patchRes.status}]: ${errDetail}`;
+            console.error(lastError);
           }
-        } catch (err) {
+        } catch (err: any) {
+          lastError = `PATCH ${sku} fallo de red: ${err?.message || err}`;
           console.error(`Error actualizando producto ${sku}:`, err);
         }
       } else {
@@ -496,8 +515,18 @@ export async function POST(request: NextRequest) {
           if (postRes.ok) {
             prodBySku.set(sku, { id: newId, sku });
             insertedProducts++;
+          } else {
+            const errJson = await postRes.json().catch(() => null);
+            const errDetail =
+              errJson?.message ||
+              errJson?.hint ||
+              errJson?.details ||
+              (await postRes.text().catch(() => `HTTP ${postRes.status}`));
+            lastError = `POST ${sku} [HTTP ${postRes.status}]: ${errDetail}`;
+            console.error(lastError);
           }
-        } catch (err) {
+        } catch (err: any) {
+          lastError = `POST ${sku} fallo de red: ${err?.message || err}`;
           console.error(`Error insertando nuevo producto ${sku}:`, err);
         }
       }
@@ -507,7 +536,7 @@ export async function POST(request: NextRequest) {
       return Response.json(
         {
           success: false,
-          error: `No se pudo registrar ni actualizar ningún producto en Supabase (${productsToMigrate.length} productos procesados pero las operaciones de inserción fallaron). Verifica los logs de Supabase o los permisos de escritura.`
+          error: `No se pudo registrar ni actualizar ningún producto en Supabase (${productsToMigrate.length} productos procesados pero las operaciones de inserción fallaron). Causa: ${lastError || 'Error de permisos o esquema'}.`
         },
         { status: 500 }
       );

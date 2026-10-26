@@ -8,9 +8,14 @@ const execAsync = promisify(exec);
 
 const SCRAPER_AUTH_TOKEN = process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
 
-const BASE_URL =
+const rawBaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  (process.env.SUPABASE_HOST ? `http://${process.env.SUPABASE_HOST}` : 'http://jg-store-bd.press-cloud.com');
+  process.env.SUPABASE_PUBLIC_URL ||
+  (process.env.SUPABASE_HOST
+    ? `https://${process.env.SUPABASE_HOST}`
+    : 'https://jg-store-bd.press-cloud.com');
+
+const BASE_URL = rawBaseUrl.replace(/^http:\/\//i, 'https://');
 
 const SERVICE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||

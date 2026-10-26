@@ -488,7 +488,9 @@ export async function createOrder(data: Partial<Order>): Promise<Order> {
   mockOrders.unshift(newOrder);
 
   // Si Supabase Dokploy está disponible, persistir en base de datos
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://jg-store-bd.press-cloud.com';
+  const rawOrdersUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
+  const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
   const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
