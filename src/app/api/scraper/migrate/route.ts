@@ -129,10 +129,28 @@ export async function POST(request: NextRequest) {
       )
     ]);
 
-    const existingCategories: any[] = catRes.ok ? await catRes.json() : [];
+    if (!catRes.ok || !prodRes.ok) {
+      const failedRes = !prodRes.ok ? prodRes : catRes;
+      let errDetail = '';
+      try {
+        const errJson = await failedRes.json();
+        errDetail = errJson.message || errJson.error || JSON.stringify(errJson);
+      } catch {
+        errDetail = await failedRes.text().catch(() => 'Error de respuesta');
+      }
+      return Response.json(
+        {
+          success: false,
+          error: `Error al conectar con la base de datos de JG Store (${SUPABASE_URL}) [HTTP ${failedRes.status}]: ${errDetail.slice(0, 200)}. Tras la reversión del VPS, es necesario reiniciar o redesplegar el servicio 'supabase-jg-stores' en Dokploy para reconectar PostgREST con la base de datos.`
+        },
+        { status: 502 }
+      );
+    }
+
+    const existingCategories: any[] = await catRes.json();
     const existingSubcategories: any[] = subRes.ok ? await subRes.json() : [];
     const existingSubSubcategories: any[] = subSubRes.ok ? await subSubRes.json() : [];
-    const existingProducts: any[] = prodRes.ok ? await prodRes.json() : [];
+    const existingProducts: any[] = await prodRes.json();
 
     // Mapas de búsqueda rápida
     const catBySlug = new Map<string, any>();
@@ -483,6 +501,16 @@ export async function POST(request: NextRequest) {
           console.error(`Error insertando nuevo producto ${sku}:`, err);
         }
       }
+    }
+
+    if (insertedProducts === 0 && updatedProducts === 0 && productsToMigrate.length > 0) {
+      return Response.json(
+        {
+          success: false,
+          error: `No se pudo registrar ni actualizar ningún producto en Supabase (${productsToMigrate.length} productos procesados pero las operaciones de inserción fallaron). Verifica los logs de Supabase o los permisos de escritura.`
+        },
+        { status: 500 }
+      );
     }
 
     return Response.json({
