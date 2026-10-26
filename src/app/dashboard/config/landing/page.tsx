@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useStoreConfigStore, ProductRowConfig } from '@/hooks/use-store-config-store';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
 import { Icons } from '@/components/icons';
@@ -160,6 +161,29 @@ export default function LandingConfigPage() {
           <Icons.externalLink className="w-4 h-4 text-[#E63946]" />
           <span>Ver Landing en Vivo</span>
         </a>
+      </div>
+
+      {/* TARJETA DESTACADA: Editor de Carrusel y Banners Promocionales */}
+      <div className="rounded-2xl border-2 border-[#E63946]/30 bg-gradient-to-r from-[#E63946]/10 via-card to-card p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#E63946]/20 text-[#E63946] text-xs font-bold">
+            <Icons.media className="w-3.5 h-3.5" />
+            <span>GESTOR DE PORTADA</span>
+          </div>
+          <h2 className="text-xl font-bebas tracking-wide text-foreground">
+            Carrusel de Banners Promocionales
+          </h2>
+          <p className="text-xs text-muted-foreground max-w-xl">
+            Editá las fotos de fondo, textos con acentos, botones de WhatsApp, modo mayorista y el orden de los slides que ven tus clientes en la portada.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/banners"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white text-xs font-bold transition-all shadow-md shadow-[#E63946]/20 shrink-0 cursor-pointer"
+        >
+          <Icons.edit className="w-4 h-4" />
+          <span>Editar Banners del Carrusel</span>
+        </Link>
       </div>
 
       {/* SECCIÓN 1: Vitrina de Categorías (Inspiración SHOPLUXE) */}

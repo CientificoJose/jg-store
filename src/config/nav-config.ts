@@ -69,6 +69,14 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: 'Carrusel y Banners',
+        url: '/dashboard/banners',
+        icon: 'media',
+        shortcut: ['b', 'n'],
+        isActive: false,
+        items: []
+      },
+      {
         title: 'Clientes y Usuarios',
         url: '/dashboard/users',
         icon: 'teams',
@@ -114,6 +122,12 @@ export const navGroups: NavGroup[] = [
             url: '/dashboard/config/landing',
             icon: 'layout',
             shortcut: ['c', 'l']
+          },
+          {
+            title: 'Carrusel de Banners',
+            url: '/dashboard/banners',
+            icon: 'media',
+            shortcut: ['c', 'b']
           },
           {
             title: 'Temas y Apariencia',

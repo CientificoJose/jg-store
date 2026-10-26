@@ -6,90 +6,11 @@ import { Icons } from '@/components/icons';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
 
-export interface CarouselSlide {
-  id: string;
-  tag: string;
-  tagColor?: string;
-  title: string;
-  titleAccent?: string;
-  subtitle: string;
-  image: string;
-  primaryActionLabel: string;
-  primaryActionType: 'explore' | 'category' | 'wholesale' | 'whatsapp';
-  categorySlug?: string;
-  secondaryActionLabel: string;
-  secondaryActionType: 'explore' | 'category' | 'wholesale' | 'whatsapp';
-  features: string[];
-}
+export { type CarouselSlide } from '@/types/banner';
+import { type CarouselSlide } from '@/types/banner';
+import { FALLBACK_SLIDES } from '@/app/api/banners/route';
 
-export const SLIDES: CarouselSlide[] = [
-  {
-    id: 'slide-1',
-    tag: '🇦🇷 DISTRIBUIDORA POLIRRUBRO • BUENOS AIRES',
-    tagColor: '#E63946',
-    title: 'COMPRÁ AL MAYOR',
-    titleAccent: 'DESDE $ 50.000 ARS',
-    subtitle:
-      'Desbloqueá tarifas mayoristas en toda tu compra al alcanzar el monto global de $ 50.000 o comprando por bulto cerrado. Despachos a todo el país.',
-    image:
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&auto=format&fit=crop&q=80',
-    primaryActionLabel: 'Explorar Catálogo',
-    primaryActionType: 'explore',
-    secondaryActionLabel: 'Activar Modo Mayorista',
-    secondaryActionType: 'wholesale',
-    features: ['Factura A con CUIT', 'Despacho por Expresos', 'Mínimo Mayorista $ 50.000']
-  },
-  {
-    id: 'slide-2',
-    tag: '✨ TENDENCIAS & TEMPORADA BAZAR',
-    tagColor: '#D4A017',
-    title: 'AROMATIZACIÓN, BAZAR',
-    titleAccent: '& DECORACIÓN',
-    subtitle:
-      'Difusores varillas 250ml, velas aromáticas, vasos térmicos de acero y organizadores giratorios 360° con hasta 25% OFF llevando por docena.',
-    image:
-      'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=1600&auto=format&fit=crop&q=80',
-    primaryActionLabel: 'Ver Aromatización & Velas',
-    primaryActionType: 'category',
-    categorySlug: 'aromatizacion-velas',
-    secondaryActionLabel: 'Cotizar por WhatsApp',
-    secondaryActionType: 'whatsapp',
-    features: ['Hasta 25% OFF por Bulto', 'Fragancias Importadas', 'Stock Inmediato']
-  },
-  {
-    id: 'slide-3',
-    tag: '🎧 GADGETS & TECNOLOGÍA SMART',
-    tagColor: '#FF85A2',
-    title: 'AURICULARES & GADGETS',
-    titleAccent: 'SMART DIGITAL',
-    subtitle:
-      'Auriculares inalámbricos Bluetooth JG Sound, termos digitales con pantalla LED touch y accesorios de última generación con garantía asegurada.',
-    image:
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1600&auto=format&fit=crop&q=80',
-    primaryActionLabel: 'Ver Bazar & Gadgets',
-    primaryActionType: 'category',
-    categorySlug: 'bazar-cocina',
-    secondaryActionLabel: 'Consultar Stock por WhatsApp',
-    secondaryActionType: 'whatsapp',
-    features: ['Sonido de Alta Fidelidad', 'Display Digital LED', 'Garantía Oficial JG']
-  },
-  {
-    id: 'slide-4',
-    tag: '💳 MEDIOS DE PAGO NACIONALES',
-    tagColor: '#25D366',
-    title: '10% DE DESCUENTO EN',
-    titleAccent: 'TRANSFERENCIAS CBU / ALIAS',
-    subtitle:
-      'Aboná por CBU, CVU o Alias y obtené 10% OFF directo en tu orden. También podés pagar en cuotas con Mercado Pago y todas las tarjetas.',
-    image:
-      'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1600&auto=format&fit=crop&q=80',
-    primaryActionLabel: 'Comprar con 10% OFF',
-    primaryActionType: 'explore',
-    secondaryActionLabel: 'Hablar con un Asesor',
-    secondaryActionType: 'whatsapp',
-    features: ['10% OFF Inmediato', 'Mercado Pago en Cuotas', 'Factura A y B AFIP']
-  }
-];
+export const SLIDES: CarouselSlide[] = FALLBACK_SLIDES;
 
 interface PromoCarouselProps {
   onExploreCatalog: () => void;
@@ -97,18 +18,55 @@ interface PromoCarouselProps {
 }
 
 export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarouselProps) {
+  const [slides, setSlides] = useState<CarouselSlide[]>(SLIDES);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const { wholesaleMode, toggleWholesaleMode } = useCartStore();
   const touchStartX = useRef<number | null>(null);
 
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+  const fetchBanners = useCallback(async () => {
+    try {
+      const res = await fetch('/api/banners');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setSlides(data);
+        }
+      }
+    } catch {
+      // Fallback silencioso a las diapositivas locales
+    }
   }, []);
 
+  useEffect(() => {
+    fetchBanners();
+
+    const handleUpdate = () => fetchBanners();
+    window.addEventListener('banners-updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+
+    return () => {
+      window.removeEventListener('banners-updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+    };
+  }, [fetchBanners]);
+
+  const totalSlides = slides.length || 1;
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  }, [totalSlides]);
+
   const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
-  }, []);
+    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+  }, [totalSlides]);
+
+  // Si currentSlide excede el número de diapositivas tras una edición, reajustar
+  useEffect(() => {
+    if (currentSlide >= totalSlides) {
+      setCurrentSlide(0);
+    }
+  }, [currentSlide, totalSlides]);
 
   // Auto-play cada 5.5 segundos (pausa si el usuario tiene el cursor encima)
   useEffect(() => {
@@ -153,7 +111,7 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
     touchStartX.current = null;
   };
 
-  const slide = SLIDES[currentSlide];
+  const slide = slides[currentSlide] || slides[0] || SLIDES[0];
 
   return (
     <div
@@ -166,7 +124,7 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
       {/* Contenedor Principal del Banner */}
       <div className="relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center">
         {/* Imágenes de Fondo con Transición Suave */}
-        {SLIDES.map((s, idx) => (
+        {slides.map((s, idx) => (
           <div
             key={s.id}
             className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
@@ -280,12 +238,12 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
         <div className="absolute top-4 right-5 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-mono text-white/80">
           <span className="font-bold text-white">0{currentSlide + 1}</span>
           <span>/</span>
-          <span>0{SLIDES.length}</span>
+          <span>0{slides.length}</span>
         </div>
 
         {/* Barra de Indicadores / Paginación (Pills en la parte inferior) */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/15">
-          {SLIDES.map((_, idx) => (
+          {slides.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx)}
