@@ -20,8 +20,13 @@ function CategoryCircleItem({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const [imgSrc, setImgSrc] = useState(cat.imageUrl);
+  const fallbackImage = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80';
+  const [imgSrc, setImgSrc] = useState(cat.imageUrl || fallbackImage);
   const itemRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setImgSrc(cat.imageUrl || fallbackImage);
+  }, [cat.imageUrl]);
 
   useEffect(() => {
     if (isSelected && itemRef.current) {
@@ -78,6 +83,22 @@ export function CategoryShowcase({
   style = 'photos'
 }: CategoryShowcaseProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [categories, setCategories] = useState<ProductCategory[]>(PRODUCT_CATEGORIES);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/categories')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -100,7 +121,7 @@ export function CategoryShowcase({
               </h2>
             </div>
             <p className="text-xs text-[#6C757D] mt-0.5">
-              Accede directamente a los 24 rubros comerciales de JG Store
+              Accede directamente a los {categories.length} rubros comerciales de JG Store
             </p>
           </div>
 
@@ -160,10 +181,10 @@ export function CategoryShowcase({
               </span>
             </button>
 
-            {/* Categorías con miniaturas de fotos */}
-            {PRODUCT_CATEGORIES.map((cat: ProductCategory) => (
+            {/* Categorías con miniaturas de fotos dinámicas */}
+            {categories.map((cat: ProductCategory) => (
               <CategoryCircleItem
-                key={cat.id}
+                key={cat.id || cat.slug}
                 cat={cat}
                 isSelected={selectedCategory === cat.slug}
                 onSelect={() => onSelectCategory(cat.slug)}
@@ -185,11 +206,11 @@ export function CategoryShowcase({
                   : 'bg-card border-border hover:bg-muted text-foreground'
               }`}
             >
-              Todos los rubros (24)
+              Todos los rubros ({categories.length})
             </button>
-            {PRODUCT_CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
-                key={cat.id}
+                key={cat.id || cat.slug}
                 onClick={() => onSelectCategory(cat.slug)}
                 className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                   selectedCategory === cat.slug
@@ -206,3 +227,4 @@ export function CategoryShowcase({
     </section>
   );
 }
+

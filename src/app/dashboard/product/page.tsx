@@ -33,6 +33,12 @@ export default async function Page(props: pageProps) {
             <Icons.store className='mr-1.5 h-4 w-4 text-[#E63946]' /> Ver Tienda
           </Link>
           <Link
+            href='/dashboard/categories'
+            className={cn(buttonVariants({ variant: 'outline' }), 'text-xs md:text-sm font-gotham')}
+          >
+            <Icons.layout className='mr-1.5 h-4 w-4 text-[#D4A017]' /> Departamentos
+          </Link>
+          <Link
             href='/dashboard/product/new'
             className={cn(
               buttonVariants(),

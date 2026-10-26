@@ -113,6 +113,15 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Módulo completo adaptado a Argentina con soporte B2B Mayorista y B2C Minorista:
     - **4 Tarjetas de Métricas Ejecutivas:** Total Facturado en Pesos Argentinos (`$` ARS), Pedidos Mayoristas B2B, Pedidos Minoristas B2C y Pendientes de Despacho en depósito.
     - **Tabla de Pedidos TanStack Table + nuqs:** Búsqueda en tiempo real por número de orden, cliente, CUIT/DNI o localidad; filtros por Tipo de Venta (Mayorista B2B / Minorista B2C), Estado del Pedido (Nueva, En Preparación, Lista p/ Despacho, Completada, Cancelada) y Estado de Pago (Pagado / Pendiente).
+- [x] **Panel y Gestor de Departamentos y Categorías con Fotos Circulares Dinámicas (`/dashboard/categories`):**
+  - **Gestión Visual Completa:** Listado de los 24+ departamentos oficiales con métricas rápidas (total de rubros, con foto activa, subcategorías hojas) y buscador en tiempo real por nombre o slug.
+  - **Modal Interactivo de Creación / Edición (`CategoryFormModal`):**
+    - Configuración de nombre, autogeneración o personalización de slug URL, descripción breve y selector de iconos polirrubro.
+    - **Subida de Fotos Reales o URL Directa:** Permite cargar archivos JPG/PNG/WEBP desde la PC directamente al bucket `products` de Supabase Storage o pegar enlaces directos (con presets rápidos de Unsplash).
+    - **Previsualización Circular en Tiempo Real:** Reproduce exactamente cómo se verá la burbuja circular en la vitrina de la tienda antes de guardar, con opción de "Quitar foto".
+  - **Integración Storefront Dinámica (`CategoryShowcase`):** La vitrina de círculos en la página principal ahora consume dinámicamente `/api/categories` en tiempo real, reflejando inmediatamente cualquier cambio de foto o nuevo departamento sin reconstruir la app.
+  - **API REST Robusta (`/api/categories` & `/api/categories/upload`):** Métodos GET, POST (upsert idempotente en PostgreSQL PostgREST) y DELETE (eliminación con confirmación de seguridad), validados al 100% con tests unitarios automatizados (`src/tests/categories-api.test.ts`).
+  - **Acceso Rápido Integrado:** Enlace directo en la barra lateral del Admin (`nav-config.ts`), botón "+ Categoría" en `ProductCommandBar` y botón "Departamentos" en `/dashboard/product`.
     - **Ficha y Cajón Lateral de Pedido (`OrderDetailSheet`):**
       - Datos fiscales AFIP: Factura A (Responsable Inscripto con CUIT) y Factura B (Consumidor Final con DNI).
       - Integración WhatsApp con un clic: mensaje pre-armado con número de orden, nombre y monto en ARS.

@@ -2,15 +2,20 @@ import { INITIAL_PRODUCTS } from '@/constants/initial-catalog';
 import { StoreProduct, ProductSortOption } from '@/types/store';
 import { PRODUCT_CATEGORIES, ProductCategory } from '@/constants/categories';
 
-const DEFAULT_SUPABASE_URL = 'http://jg-store-bd.press-cloud.com';
+const DEFAULT_SUPABASE_URL = 'https://jg-store-bd.press-cloud.com';
 const DEFAULT_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.MHnaK-G4RLBfaybcOR7IOVsRj6WK5of1v3xooRJAObc';
 const DEFAULT_SUPABASE_SERVICE_ROLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A';
 
-const SUPABASE_URL =
+const rawSupabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  (process.env.SUPABASE_HOST ? `http://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
+  (process.env.SUPABASE_HOST ? `https://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
+
+const SUPABASE_URL =
+  rawSupabaseUrl.startsWith('http://') && rawSupabaseUrl.includes('press-cloud.com')
+    ? rawSupabaseUrl.replace('http://', 'https://')
+    : rawSupabaseUrl;
 
 // Clave con privilegios de servicio para mutaciones del backend (bypasses RLS)
 const SUPABASE_SERVICE_KEY =
@@ -23,11 +28,11 @@ const SUPABASE_ANON_KEY =
   process.env.ANON_KEY ||
   DEFAULT_SUPABASE_ANON_KEY;
 
-// Memoria local para cambios de stock en sesión cuando no esté la tabla en Supabase
-let localCatalog: StoreProduct[] = [];
+// Memoria local para catálogo garantizando que siempre haya productos visibles
+let localCatalog: StoreProduct[] = [...INITIAL_PRODUCTS];
 
 export function resetLocalCatalogMemory() {
-  localCatalog = [];
+  localCatalog = [...INITIAL_PRODUCTS];
 }
 
 export interface FetchProductsOptions {
@@ -122,9 +127,9 @@ export async function fetchStoreProductsWithMeta(
     }
   }
 
-  // Fallback solo si la BD remota no respondió o está inaccesible
-  if (!connectedToSupabase && products.length === 0) {
-    products = [...localCatalog];
+  // Fallback si la BD remota no respondió o no trajo productos
+  if (!connectedToSupabase || products.length === 0) {
+    products = localCatalog.length > 0 ? [...localCatalog] : [...INITIAL_PRODUCTS];
   } else if (connectedToSupabase && localCatalog.length > 0) {
     // Si la BD tiene registros, sincronizar cualquier producto creado en memoria local
     const remoteSkus = new Set(products.map((p) => p.sku));

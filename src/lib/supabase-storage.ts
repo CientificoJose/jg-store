@@ -1,10 +1,15 @@
-const DEFAULT_SUPABASE_URL = 'http://jg-store-bd.press-cloud.com';
+const DEFAULT_SUPABASE_URL = 'https://jg-store-bd.press-cloud.com';
 const DEFAULT_SUPABASE_SERVICE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A';
 
-const SUPABASE_URL =
+const rawStorageUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  (process.env.SUPABASE_HOST ? `http://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
+  (process.env.SUPABASE_HOST ? `https://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
+
+const SUPABASE_URL =
+  rawStorageUrl.startsWith('http://') && rawStorageUrl.includes('press-cloud.com')
+    ? rawStorageUrl.replace('http://', 'https://')
+    : rawStorageUrl;
 
 const SUPABASE_KEY =
   process.env.SERVICE_ROLE_KEY ||
@@ -115,3 +120,49 @@ export async function uploadImageToSupabaseStorage(
     return sourceUrl;
   }
 }
+
+/**
+ * Sube un buffer de imagen directamente a Supabase Storage y retorna la URL pública.
+ */
+export async function uploadBufferToSupabaseStorage(
+  buffer: ArrayBuffer | Buffer,
+  fileName: string,
+  contentType: string = 'image/jpeg'
+): Promise<string> {
+  await ensureProductsBucketExists();
+
+  let cleanFileName = fileName
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/_+/g, '_');
+
+  if (!cleanFileName.toLowerCase().endsWith('.jpg') && !cleanFileName.toLowerCase().endsWith('.png') && !cleanFileName.toLowerCase().endsWith('.webp')) {
+    cleanFileName += '.jpg';
+  }
+
+  try {
+    const uploadRes = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/${PRODUCTS_BUCKET}/${cleanFileName}`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': contentType,
+          'x-upsert': 'true'
+        },
+        body: buffer
+      }
+    );
+
+    if (uploadRes.ok) {
+      return `${SUPABASE_URL}/storage/v1/object/public/${PRODUCTS_BUCKET}/${cleanFileName}`;
+    }
+    const err = await uploadRes.text();
+    console.warn('[storage] Error al subir buffer:', err);
+    return '';
+  } catch (error: any) {
+    console.warn('[storage] Excepción al subir buffer:', error?.message);
+    return '';
+  }
+}
+

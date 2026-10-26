@@ -9,6 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { productKeys } from '../api/queries';
 import { toast } from 'sonner';
 import { CatalogResetDialog } from '@/components/catalog-reset-dialog';
+import { CategoryFormModal } from '@/features/categories/components/category-form-modal';
+
 
 interface ProductCommandBarProps {
   totalProducts?: number;
@@ -22,6 +24,18 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
   const [margenDetal, setMargenDetal] = useState<number>(40);
   const [margenMayor, setMargenMayor] = useState<number>(18);
   const [isApplyingMargins, setIsApplyingMargins] = useState<boolean>(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
+
+  const reloadCategories = () => {
+    fetch('/api/categories')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCategoriesList(data);
+        }
+      })
+      .catch(() => {});
+  };
 
   // Cargar categorías dinámicas desde API (incluyendo subcategorías de proveedores)
   useEffect(() => {
@@ -392,7 +406,18 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
         </div>
 
         {/* Lado Derecho: Botón de Acción Dinámico + Reset */}
-        <div className='flex items-center gap-2 w-full sm:w-auto justify-end'>
+        <div className='flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap sm:flex-nowrap'>
+          {/* Botón para Crear / Gestionar Categorías con imagen */}
+          <button
+            type='button'
+            onClick={() => setIsCategoryModalOpen(true)}
+            className='px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/80 border border-border rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95'
+            title='Crear nuevo departamento con foto'
+          >
+            <Icons.add className='w-3.5 h-3.5 text-[#E63946]' />
+            <span>+ Categoría</span>
+          </button>
+
           {/* Botón de Vaciar Catálogo y Categorías con confirmación de 5s */}
           <CatalogResetDialog compact triggerButtonText='Vaciar Catálogo' />
 
@@ -429,6 +454,13 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
           </button>
         </div>
       </div>
+
+      {/* Modal interactivo de creación de categoría con preview en vivo */}
+      <CategoryFormModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        onSuccess={reloadCategories}
+      />
     </div>
   );
 }
