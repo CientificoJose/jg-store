@@ -14,6 +14,7 @@ import { CategoryShowcase } from './category-showcase';
 import { HorizontalProductRow } from './horizontal-product-row';
 import { ProductGrid } from './product-grid';
 import { CartDrawer } from './cart-drawer';
+import { OrderSuccessModal } from './order-success-modal';
 import { ProductQuickView } from './product-quick-view';
 import { StoreFooter } from './store-footer';
 import { INITIAL_PRODUCTS } from '@/constants/initial-catalog';
@@ -261,6 +262,9 @@ export function StoreFront() {
 
       {/* Drawer del Carrito */}
       <CartDrawer />
+
+      {/* Pantalla de Confirmación Post-Pedido (Éxito & Datos Bancarios 10% OFF) */}
+      <OrderSuccessModal />
 
       {/* Pie de Página */}
       <StoreFooter

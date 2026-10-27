@@ -23,6 +23,10 @@ export interface GeneralStoreConfig {
   socialInstagram: string;
   socialFacebook: string;
   socialTikTok: string;
+  bankName?: string;
+  bankAccountHolder?: string;
+  bankCbu?: string;
+  bankAlias?: string;
 }
 
 export interface LandingStoreConfig {
@@ -114,7 +118,11 @@ const DEFAULT_CONFIG: {
     schedule: 'Lunes a Sábado de 8:00 a 18:00 hs',
     socialInstagram: 'https://instagram.com/jgstore.oficial',
     socialFacebook: 'https://facebook.com/jgstore.argentina',
-    socialTikTok: 'https://tiktok.com/@jgstore.polirrubro'
+    socialTikTok: 'https://tiktok.com/@jgstore.polirrubro',
+    bankName: 'Banco Santander / Mercado Pago',
+    bankAccountHolder: 'JG Store Polirrubro',
+    bankCbu: '0720000000000000000000',
+    bankAlias: 'JG.STORE.PAGOS'
   },
   landing: {
     showCategoryCards: true,

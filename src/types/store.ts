@@ -82,6 +82,7 @@ export interface CustomerOrderInfo {
   postal_code?: string;
   province?: string;
   invoice_type?: 'B' | 'A'; // Factura B (Consumidor Final / Monotributo) o Factura A (Responsable Inscripto)
+  dni_cuit?: string; // DNI o CUIT del comprador
   notes?: string;
 }
 

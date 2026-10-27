@@ -247,6 +247,80 @@ export default function GeneralConfigPage() {
           </div>
         </div>
 
+        {/* Bloque 3.5: Datos Bancarios para Transferencia (10% OFF CBU / Alias) */}
+        <div className="p-5 rounded-2xl bg-card border border-[#D4A017]/30 shadow-xs space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#D4A017]/15 text-[#D4A017] flex items-center justify-center shrink-0 border border-[#D4A017]/25">
+              <Icons.creditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-foreground">Cuenta Bancaria para Transferencias (10% OFF)</h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  Visible en Pantalla de Éxito
+                </span>
+              </div>
+              <p className="text-xs text-[#6C757D] mt-0.5">
+                Estos datos se muestran al cliente al confirmar su pedido para que transfiera con el 10% de descuento y envíe el comprobante por WhatsApp.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                Entidad Bancaria / Billetera
+              </label>
+              <input
+                type="text"
+                value={formData.bankName || ''}
+                onChange={(e) => handleChange('bankName', e.target.value)}
+                placeholder="Banco Santander / Mercado Pago"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-medium focus:ring-2 focus:ring-[#D4A017]/20 focus:border-[#D4A017] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                Titular de la Cuenta
+              </label>
+              <input
+                type="text"
+                value={formData.bankAccountHolder || ''}
+                onChange={(e) => handleChange('bankAccountHolder', e.target.value)}
+                placeholder="JG Store Polirrubro S.R.L."
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-medium focus:ring-2 focus:ring-[#D4A017]/20 focus:border-[#D4A017] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                Alias de Transferencia
+              </label>
+              <input
+                type="text"
+                value={formData.bankAlias || ''}
+                onChange={(e) => handleChange('bankAlias', e.target.value.toUpperCase())}
+                placeholder="JG.STORE.PAGOS"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-mono font-bold tracking-wider text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-[#D4A017]/20 focus:border-[#D4A017] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                CBU / CVU (22 dígitos)
+              </label>
+              <input
+                type="text"
+                value={formData.bankCbu || ''}
+                onChange={(e) => handleChange('bankCbu', e.target.value)}
+                placeholder="0720000000000000000000"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-mono font-medium focus:ring-2 focus:ring-[#D4A017]/20 focus:border-[#D4A017] outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Bloque 4: Redes Sociales */}
         <div className="p-5 rounded-2xl bg-card border border-border shadow-xs space-y-4">
           <div className="flex items-start gap-3">

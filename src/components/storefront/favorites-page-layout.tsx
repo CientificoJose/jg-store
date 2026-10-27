@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { StoreHeader } from './store-header';
 import { FavoritesView } from './favorites-view';
 import { CartDrawer } from './cart-drawer';
+import { OrderSuccessModal } from './order-success-modal';
 import { StoreFooter } from './store-footer';
 
 export function FavoritesPageLayout() {
@@ -37,6 +38,7 @@ export function FavoritesPageLayout() {
         <FavoritesView />
       </main>
       <CartDrawer />
+      <OrderSuccessModal />
       <StoreFooter onSelectCategory={handleSelectCategory} />
     </div>
   );

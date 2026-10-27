@@ -32,6 +32,8 @@ import {
   IconDeviceLaptop,
   IconDots,
   IconDotsVertical,
+  IconPrinter,
+  IconReceipt,
   IconEdit,
   IconExternalLink,
   IconEyeOff,
@@ -204,6 +206,8 @@ export const Icons = {
 
   // Actions
   add: IconPlus,
+  printer: IconPrinter,
+  receipt: IconReceipt,
   edit: IconEdit,
   upload: IconUpload,
   share: IconShare,

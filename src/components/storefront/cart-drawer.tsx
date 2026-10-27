@@ -18,6 +18,7 @@ export function CartDrawer() {
     clearCart,
     customer,
     setCustomerInfo,
+    setCompletedOrder,
     getSummary
   } = useCartStore();
 
@@ -120,16 +121,31 @@ export function CartDrawer() {
       }
 
       // 2. Armar URL de WhatsApp incorporando el número de orden oficial
-      const whatsappUrl = buildWhatsAppUrl(items, customer, whatsappNumber, registeredOrderNumber);
+      const finalOrderNumber = registeredOrderNumber || `JG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const whatsappUrl = buildWhatsAppUrl(items, customer, whatsappNumber, finalOrderNumber);
 
-      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      // 3. Guardar orden completada para desplegar la pantalla de éxito con datos bancarios
+      setCompletedOrder({
+        orderNumber: finalOrderNumber,
+        items: [...items],
+        summary: { ...summary },
+        customer: { ...customer },
+        whatsappUrl,
+        createdAt: new Date().toISOString()
+      });
+
+      // Intentar abrir WhatsApp en nueva pestaña
+      try {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      } catch {
+        // En caso de que el navegador bloquee la pestaña, el modal de confirmación cuenta con el botón de respaldo
+      }
+
       toast.success(
-        registeredOrderNumber
-          ? `¡Pedido #${registeredOrderNumber} registrado! Abriendo WhatsApp...`
-          : 'Abriendo WhatsApp con el detalle de tu pedido...'
+        `¡Pedido #${finalOrderNumber} registrado con éxito!`
       );
 
-      // 3. Limpiar carrito y cerrar drawer tras confirmar cotización
+      // 4. Limpiar carrito y cerrar drawer tras confirmar cotización
       clearCart();
       setOpen(false);
     } catch {

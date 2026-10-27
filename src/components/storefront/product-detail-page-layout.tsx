@@ -6,6 +6,7 @@ import { StoreProduct } from '@/types/store';
 import { StoreHeader } from './store-header';
 import { ProductDetailView } from './product-detail-view';
 import { CartDrawer } from './cart-drawer';
+import { OrderSuccessModal } from './order-success-modal';
 import { StoreFooter } from './store-footer';
 
 interface ProductDetailPageLayoutProps {
@@ -46,6 +47,7 @@ export function ProductDetailPageLayout({
         <ProductDetailView product={product} relatedProducts={relatedProducts} />
       </main>
       <CartDrawer />
+      <OrderSuccessModal />
       <StoreFooter onSelectCategory={handleSelectCategory} />
     </div>
   );

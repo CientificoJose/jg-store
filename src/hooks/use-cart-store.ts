@@ -3,16 +3,28 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { StoreProduct, CartItem, CartSummary, CustomerOrderInfo } from '@/types/store';
 import { calculateCartSummary } from '@/lib/whatsapp';
 
+export interface CompletedOrderData {
+  orderNumber: string;
+  items: CartItem[];
+  summary: CartSummary;
+  customer: CustomerOrderInfo;
+  whatsappUrl: string;
+  createdAt: string;
+}
+
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
   wholesaleMode: boolean; // Si el cliente activó vista mayorista global
   customer: CustomerOrderInfo;
+  completedOrder: CompletedOrderData | null;
   
   // Acciones UI
   setOpen: (open: boolean) => void;
   toggleWholesaleMode: () => void;
   setCustomerInfo: (info: Partial<CustomerOrderInfo>) => void;
+  setCompletedOrder: (order: CompletedOrderData | null) => void;
+  clearCompletedOrder: () => void;
 
   // Acciones de Carrito
   addItem: (product: StoreProduct, qty?: number) => { success: boolean; message?: string };
@@ -65,6 +77,7 @@ export const useCartStore = create<CartStore>()(
         address: '',
         notes: ''
       },
+      completedOrder: null,
 
       setOpen: (open) => set({ isOpen: open }),
 
@@ -75,6 +88,9 @@ export const useCartStore = create<CartStore>()(
         set((state) => ({
           customer: { ...state.customer, ...info }
         })),
+
+      setCompletedOrder: (order) => set({ completedOrder: order }),
+      clearCompletedOrder: () => set({ completedOrder: null }),
 
       addItem: (product, qty = 1) => {
         const { items } = get();
@@ -160,7 +176,8 @@ export const useCartStore = create<CartStore>()(
       partialize: (state) => ({
         items: state.items,
         wholesaleMode: state.wholesaleMode,
-        customer: state.customer
+        customer: state.customer,
+        completedOrder: state.completedOrder
       })
     }
   )
