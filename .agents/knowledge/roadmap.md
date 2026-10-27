@@ -422,6 +422,15 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Selección Global Maestro (`isAllSelected`):** El checkbox del encabezado ahora conmuta la selección de la totalidad de productos del catálogo o filtro activo, informando en la barra flotante el total real y permitiendo deselección inmediata o selección manual por filas individuales.
   - **Actualización Masiva de Stock Robusta:** Sincronización de stock en lotes de 50 en Supabase PostgREST con validación de estado, soporte para modo global `selectAll: true` con filtros jerárquicos e invalidación de caché reactiva inmediata.
   - **Limpieza en Centro de Migración (`/dashboard/coronel`):** Eliminados los inputs redundantes de margen Detal/Mayorista en la publicación al catálogo web, ocultado el checkbox de "Descarga fotos en disco" (activo por defecto permanentemente) y removida la terminología "SQLite" en la interfaz para simplificar la experiencia de usuario.
+- [x] **Pantalla Modal de Confirmación Post-Pedido (Éxito & Datos Bancarios 10% OFF):**
+  - Componente `OrderSuccessModal` integrado en storefront (`/`), ficha de producto (`/producto/[id]`) y favoritos (`/favoritos`).
+  - Animación de éxito con ícono esmeralda, felicitación personalizada y código de orden `#JG-2026-XXXX` con botón de copiado en 1 clic.
+  - Botón de reintento/apertura directa de WhatsApp oficial para evitar fallos si el navegador bloquea la ventana emergente.
+  - Tarjeta de pago para Transferencia Bancaria (CBU / Alias) con cálculo dinámico del 10% de descuento extra y botones de copiado de CBU y Alias.
+  - Acordeón de resumen del pedido con desglose de productos, cantidades, precios, modalidad de entrega (retiro/envío) y tipo de factura (A/B).
+  - Botón de imprimir comprobante (`window.print()`).
+  - Configuración de datos bancarios (`bankName`, `bankAccountHolder`, `bankCbu`, `bankAlias`) editable desde el panel de control (`/dashboard/config/general`).
+  - Pruebas automatizadas en `src/tests/order-success.test.ts` pasando al 100%.
 
 ---
 
