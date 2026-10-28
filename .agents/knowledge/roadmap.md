@@ -427,5 +427,8 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Normalización Forzosa a HTTPS:** Se forzó `https://` mediante `rawSupabaseUrl.replace(/^http:\/\//i, 'https://')` en `store-service.ts`, `supabase-storage.ts`, `src/app/api/scraper/migrate/route.ts`, `src/app/api/catalog/reset/route.ts` y `src/features/orders/api/service.ts`, garantizando inserciones directas sin redirecciones.
   - **Esquema de Base de Datos (Columna `images`):** Se agregó la columna `images TEXT[] DEFAULT '{}'` en la tabla `public.products` y se recargó la caché de PostgREST (`NOTIFY pgrst, 'reload schema'`), eliminando el error `PGRST204 (Could not find the 'images' column)`.
   - **Diagnóstico y Logging Detallado:** Se implementó captura explícita de `lastError` (`postRes.json()` / `patchRes.json()`) para exponer los detalles exactos de cualquier fallo en la respuesta HTTP 500.
+- [x] **Corrección de Resiliencia en Vaciado de Catálogo (`/api/catalog/reset`):**
+  - **Resolución de Error 42P01 (relation "public.favorites" does not exist):** Al vaciar Supabase, el endpoint intentaba borrar de tablas inexistentes (`public.favorites` se gestiona en el cliente con Zustand/localStorage y `product_variants` está integrado en `products`), causando fallo inmediato de transacción.
+  - **Bloque DO Dinámico e Idempotente:** Se sustituyó la consulta rígida por un bloque `DO $purge$ ... END $purge$;` que valida la existencia de cada tabla en `information_schema.tables` antes de ejecutar `DELETE`, vaciando con seguridad en orden jerárquico (`products` ➔ `sub_subcategories` ➔ `subcategories` ➔ `categories`) y recargando la caché de PostgREST.
 
 

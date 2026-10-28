@@ -42,14 +42,30 @@ export async function POST(request: NextRequest) {
     // 1. Purgar base de datos web oficial en Supabase (PostgreSQL)
     if (clear_supabase) {
       const purgeSql = `
-        BEGIN;
-        DELETE FROM public.favorites;
-        DELETE FROM public.product_variants;
-        DELETE FROM public.products;
-        DELETE FROM public.sub_subcategories;
-        DELETE FROM public.subcategories;
-        DELETE FROM public.categories;
-        COMMIT;
+        DO $purge$
+        BEGIN
+          -- Eliminar tablas dependientes o auxiliares si existen
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'favorites') THEN
+            EXECUTE 'DELETE FROM public.favorites';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'product_variants') THEN
+            EXECUTE 'DELETE FROM public.product_variants';
+          END IF;
+
+          -- Eliminar catálogo en orden jerárquico de claves foráneas
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'products') THEN
+            EXECUTE 'DELETE FROM public.products';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'sub_subcategories') THEN
+            EXECUTE 'DELETE FROM public.sub_subcategories';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'subcategories') THEN
+            EXECUTE 'DELETE FROM public.subcategories';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'categories') THEN
+            EXECUTE 'DELETE FROM public.categories';
+          END IF;
+        END $purge$;
         NOTIFY pgrst, 'reload schema';
       `;
 

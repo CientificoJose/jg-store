@@ -372,3 +372,9 @@ graph TD
   - **Columna `images` en Base de Datos:** Se añadió `images TEXT[] DEFAULT '{}'` a `public.products` y se recargó la caché de PostgREST, eliminando el error `PGRST204`.
   - **Captura Detallada de Errores:** Se implementó `lastError` en el bucle de migración para reportar de inmediato cualquier error HTTP de PostgREST.
 
+### 34. 🟢 Resiliencia en Vaciado del Catálogo Supabase (`catalog-reset-resilience-fix`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Diagnóstico de Error 42P01:** Se identificó que `/api/catalog/reset` ejecutaba `DELETE FROM public.favorites;` y `DELETE FROM public.product_variants;`, tablas que no existen en la base de datos (los favoritos son locales vía Zustand/localStorage). Al estar dentro de una transacción `BEGIN...COMMIT`, PostgreSQL abortaba el vaciado completo.
+  - **Ejecución Dinámica Condicional:** Se implementó un bloque `DO $purge$ ... END $purge$;` que consulta `information_schema.tables` y solo emite `DELETE` sobre las tablas existentes en orden de claves foráneas (`products` ➔ `sub_subcategories` ➔ `subcategories` ➔ `categories`), garantizando un vaciado limpio y 100% libre de errores.
+
