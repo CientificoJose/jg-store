@@ -422,14 +422,16 @@ def actualizar_stock_productos(
     if not clean_codes:
         return {"updated": 0, "message": "Lista de códigos vacía"}
 
+    safe_stock = min(10, max(0, int(nuevo_stock)))
+
     with closing(sqlite3.connect(db_path)) as conn:
         cursor = conn.cursor()
         placeholders = ",".join("?" for _ in clean_codes)
         sql = f"UPDATE productos SET stock = ?, updated_at = ? WHERE codigo IN ({placeholders})"
-        cursor.execute(sql, [int(nuevo_stock), datetime.now().isoformat()] + clean_codes)
+        cursor.execute(sql, [safe_stock, datetime.now().isoformat()] + clean_codes)
         affected = cursor.rowcount
         conn.commit()
-        return {"updated": affected, "success": True, "stock": nuevo_stock}
+        return {"updated": affected, "success": True, "stock": safe_stock}
 
 def eliminar_productos_db(
     codigos: List[str],

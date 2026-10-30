@@ -564,7 +564,7 @@ def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None, excel_ma
             costo_cambio = (nuevo_costo > 0 and abs(nuevo_costo - costo_anterior) > 0.01)
 
             payload = {
-                "stock": 999,
+                "stock": 10,
                 "updated_at": now_iso
             }
 
@@ -628,7 +628,7 @@ def sync_supabase_stock_and_prices(scraped_products, sqlite_items=None, excel_ma
 
     dur = time.time() - t_start
     print(Fore.GREEN + f"⏱️ [CRONÓMETRO] Sincronización Supabase completada en {formatear_duracion(dur)}:" + Style.RESET_ALL)
-    print(f"  - {Fore.GREEN}{updated_activos}{Style.RESET_ALL} productos activos sincronizados (stock = 999).")
+    print(f"  - {Fore.GREEN}{updated_activos}{Style.RESET_ALL} productos activos sincronizados (stock = 10).")
     if barcodes_enriquecidos > 0:
         print(f"  - {Fore.CYAN}{barcodes_enriquecidos}{Style.RESET_ALL} productos enriquecidos con código de barras oficial EAN-13.")
     if precios_recalculados_web > 0:
@@ -668,7 +668,7 @@ def update_tiendanube_stock(scraped_products):
                     product_has_stock = True
                     continue
 
-                new_stock = 999999 if sku in scraped_codes else 0
+                new_stock = 10 if sku in scraped_codes else 0
                 if new_stock > 0:
                     product_has_stock = True
                     updates['infinito'] += 1

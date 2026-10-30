@@ -438,7 +438,7 @@ export async function POST(request: NextRequest) {
         barcode: p.codigo_barra || p.barcode || null,
         supplier_code: p.supplier_code || p.codigo || null,
         min_wholesale_qty: 6,
-        stock: Number(p.stock ?? 10),
+        stock: Math.min(10, Math.max(0, Number(p.stock ?? 10))),
         image_url: imageUrl,
         images: uploadedGallery.length > 0 ? uploadedGallery : [imageUrl],
         unit: 'unidad',
@@ -457,7 +457,7 @@ export async function POST(request: NextRequest) {
 
         if (price_strategy === 'stock_only') {
           patchBody = {
-            stock: Number(p.stock ?? 10),
+            stock: Math.min(10, Math.max(0, Number(p.stock ?? 10))),
             updated_at: new Date().toISOString()
           };
         } else if (price_strategy === 'only_new' || price_strategy === 'keep_prices') {

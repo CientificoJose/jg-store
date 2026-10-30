@@ -126,7 +126,7 @@ export async function createProduct(data: ProductMutationPayload) {
     retail_price: Number(data.retail_price ?? data.price ?? 0),
     wholesale_price: Number(data.wholesale_price ?? data.retail_price ?? data.price ?? 0),
     min_wholesale_qty: Number(data.min_wholesale_qty || 6),
-    stock: Number(data.stock || 0),
+    stock: Math.min(15, Math.max(0, Number(data.stock ?? 0))),
     unit: data.unit || 'unidad',
     image_url:
       data.photo_url ||
@@ -162,7 +162,7 @@ export async function updateProduct(id: string | number, data: ProductMutationPa
     retail_price: Number(data.retail_price ?? data.price ?? 0),
     wholesale_price: Number(data.wholesale_price ?? data.retail_price ?? data.price ?? 0),
     min_wholesale_qty: Number(data.min_wholesale_qty || 6),
-    stock: Number(data.stock || 0),
+    stock: Math.min(15, Math.max(0, Number(data.stock ?? 0))),
     unit: data.unit || 'unidad',
     image_url: data.photo_url
   });

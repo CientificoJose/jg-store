@@ -22,7 +22,7 @@ export function ProductTable() {
   // Estados para acciones masivas e inline
   const [isAllSelected, setIsAllSelected] = useState<boolean>(false);
   const [savingStockId, setSavingStockId] = useState<string | null>(null);
-  const [bulkStockVal, setBulkStockVal] = useState<number>(50);
+  const [bulkStockVal, setBulkStockVal] = useState<number>(10);
   const [bulkRetailMargin, setBulkRetailMargin] = useState<number>(40);
   const [bulkWholesaleMargin, setBulkWholesaleMargin] = useState<number>(18);
   const [isUpdatingBulkStock, setIsUpdatingBulkStock] = useState<boolean>(false);
@@ -119,6 +119,7 @@ export function ProductTable() {
     if (!hasSelection) return;
     setIsUpdatingBulkStock(true);
     try {
+      const safeStock = Math.min(15, Math.max(0, Number(bulkStockVal) || 0));
       const payload = isAllSelected
         ? {
             selectAll: true,
@@ -129,11 +130,11 @@ export function ProductTable() {
               search: params.name,
               stock_status: params.stock_status
             },
-            stock: Number(bulkStockVal)
+            stock: safeStock
           }
         : {
             ids: selectedIds,
-            stock: Number(bulkStockVal)
+            stock: safeStock
           };
 
       const res = await fetch('/api/products/stock', {
@@ -258,10 +259,14 @@ export function ProductTable() {
               <input
                 type='number'
                 min='0'
-                max='99999'
+                max='15'
                 value={bulkStockVal}
-                onChange={(e) => setBulkStockVal(Number(e.target.value))}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setBulkStockVal(isNaN(n) ? 0 : Math.min(15, Math.max(0, n)));
+                }}
                 className='w-14 bg-transparent text-foreground font-bold text-center outline-none text-xs'
+                title='Máximo 15'
               />
               <button
                 onClick={handleBulkStockUpdate}

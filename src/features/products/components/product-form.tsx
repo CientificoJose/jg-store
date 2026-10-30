@@ -311,12 +311,13 @@ export default function ProductForm({
                   name='stock'
                   children={(field) => (
                     <field.TextField
-                      label='Stock Físico en Depósito'
+                      label='Stock Físico en Depósito (Máx. 15)'
                       required
                       type='number'
                       min={0}
+                      max={15}
                       step={1}
-                      placeholder='50'
+                      placeholder='10'
                     />
                   )}
                 />

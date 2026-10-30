@@ -27,8 +27,12 @@ function InlineStockCell({
   }, [product.stock]);
 
   const handleBlur = () => {
-    if (val !== product.stock && onSave) {
-      onSave(product.id, val);
+    const clamped = Math.min(15, Math.max(0, Number(val) || 0));
+    if (clamped !== val) {
+      setVal(clamped);
+    }
+    if (clamped !== product.stock && onSave) {
+      onSave(product.id, clamped);
     }
   };
 
@@ -42,26 +46,29 @@ function InlineStockCell({
     <div className='flex items-center gap-1.5'>
       <span
         className={`w-2 h-2 rounded-full shrink-0 ${
-          val <= 0 ? 'bg-[#6C757D]' : val <= 10 ? 'bg-amber-500' : 'bg-emerald-500'
+          val <= 0 ? 'bg-[#6C757D]' : val <= 5 ? 'bg-amber-500' : 'bg-emerald-500'
         }`}
       />
       <input
         type='number'
         min='0'
-        max='99999'
+        max='15'
         value={val}
-        onChange={(e) => setVal(Number(e.target.value))}
+        onChange={(e) => {
+          const num = Number(e.target.value);
+          setVal(isNaN(num) ? 0 : Math.min(15, Math.max(0, num)));
+        }}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={cn(
           'w-16 px-1.5 py-0.5 text-center font-bold text-xs rounded border transition-all outline-none',
           val <= 0
             ? 'bg-red-500/10 text-red-500 border-red-500/30'
-            : val <= 10
+            : val <= 5
               ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
               : 'bg-background text-foreground border-border focus:border-[#E63946]'
         )}
-        title='Presiona Enter o haz clic fuera para guardar stock en Supabase'
+        title='Máximo 15 unidades. Presiona Enter o haz clic fuera para guardar stock en Supabase'
       />
       {isSaving && <Icons.spinner className='w-3.5 h-3.5 animate-spin text-[#E63946] shrink-0' />}
     </div>

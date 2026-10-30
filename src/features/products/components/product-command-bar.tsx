@@ -23,7 +23,9 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
   const [categoriesList, setCategoriesList] = useState<ProductCategory[]>(PRODUCT_CATEGORIES);
   const [margenDetal, setMargenDetal] = useState<number>(40);
   const [margenMayor, setMargenMayor] = useState<number>(18);
+  const [globalStock, setGlobalStock] = useState<number>(10);
   const [isApplyingMargins, setIsApplyingMargins] = useState<boolean>(false);
+  const [isApplyingStock, setIsApplyingStock] = useState<boolean>(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
 
   const reloadCategories = () => {
@@ -244,6 +246,42 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
     }
   };
 
+  // Fijar stock masivo a todos los productos del ámbito o catálogo
+  const handleApplyGlobalStock = async () => {
+    const safeStock = Math.min(15, Math.max(0, Number(globalStock)));
+    setIsApplyingStock(true);
+    try {
+      const res = await fetch('/api/products/stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectAll: true,
+          stock: safeStock,
+          filters: {
+            category: params.category,
+            subcategory: params.subcategory,
+            sub_subcategory: params.sub_subcategory,
+            search: params.name,
+            stock_status: params.stock_status
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al actualizar stock');
+
+      toast.success(
+        `¡Stock fijado a ${safeStock} unidades en ${activeScopeInfo.label}! (${data.updated_count ?? 0} productos modificados).`
+      );
+
+      await queryClient.invalidateQueries({ queryKey: productKeys.all });
+    } catch (err: any) {
+      toast.error(err.message || 'Error al actualizar stock masivo');
+    } finally {
+      setIsApplyingStock(false);
+    }
+  };
+
   const hasActiveFilters = Boolean(
     params.name ||
     params.category ||
@@ -402,6 +440,39 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
               className='w-12 bg-transparent text-foreground text-xs font-bold text-center outline-none'
             />
             <span className='text-muted-foreground font-semibold text-[11px]'>%</span>
+          </div>
+
+          {/* Fijar Stock Masivo (Máx. 15) */}
+          <div className='flex items-center gap-1.5 bg-background border border-emerald-500/30 px-2.5 py-1.5 rounded-lg shadow-2xs'>
+            <span className='text-muted-foreground font-medium text-[11px] whitespace-nowrap flex items-center gap-1'>
+              <Icons.box className='w-3.5 h-3.5 text-emerald-500' />
+              Stock:
+            </span>
+            <input
+              type='number'
+              min='0'
+              max='15'
+              value={globalStock}
+              onChange={(e) => setGlobalStock(Math.min(15, Math.max(0, Number(e.target.value))))}
+              disabled={isApplyingStock}
+              className='w-9 bg-transparent text-foreground text-xs font-bold text-center outline-none border-b border-muted-foreground/30 focus:border-emerald-500'
+              title='Ingresa el stock deseado (0 a 15)'
+            />
+            <span className='text-muted-foreground font-semibold text-[10px]'>u.</span>
+            <button
+              type='button'
+              onClick={handleApplyGlobalStock}
+              disabled={isApplyingStock}
+              className='px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1 shadow-xs active:scale-95 ml-0.5'
+              title={`Fijar stock en ${globalStock} a todos los productos de ${activeScopeInfo.label}`}
+            >
+              {isApplyingStock ? (
+                <Icons.spinner className='w-3 h-3 animate-spin' />
+              ) : (
+                <Icons.check className='w-3 h-3' />
+              )}
+              <span>Fijar a Todos</span>
+            </button>
           </div>
         </div>
 

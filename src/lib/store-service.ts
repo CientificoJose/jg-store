@@ -269,12 +269,15 @@ export async function updateProductStock(
   productId: string,
   newStock: number
 ): Promise<{ success: boolean; stock: number }> {
+  // Limitar stock al rango válido (máximo 15 según regla comercial)
+  const safeStock = Math.min(15, Math.max(0, Number(newStock)));
+
   // 1. Actualizar catálogo local
   const itemIndex = localCatalog.findIndex((p) => p.id === productId);
   if (itemIndex >= 0) {
     localCatalog[itemIndex] = {
       ...localCatalog[itemIndex],
-      stock: Math.max(0, newStock)
+      stock: safeStock
     };
   }
 
@@ -289,14 +292,14 @@ export async function updateProductStock(
           'Content-Type': 'application/json',
           Prefer: 'return=minimal'
         },
-        body: JSON.stringify({ stock: Math.max(0, newStock) })
+        body: JSON.stringify({ stock: safeStock })
       });
     } catch {
       // Silencioso si no está la tabla creada
     }
   }
 
-  return { success: true, stock: Math.max(0, newStock) };
+  return { success: true, stock: safeStock };
 }
 
 export async function createStoreProduct(
@@ -305,7 +308,7 @@ export async function createStoreProduct(
   const newProduct: StoreProduct = {
     ...data,
     id: data.id || `prod-${Date.now()}`,
-    stock: Number(data.stock ?? 0),
+    stock: Math.min(15, Math.max(0, Number(data.stock ?? 0))),
     retail_price: Number(data.retail_price ?? 0),
     wholesale_price: Number(data.wholesale_price ?? 0),
     min_wholesale_qty: Number(data.min_wholesale_qty ?? 6),
@@ -345,10 +348,15 @@ export async function updateStoreProduct(
   const index = localCatalog.findIndex((p) => p.id === id || p.sku === id);
   if (index === -1) return null;
 
+  const safeStock =
+    data.stock !== undefined
+      ? Math.min(15, Math.max(0, Number(data.stock)))
+      : localCatalog[index].stock;
+
   localCatalog[index] = {
     ...localCatalog[index],
     ...data,
-    stock: data.stock !== undefined ? Number(data.stock) : localCatalog[index].stock,
+    stock: safeStock,
     retail_price:
       data.retail_price !== undefined
         ? Number(data.retail_price)
@@ -366,6 +374,10 @@ export async function updateStoreProduct(
   if (SUPABASE_URL && (SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY)) {
     const authKey = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
     try {
+      const patchData = {
+        ...data,
+        ...(data.stock !== undefined && { stock: safeStock })
+      };
       await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
         method: 'PATCH',
         headers: {
@@ -374,7 +386,7 @@ export async function updateStoreProduct(
           'Content-Type': 'application/json',
           Prefer: 'return=minimal'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(patchData)
       });
     } catch {
       // Silencioso
@@ -433,10 +445,10 @@ export async function updateStoreProductsStock(
 
   if (Array.isArray(target)) {
     ids = target;
-    stock = Number(stockArg || 0);
+    stock = Math.min(15, Math.max(0, Number(stockArg || 0)));
   } else if (typeof target === 'object' && target !== null) {
     ids = target.ids || [];
-    stock = Number(target.stock || 0);
+    stock = Math.min(15, Math.max(0, Number(target.stock || 0)));
     selectAll = Boolean(target.selectAll);
     filters = target.filters;
   }

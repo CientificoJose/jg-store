@@ -9,7 +9,7 @@ export const productSchema = z.object({
   retail_price: z.number().min(0.01, 'El precio al detal debe ser mayor a 0'),
   wholesale_price: z.number().min(0.01, 'El precio mayorista debe ser mayor a 0'),
   min_wholesale_qty: z.number().min(1, 'El mínimo mayorista debe ser al menos 1'),
-  stock: z.number().min(0, 'El stock no puede ser negativo'),
+  stock: z.number().min(0, 'El stock no puede ser negativo').max(15, 'El stock no puede superar 15 unidades'),
   unit: z.string().min(1, 'Especifica la unidad (unidad, docena, pack, bulto, kilo)'),
   photo_url: z.string().min(1, 'Ingresa la URL de la imagen del producto'),
   description: z.string().min(5, 'La descripción debe tener al menos 5 caracteres')

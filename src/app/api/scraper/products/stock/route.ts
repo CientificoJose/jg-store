@@ -26,7 +26,8 @@ function getPythonBin(baseDir: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { codigos, stock = 1 } = body;
+    const { codigos, stock = 10 } = body;
+    const safeStock = Math.min(10, Math.max(0, Number(stock)));
 
     if (!codigos || !Array.isArray(codigos) || codigos.length === 0) {
       return Response.json({ error: 'Lista de códigos requerida' }, { status: 400 });
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${SCRAPER_AUTH_TOKEN}`
           },
-          body: JSON.stringify({ codigos, stock: Number(stock) })
+          body: JSON.stringify({ codigos, stock: safeStock })
         });
 
         if (res.ok) {
@@ -63,7 +64,7 @@ import sys, json
 from app.core.db import actualizar_stock_productos
 res = actualizar_stock_productos(
     codigos=${JSON.stringify(codigos)},
-    nuevo_stock=${Number(stock)}
+    nuevo_stock=${safeStock}
 )
 print(json.dumps(res))
 `;
