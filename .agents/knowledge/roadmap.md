@@ -439,11 +439,21 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Acceso Discreto en Footer:** Incorporado un enlace sutil y casi invisible en el pie de página junto al copyright para facilitar el acceso rápido del dueño de la tienda desde cualquier dispositivo.
   - **Pruebas Automatizadas:** 5 pruebas unitarias en `src/tests/admin-auth.test.ts` pasando al 100%.
 
----
+- [x] **Reparación de Infraestructura VPS, Recuperación de Supabase y Solución noVNC / Dokploy:**
+  - **noVNC sin Desconexiones en `/dashboard/coronel`:** Solucionado el bloqueo de WebSockets por cookies de terceros e iframe (CHIPS) codificando el token de sesión dentro del parámetro `path` de la URL (`websockify?token=...`) y añadiendo validación de `$http_origin` en `scraping-coronel/nginx.conf`.
+  - **Rescate de PostgreSQL Supabase tras Reversión del VPS:**
+    - Corregidos permisos de archivos restaurados como `root` a `postgres:postgres` (`100:101`).
+    - Resueltos fallos de checkpoint y falta de segmentos `pg_subtrans` mediante placeholder `dd` y alineación LSN vía `pg_resetwal -f -x 1162500`.
+    - Eliminadas 37 relaciones huérfanas en `pg_class` y `pg_attribute` de esquemas perdidos, seguido de `VACUUM FULL` y `reindexdb` completo con 0 errores.
+    - Ejecutadas todas las migraciones pendientes: jerarquía de 3 niveles, categorías recursivas, costos, márgenes duales y tablas de órdenes.
+  - **Redespliegue Automatizado con Dokploy MCP:** Despliegue de los nuevos contenedores de `cutimage-jgstore-shop-yogyps` (JG Store Shop) y `coronel-scraper-6qhe5i` (Scraper & noVNC) directamente a través de las herramientas MCP de Dokploy y convergencia en Swarm.
+- [x] **Solución a Inserción y Migración de Productos Coronel hacia Supabase (`/api/scraper/migrate`):**
+  - **Identificación de Causa Raíz HTTP 308 (Stripping de Cabeceras):** Se detectó que la URL de Supabase configurada con `http://` provocaba una redirección `308 Permanent Redirect` en Traefik hacia `https://`. En Node.js `fetch`, cualquier redirección de protocolo remueve automáticamente las cabeceras `Authorization` y `apikey`, degradando la petición de `service_role` a `anon` y causando que PostgREST rechazara las inserciones con error `HTTP 401 42501 (new row violates row-level security policy for table "products")`.
+  - **Normalización Forzosa a HTTPS:** Se forzó `https://` mediante `rawSupabaseUrl.replace(/^http:\/\//i, 'https://')` en `store-service.ts`, `supabase-storage.ts`, `src/app/api/scraper/migrate/route.ts`, `src/app/api/catalog/reset/route.ts` y `src/features/orders/api/service.ts`, garantizando inserciones directas sin redirecciones.
+  - **Esquema de Base de Datos (Columna `images`):** Se agregó la columna `images TEXT[] DEFAULT '{}'` en la tabla `public.products` y se recargó la caché de PostgREST (`NOTIFY pgrst, 'reload schema'`), eliminando el error `PGRST204 (Could not find the 'images' column)`.
+  - **Diagnóstico y Logging Detallado:** Se implementó captura explícita de `lastError` (`postRes.json()` / `patchRes.json()`) para exponer los detalles exactos de cualquier fallo en la respuesta HTTP 500.
+- [x] **Corrección de Resiliencia en Vaciado de Catálogo (`/api/catalog/reset`):**
+  - **Resolución de Error 42P01 (relation "public.favorites" does not exist):** Al vaciar Supabase, el endpoint intentaba borrar de tablas inexistentes (`public.favorites` se gestiona en el cliente con Zustand/localStorage y `product_variants` está integrado en `products`), causando fallo inmediato de transacción.
+  - **Bloque DO Dinámico e Idempotente:** Se sustituyó la consulta rígida por un bloque `DO $purge$ ... END $purge$;` que valida la existencia de cada tabla en `information_schema.tables` antes de ejecutar `DELETE`, vaciando con seguridad en orden jerárquico (`products` ➔ `sub_subcategories` ➔ `subcategories` ➔ `categories`) y recargando la caché de PostgREST.
 
-### ⚪ Fase 7: Expansión & Despliegue en Producción (Pospuesto intencionalmente)
-- [x] **Optimización de Build en Docker para Dokploy:** Fijación de Bun a `1.3.13` y remoción de `--frozen-lockfile` en `Dockerfile` y `Dockerfile.bun` para evitar fallos de parseo en cosmiconfig.
-- [ ] Conexión de producción con Clerk cuando el usuario proporcione credenciales activas.
-- [ ] Pasarela de pago complementaria a WhatsApp (opcional).
-- [ ] Despliegue en producción con SSL/Traefik en Dokploy.
 

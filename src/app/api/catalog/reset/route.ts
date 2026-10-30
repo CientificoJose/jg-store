@@ -8,9 +8,14 @@ const execAsync = promisify(exec);
 
 const SCRAPER_AUTH_TOKEN = process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
 
-const BASE_URL =
+const rawBaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  (process.env.SUPABASE_HOST ? `http://${process.env.SUPABASE_HOST}` : 'http://jg-store-bd.press-cloud.com');
+  process.env.SUPABASE_PUBLIC_URL ||
+  (process.env.SUPABASE_HOST
+    ? `https://${process.env.SUPABASE_HOST}`
+    : 'https://jg-store-bd.press-cloud.com');
+
+const BASE_URL = rawBaseUrl.replace(/^http:\/\//i, 'https://');
 
 const SERVICE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -37,14 +42,30 @@ export async function POST(request: NextRequest) {
     // 1. Purgar base de datos web oficial en Supabase (PostgreSQL)
     if (clear_supabase) {
       const purgeSql = `
-        BEGIN;
-        DELETE FROM public.favorites;
-        DELETE FROM public.product_variants;
-        DELETE FROM public.products;
-        DELETE FROM public.sub_subcategories;
-        DELETE FROM public.subcategories;
-        DELETE FROM public.categories;
-        COMMIT;
+        DO $purge$
+        BEGIN
+          -- Eliminar tablas dependientes o auxiliares si existen
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'favorites') THEN
+            EXECUTE 'DELETE FROM public.favorites';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'product_variants') THEN
+            EXECUTE 'DELETE FROM public.product_variants';
+          END IF;
+
+          -- Eliminar catálogo en orden jerárquico de claves foráneas
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'products') THEN
+            EXECUTE 'DELETE FROM public.products';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'sub_subcategories') THEN
+            EXECUTE 'DELETE FROM public.sub_subcategories';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'subcategories') THEN
+            EXECUTE 'DELETE FROM public.subcategories';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'categories') THEN
+            EXECUTE 'DELETE FROM public.categories';
+          END IF;
+        END $purge$;
         NOTIFY pgrst, 'reload schema';
       `;
 

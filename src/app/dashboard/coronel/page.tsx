@@ -60,7 +60,9 @@ export default function CoronelScraperPage() {
   // Estados de Migración al Catálogo Web (Supabase Dokploy)
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationCategory, setMigrationCategory] = useState<string>('all');
-  const [priceStrategy, setPriceStrategy] = useState<'only_new' | 'overwrite_all' | 'stock_only'>('only_new');
+  const [priceStrategy, setPriceStrategy] = useState<'only_new' | 'overwrite_all' | 'stock_only'>(
+    'only_new'
+  );
   const [webProductCount, setWebProductCount] = useState<number>(0);
 
   const [lastMigrationInfo, setLastMigrationInfo] = useState<{
@@ -450,19 +452,16 @@ export default function CoronelScraperPage() {
   };
 
   // URLs con autenticación de tokens y auto-escalado nativo
-  const vncIframeUrl = `${vncHost.replace(
-    /\/$/,
-    ''
-  )}/vnc/vnc_lite.html?path=websockify&autoconnect=true&scale=true&resize=scale&token=${encodeURIComponent(
-    vncToken
-  )}&reconnect=true`;
+  // Pasamos el token dentro del path de websocket para evitar que bloqueos de cookies de terceros en iframes desconecten noVNC
+  const vncWsPath = `websockify?token=${encodeURIComponent(vncToken)}`;
 
-  const vncExternalUrl = `${vncHost.replace(
-    /\/$/,
-    ''
-  )}/vnc/vnc.html?path=websockify&autoconnect=true&scale=true&resize=scale&token=${encodeURIComponent(
-    vncToken
-  )}&reconnect=true`;
+  const vncIframeUrl = `${vncHost.replace(/\/$/, '')}/vnc/vnc_lite.html?path=${encodeURIComponent(
+    vncWsPath
+  )}&autoconnect=true&scale=true&resize=scale&token=${encodeURIComponent(vncToken)}&reconnect=true`;
+
+  const vncExternalUrl = `${vncHost.replace(/\/$/, '')}/vnc/vnc.html?path=${encodeURIComponent(
+    vncWsPath
+  )}&autoconnect=true&scale=true&resize=scale&token=${encodeURIComponent(vncToken)}&reconnect=true`;
 
   // Estilos de dimensionamiento para el visor escalable (base 1280x800, proporción 16:10)
   const getViewportStyle = () => {
@@ -607,7 +606,8 @@ export default function CoronelScraperPage() {
                   <span>Modo: Extracción de Catálogo</span>
                 </span>
                 <span className='text-xs text-muted-foreground hidden sm:inline'>
-                  ⚡ Extrae productos de la categoría seleccionada en Chrome con fotos y margen comercial
+                  ⚡ Extrae productos de la categoría seleccionada en Chrome con fotos y margen
+                  comercial
                 </span>
               </div>
               <div className='text-[11px] text-muted-foreground font-medium'>
@@ -691,702 +691,709 @@ export default function CoronelScraperPage() {
             </div>
           </div>
 
-      {/* MODULO PRINCIPAL: VISOR REMOTO COMPLETO (ANCHO TOTAL DEL BODY) */}
-      <div
-        className={`w-full transition-all duration-200 ${
-          isFullscreen
-            ? 'fixed inset-0 z-50 bg-[#070a12]/98 p-4 sm:p-6 flex flex-col backdrop-blur-md overflow-hidden'
-            : 'space-y-3'
-        }`}
-      >
-        {/* Barra de Herramientas del Visor: Modo, Zoom, Escala y Acciones */}
-        <div className='flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-xl shadow-xs'>
-          {/* Izquierda: Selector de Modo noVNC / Captura */}
-          <div className='flex items-center gap-3'>
-            <div className='flex items-center gap-2 font-bold text-foreground text-sm'>
-              <Icons.laptop className='w-4 h-4 text-[#E63946]' />
-              <span className='hidden sm:inline'>Navegador Remoto Chrome</span>
-            </div>
+          {/* MODULO PRINCIPAL: VISOR REMOTO COMPLETO (ANCHO TOTAL DEL BODY) */}
+          <div
+            className={`w-full transition-all duration-200 ${
+              isFullscreen
+                ? 'fixed inset-0 z-50 bg-[#070a12]/98 p-4 sm:p-6 flex flex-col backdrop-blur-md overflow-hidden'
+                : 'space-y-3'
+            }`}
+          >
+            {/* Barra de Herramientas del Visor: Modo, Zoom, Escala y Acciones */}
+            <div className='flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-2.5 rounded-xl shadow-xs'>
+              {/* Izquierda: Selector de Modo noVNC / Captura */}
+              <div className='flex items-center gap-3'>
+                <div className='flex items-center gap-2 font-bold text-foreground text-sm'>
+                  <Icons.laptop className='w-4 h-4 text-[#E63946]' />
+                  <span className='hidden sm:inline'>Navegador Remoto Chrome</span>
+                </div>
 
-            <div className='flex items-center bg-muted/60 p-0.5 rounded-lg border border-border text-xs font-medium'>
-              <button
-                onClick={() => setViewMode('vnc')}
-                className={`px-2.5 py-1 rounded-md transition-all ${
-                  viewMode === 'vnc'
-                    ? 'bg-background text-foreground shadow-xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                noVNC Interactivo
-              </button>
-              <button
-                onClick={() => setViewMode('image')}
-                className={`px-2.5 py-1 rounded-md transition-all ${
-                  viewMode === 'image'
-                    ? 'bg-background text-foreground shadow-xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Captura
-              </button>
-            </div>
-          </div>
+                <div className='flex items-center bg-muted/60 p-0.5 rounded-lg border border-border text-xs font-medium'>
+                  <button
+                    onClick={() => setViewMode('vnc')}
+                    className={`px-2.5 py-1 rounded-md transition-all ${
+                      viewMode === 'vnc'
+                        ? 'bg-background text-foreground shadow-xs font-bold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    noVNC Interactivo
+                  </button>
+                  <button
+                    onClick={() => setViewMode('image')}
+                    className={`px-2.5 py-1 rounded-md transition-all ${
+                      viewMode === 'image'
+                        ? 'bg-background text-foreground shadow-xs font-bold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Captura
+                  </button>
+                </div>
+              </div>
 
-          {/* Centro: Controles de Zoom & Escala */}
-          <div className='flex items-center gap-2 bg-muted/40 px-2 py-1 rounded-lg border border-border'>
-            <span className='text-[11px] text-muted-foreground font-semibold hidden md:inline'>
-              Escala:
-            </span>
+              {/* Centro: Controles de Zoom & Escala */}
+              <div className='flex items-center gap-2 bg-muted/40 px-2 py-1 rounded-lg border border-border'>
+                <span className='text-[11px] text-muted-foreground font-semibold hidden md:inline'>
+                  Escala:
+                </span>
 
-            {/* Presets de Zoom */}
-            <div className='flex items-center gap-1 text-xs'>
-              <button
-                onClick={handleSetFit}
-                title='Ajustar automáticamente al contenedor'
-                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
-                  isFit
-                    ? 'bg-[#E63946] text-white shadow-xs'
-                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
-                }`}
-              >
-                Fit
-              </button>
-              <button
-                onClick={() => handleSetZoom(50)}
-                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
-                  !isFit && zoomLevel === 50
-                    ? 'bg-[#E63946] text-white shadow-xs'
-                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
-                }`}
-              >
-                50%
-              </button>
-              <button
-                onClick={() => handleSetZoom(75)}
-                title='Resolución recomendada para vista completa'
-                className={`px-2.5 py-0.5 rounded transition-all font-bold text-[11px] flex items-center gap-1 ${
-                  !isFit && zoomLevel === 75
-                    ? 'bg-[#E63946] text-white shadow-xs ring-1 ring-[#E63946]'
-                    : 'bg-background/80 text-foreground hover:text-white hover:bg-[#E63946]/80 border border-border/50'
-                }`}
-              >
-                <span>75%</span>
-                <span className='text-[9px] opacity-80'>(Ideal)</span>
-              </button>
-              <button
-                onClick={() => handleSetZoom(100)}
-                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
-                  !isFit && zoomLevel === 100
-                    ? 'bg-[#E63946] text-white shadow-xs'
-                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
-                }`}
-              >
-                100%
-              </button>
-              <button
-                onClick={() => handleSetZoom(125)}
-                className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] hidden sm:inline ${
-                  !isFit && zoomLevel === 125
-                    ? 'bg-[#E63946] text-white shadow-xs'
-                    : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
-                }`}
-              >
-                125%
-              </button>
-            </div>
+                {/* Presets de Zoom */}
+                <div className='flex items-center gap-1 text-xs'>
+                  <button
+                    onClick={handleSetFit}
+                    title='Ajustar automáticamente al contenedor'
+                    className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
+                      isFit
+                        ? 'bg-[#E63946] text-white shadow-xs'
+                        : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    Fit
+                  </button>
+                  <button
+                    onClick={() => handleSetZoom(50)}
+                    className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
+                      !isFit && zoomLevel === 50
+                        ? 'bg-[#E63946] text-white shadow-xs'
+                        : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    50%
+                  </button>
+                  <button
+                    onClick={() => handleSetZoom(75)}
+                    title='Resolución recomendada para vista completa'
+                    className={`px-2.5 py-0.5 rounded transition-all font-bold text-[11px] flex items-center gap-1 ${
+                      !isFit && zoomLevel === 75
+                        ? 'bg-[#E63946] text-white shadow-xs ring-1 ring-[#E63946]'
+                        : 'bg-background/80 text-foreground hover:text-white hover:bg-[#E63946]/80 border border-border/50'
+                    }`}
+                  >
+                    <span>75%</span>
+                    <span className='text-[9px] opacity-80'>(Ideal)</span>
+                  </button>
+                  <button
+                    onClick={() => handleSetZoom(100)}
+                    className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] ${
+                      !isFit && zoomLevel === 100
+                        ? 'bg-[#E63946] text-white shadow-xs'
+                        : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    100%
+                  </button>
+                  <button
+                    onClick={() => handleSetZoom(125)}
+                    className={`px-2 py-0.5 rounded transition-all font-semibold text-[11px] hidden sm:inline ${
+                      !isFit && zoomLevel === 125
+                        ? 'bg-[#E63946] text-white shadow-xs'
+                        : 'bg-background/80 text-muted-foreground hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    125%
+                  </button>
+                </div>
 
-            {/* Separador */}
-            <span className='w-px h-4 bg-border mx-0.5' />
+                {/* Separador */}
+                <span className='w-px h-4 bg-border mx-0.5' />
 
-            {/* Botones +/- para zoom fino */}
-            <div className='flex items-center gap-1'>
-              <button
-                onClick={handleZoomOut}
-                title='Reducir zoom (-10%)'
-                className='p-1 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors'
-              >
-                <Icons.zoomOut className='w-3.5 h-3.5' />
-              </button>
-              <span className='text-[11px] font-mono font-bold text-foreground w-10 text-center'>
-                {isFit ? 'Fit' : `${zoomLevel}%`}
-              </span>
-              <button
-                onClick={handleZoomIn}
-                title='Aumentar zoom (+10%)'
-                className='p-1 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors'
-              >
-                <Icons.zoomIn className='w-3.5 h-3.5' />
-              </button>
-            </div>
-          </div>
+                {/* Botones +/- para zoom fino */}
+                <div className='flex items-center gap-1'>
+                  <button
+                    onClick={handleZoomOut}
+                    title='Reducir zoom (-10%)'
+                    className='p-1 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors'
+                  >
+                    <Icons.zoomOut className='w-3.5 h-3.5' />
+                  </button>
+                  <span className='text-[11px] font-mono font-bold text-foreground w-10 text-center'>
+                    {isFit ? 'Fit' : `${zoomLevel}%`}
+                  </span>
+                  <button
+                    onClick={handleZoomIn}
+                    title='Aumentar zoom (+10%)'
+                    className='p-1 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors'
+                  >
+                    <Icons.zoomIn className='w-3.5 h-3.5' />
+                  </button>
+                </div>
+              </div>
 
-          {/* Derecha: Botones de Acción (Reconectar, Pantalla Completa, Popout, Config) */}
-          <div className='flex items-center gap-1.5'>
-            {viewMode === 'vnc' && (
-              <>
+              {/* Derecha: Botones de Acción (Reconectar, Pantalla Completa, Popout, Config) */}
+              <div className='flex items-center gap-1.5'>
+                {viewMode === 'vnc' && (
+                  <>
+                    <button
+                      onClick={() => setVncKey(Date.now())}
+                      title='Reconectar noVNC'
+                      className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+                    >
+                      <Icons.refresh className='w-4 h-4' />
+                    </button>
+                    <a
+                      href={vncExternalUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      title='Abrir noVNC en pestaña independiente'
+                      className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+                    >
+                      <Icons.externalLink className='w-4 h-4' />
+                    </a>
+                  </>
+                )}
+
+                {viewMode === 'image' && (
+                  <button
+                    onClick={() => setPreviewTimestamp(Date.now())}
+                    title='Refrescar captura'
+                    className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+                  >
+                    <Icons.refresh className='w-4 h-4' />
+                  </button>
+                )}
+
+                {/* Alternar Pantalla Completa */}
                 <button
-                  onClick={() => setVncKey(Date.now())}
-                  title='Reconectar noVNC'
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
                   className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
                 >
-                  <Icons.refresh className='w-4 h-4' />
+                  {isFullscreen ? (
+                    <Icons.minimize className='w-4 h-4 text-[#E63946]' />
+                  ) : (
+                    <Icons.maximize className='w-4 h-4' />
+                  )}
                 </button>
-                <a
-                  href={vncExternalUrl}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  title='Abrir noVNC en pestaña independiente'
-                  className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
+
+                <button
+                  onClick={() => setShowVncConfig(!showVncConfig)}
+                  title='Seguridad y Configuración de Conexión'
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    showVncConfig
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
                 >
-                  <Icons.externalLink className='w-4 h-4' />
-                </a>
-              </>
+                  <Icons.settings className='w-4 h-4' />
+                </button>
+              </div>
+            </div>
+
+            {/* Panel de Configuración de Seguridad y Host (Desplegable) */}
+            {showVncConfig && (
+              <div className='p-4 bg-card border border-border rounded-xl text-xs space-y-3 animate-fadeIn shadow-sm'>
+                <div className='flex items-center justify-between border-b border-border pb-2'>
+                  <div className='flex items-center gap-2'>
+                    <Icons.lock className='w-4 h-4 text-emerald-500' />
+                    <span className='font-bold text-foreground'>
+                      Seguridad y Conexión del Scraper Remoto (Dokploy)
+                    </span>
+                  </div>
+                  <span className='text-[10px] text-muted-foreground font-mono'>
+                    Token & VNC Password Protegidos
+                  </span>
+                </div>
+
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+                  <div>
+                    <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
+                      Host Dokploy:
+                    </label>
+                    <input
+                      type='text'
+                      value={vncHost}
+                      onChange={(e) => {
+                        setVncHost(e.target.value);
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('jg_scraper_vnc_host', e.target.value);
+                        }
+                      }}
+                      placeholder='https://coronel.press-cloud.com'
+                      className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
+                    />
+                  </div>
+
+                  <div>
+                    <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
+                      Token de Sesión / Auth:
+                    </label>
+                    <input
+                      type='password'
+                      value={vncToken}
+                      onChange={(e) => {
+                        setVncToken(e.target.value);
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('jg_scraper_token', e.target.value);
+                        }
+                      }}
+                      className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
+                    />
+                  </div>
+
+                  <div>
+                    <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
+                      Contraseña VNC (x11vnc):
+                    </label>
+                    <input
+                      type='password'
+                      value={vncPassword}
+                      onChange={(e) => {
+                        setVncPassword(e.target.value);
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('jg_scraper_vnc_password', e.target.value);
+                        }
+                      }}
+                      className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
+                    />
+                  </div>
+                </div>
+
+                <div className='flex items-center justify-between pt-1'>
+                  <p className='text-[11px] text-muted-foreground'>
+                    Ruta protegida por Nginx y FastAPI con token bearer contra accesos públicos no
+                    autorizados.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setVncKey(Date.now());
+                      toast.success('Configuración aplicada y sesión VNC refrescada');
+                    }}
+                    className='px-3 py-1 bg-[#E63946] text-white rounded-lg font-bold text-xs hover:bg-[#c92a37] transition-colors'
+                  >
+                    Aplicar y Reconectar
+                  </button>
+                </div>
+              </div>
             )}
 
-            {viewMode === 'image' && (
-              <button
-                onClick={() => setPreviewTimestamp(Date.now())}
-                title='Refrescar captura'
-                className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
-              >
-                <Icons.refresh className='w-4 h-4' />
-              </button>
-            )}
-
-            {/* Alternar Pantalla Completa */}
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-              className='p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
-            >
-              {isFullscreen ? (
-                <Icons.minimize className='w-4 h-4 text-[#E63946]' />
-              ) : (
-                <Icons.maximize className='w-4 h-4' />
-              )}
-            </button>
-
-            <button
-              onClick={() => setShowVncConfig(!showVncConfig)}
-              title='Seguridad y Configuración de Conexión'
-              className={`p-1.5 rounded-lg transition-colors ${
-                showVncConfig
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            {/* Marco de Pantalla del Navegador */}
+            <div
+              className={`relative rounded-2xl overflow-hidden border border-border bg-[#090d16] shadow-sm flex flex-col ${
+                isFullscreen ? 'flex-1 min-h-0' : 'min-h-[580px] h-[66vh]'
               }`}
             >
-              <Icons.settings className='w-4 h-4' />
-            </button>
-          </div>
-        </div>
+              {/* Header tipo pestaña de navegador */}
+              <div className='flex items-center justify-between px-4 py-2.5 bg-[#121826] border-b border-border/50 text-xs shrink-0'>
+                <div className='flex items-center gap-2'>
+                  <span className='w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block' />
+                  <span className='w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block' />
+                  <span className='w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block' />
+                  <div className='flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-black/40 text-slate-300 font-mono text-[11px] ml-2'>
+                    <Icons.lock className='w-3 h-3 text-emerald-400 shrink-0' />
+                    <span>
+                      {viewMode === 'vnc'
+                        ? 'https://coronelmayorista.com (Sesión Interactiva Remota)'
+                        : 'Vista Previa Renderizada (Selenium Chrome)'}
+                    </span>
+                  </div>
+                </div>
 
-        {/* Panel de Configuración de Seguridad y Host (Desplegable) */}
-        {showVncConfig && (
-          <div className='p-4 bg-card border border-border rounded-xl text-xs space-y-3 animate-fadeIn shadow-sm'>
-            <div className='flex items-center justify-between border-b border-border pb-2'>
-              <div className='flex items-center gap-2'>
-                <Icons.lock className='w-4 h-4 text-emerald-500' />
-                <span className='font-bold text-foreground'>
-                  Seguridad y Conexión del Scraper Remoto (Dokploy)
-                </span>
-              </div>
-              <span className='text-[10px] text-muted-foreground font-mono'>
-                Token & VNC Password Protegidos
-              </span>
-            </div>
-
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
-              <div>
-                <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
-                  Host Dokploy:
-                </label>
-                <input
-                  type='text'
-                  value={vncHost}
-                  onChange={(e) => {
-                    setVncHost(e.target.value);
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('jg_scraper_vnc_host', e.target.value);
-                    }
-                  }}
-                  placeholder='https://coronel.press-cloud.com'
-                  className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
-                />
+                <div className='flex items-center gap-2'>
+                  {isRunning && (
+                    <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 font-bold tracking-wider'>
+                      <span className='w-1.5 h-1.5 rounded-full bg-red-500 animate-ping' />
+                      PROCESO ACTIVO
+                    </span>
+                  )}
+                  <span className='text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground font-mono'>
+                    Zoom: {isFit ? 'Fit' : `${zoomLevel}%`}
+                  </span>
+                </div>
               </div>
 
-              <div>
-                <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
-                  Token de Sesión / Auth:
-                </label>
-                <input
-                  type='password'
-                  value={vncToken}
-                  onChange={(e) => {
-                    setVncToken(e.target.value);
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('jg_scraper_token', e.target.value);
-                    }
-                  }}
-                  className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
-                />
-              </div>
+              {/* Área de Visualización con Escalado Proporcional (Cero Scroll) */}
+              <div className='relative flex-1 w-full bg-[#05070d] flex items-center justify-center overflow-hidden p-2'>
+                {viewMode === 'vnc' ? (
+                  <div
+                    style={getViewportStyle()}
+                    className='relative bg-black rounded-lg overflow-hidden shadow-2xl border border-border/30 flex items-center justify-center'
+                  >
+                    <iframe
+                      key={vncKey}
+                      src={vncIframeUrl}
+                      scrolling='no'
+                      className='w-full h-full border-0 bg-black block overflow-hidden'
+                      allow='fullscreen; clipboard-read; clipboard-write; autoplay'
+                      allowFullScreen={true}
+                      title='Navegador Remoto Chrome noVNC'
+                    />
+                  </div>
+                ) : (
+                  <div
+                    style={getViewportStyle()}
+                    className='relative bg-black rounded-lg overflow-hidden shadow-2xl border border-border/30 flex items-center justify-center'
+                  >
+                    <img
+                      key={previewTimestamp}
+                      src={`/api/scraper/preview?t=${previewTimestamp}`}
+                      alt='Vista previa de Chrome'
+                      onLoad={() => setPreviewLoading(false)}
+                      className='w-full h-full object-contain'
+                    />
 
-              <div>
-                <label className='block text-muted-foreground text-[11px] mb-1 font-medium'>
-                  Contraseña VNC (x11vnc):
-                </label>
-                <input
-                  type='password'
-                  value={vncPassword}
-                  onChange={(e) => {
-                    setVncPassword(e.target.value);
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('jg_scraper_vnc_password', e.target.value);
-                    }
-                  }}
-                  className='w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-foreground outline-none focus:border-[#E63946]'
-                />
-              </div>
-            </div>
-
-            <div className='flex items-center justify-between pt-1'>
-              <p className='text-[11px] text-muted-foreground'>
-                Ruta protegida por Nginx y FastAPI con token bearer contra accesos públicos no
-                autorizados.
-              </p>
-              <button
-                onClick={() => {
-                  setVncKey(Date.now());
-                  toast.success('Configuración aplicada y sesión VNC refrescada');
-                }}
-                className='px-3 py-1 bg-[#E63946] text-white rounded-lg font-bold text-xs hover:bg-[#c92a37] transition-colors'
-              >
-                Aplicar y Reconectar
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Marco de Pantalla del Navegador */}
-        <div
-          className={`relative rounded-2xl overflow-hidden border border-border bg-[#090d16] shadow-sm flex flex-col ${
-            isFullscreen ? 'flex-1 min-h-0' : 'min-h-[580px] h-[66vh]'
-          }`}
-        >
-          {/* Header tipo pestaña de navegador */}
-          <div className='flex items-center justify-between px-4 py-2.5 bg-[#121826] border-b border-border/50 text-xs shrink-0'>
-            <div className='flex items-center gap-2'>
-              <span className='w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block' />
-              <span className='w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block' />
-              <span className='w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block' />
-              <div className='flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-black/40 text-slate-300 font-mono text-[11px] ml-2'>
-                <Icons.lock className='w-3 h-3 text-emerald-400 shrink-0' />
-                <span>
-                  {viewMode === 'vnc'
-                    ? 'https://coronelmayorista.com (Sesión Interactiva Remota)'
-                    : 'Vista Previa Renderizada (Selenium Chrome)'}
-                </span>
-              </div>
-            </div>
-
-            <div className='flex items-center gap-2'>
-              {isRunning && (
-                <span className='inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 font-bold tracking-wider'>
-                  <span className='w-1.5 h-1.5 rounded-full bg-red-500 animate-ping' />
-                  PROCESO ACTIVO
-                </span>
-              )}
-              <span className='text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground font-mono'>
-                Zoom: {isFit ? 'Fit' : `${zoomLevel}%`}
-              </span>
-            </div>
-          </div>
-
-          {/* Área de Visualización con Escalado Proporcional (Cero Scroll) */}
-          <div className='relative flex-1 w-full bg-[#05070d] flex items-center justify-center overflow-hidden p-2'>
-            {viewMode === 'vnc' ? (
-              <div
-                style={getViewportStyle()}
-                className='relative bg-black rounded-lg overflow-hidden shadow-2xl border border-border/30 flex items-center justify-center'
-              >
-                <iframe
-                  key={vncKey}
-                  src={vncIframeUrl}
-                  scrolling='no'
-                  className='w-full h-full border-0 bg-black block overflow-hidden'
-                  allow='fullscreen; clipboard-read; clipboard-write; autoplay'
-                  allowFullScreen={true}
-                  title='Navegador Remoto Chrome noVNC'
-                />
-              </div>
-            ) : (
-              <div
-                style={getViewportStyle()}
-                className='relative bg-black rounded-lg overflow-hidden shadow-2xl border border-border/30 flex items-center justify-center'
-              >
-                <img
-                  key={previewTimestamp}
-                  src={`/api/scraper/preview?t=${previewTimestamp}`}
-                  alt='Vista previa de Chrome'
-                  onLoad={() => setPreviewLoading(false)}
-                  className='w-full h-full object-contain'
-                />
-
-                {/* Overlay de Interacción Necesaria */}
-                {waitingUser && (
-                  <div className='absolute inset-0 bg-black/80 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-fadeIn'>
-                    <div className='w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-pulse'>
-                      <Icons.laptop className='w-7 h-7' />
-                    </div>
-                    <h3 className='text-white font-bold text-lg mb-1'>
-                      ¡Selecciona la Categoría en Chrome!
-                    </h3>
-                    <p className='text-slate-300 text-xs max-w-sm mb-4'>
-                      Cambia al modo "noVNC Interactivo" arriba para hacer clic con tu ratón dentro
-                      de la página, o si ya seleccionaste la categoría pulsa el botón:
-                    </p>
-                    <button
-                      onClick={handleContinue}
-                      className='px-6 py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all flex items-center gap-2'
-                    >
-                      <Icons.check className='w-4 h-4' />
-                      <span>Continuar Scraping Ahora</span>
-                    </button>
+                    {/* Overlay de Interacción Necesaria */}
+                    {waitingUser && (
+                      <div className='absolute inset-0 bg-black/80 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-fadeIn'>
+                        <div className='w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-pulse'>
+                          <Icons.laptop className='w-7 h-7' />
+                        </div>
+                        <h3 className='text-white font-bold text-lg mb-1'>
+                          ¡Selecciona la Categoría en Chrome!
+                        </h3>
+                        <p className='text-slate-300 text-xs max-w-sm mb-4'>
+                          Cambia al modo "noVNC Interactivo" arriba para hacer clic con tu ratón
+                          dentro de la página, o si ya seleccionaste la categoría pulsa el botón:
+                        </p>
+                        <button
+                          onClick={handleContinue}
+                          className='px-6 py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all flex items-center gap-2'
+                        >
+                          <Icons.check className='w-4 h-4' />
+                          <span>Continuar Scraping Ahora</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Barra de Estado Inferior */}
-          <div className='px-4 py-2 bg-[#121826] border-t border-border/50 flex items-center justify-between text-[11px] text-slate-400 shrink-0'>
-            <div className='flex items-center gap-2'>
-              <span className='w-2 h-2 rounded-full bg-emerald-400' />
-              <span>
-                {viewMode === 'vnc'
-                  ? 'Transmisión WebSockets Segura activa (Ratón y Teclado habilitados)'
-                  : 'Modo Captura Estática (Actualización cada 2 seg)'}
-              </span>
-            </div>
-            <div className='flex items-center gap-3 font-mono text-[10px]'>
-              <span>Escala Nativa: 1280x800</span>
-              <span>•</span>
-              <span>Zoom actual: {isFit ? 'Ajustado a ventana' : `${zoomLevel}%`}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SECCIÓN COLAPSABLE: TERMINAL EN VIVO */}
-      <div className='rounded-2xl border border-border bg-[#0a0d14] overflow-hidden shadow-xs'>
-        <div className='flex items-center justify-between px-4 py-3 bg-[#10141f] border-b border-slate-800 text-xs'>
-          <div className='flex items-center gap-3'>
-            <button
-              onClick={() => setIsTerminalOpen(!isTerminalOpen)}
-              className='flex items-center gap-2 text-foreground font-bold hover:text-[#E63946] transition-colors'
-            >
-              <Icons.terminal className='w-4 h-4 text-emerald-400' />
-              <span>Terminal y Consola de Eventos</span>
-              <span className='text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono font-normal'>
-                {logs.length} líneas
-              </span>
-            </button>
-            <span className='text-slate-600 hidden sm:inline'>|</span>
-            <span className='text-slate-400 font-mono text-[11px] hidden sm:inline'>
-              python scraping-coronel/main.py
-            </span>
-          </div>
-
-          <div className='flex items-center gap-2'>
-            <label className='flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none mr-2'>
-              <input
-                type='checkbox'
-                checked={autoScroll}
-                onChange={(e) => setAutoScroll(e.target.checked)}
-                className='rounded border-slate-700 bg-slate-900 text-[#E63946] focus:ring-0 w-3 h-3'
-              />
-              <span className='hidden sm:inline'>Auto-scroll</span>
-            </label>
-
-            <button
-              onClick={handleCopyLogs}
-              className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
-              title='Copiar logs'
-            >
-              <Icons.copy className='w-3.5 h-3.5' />
-              <span className='hidden sm:inline'>Copiar</span>
-            </button>
-
-            <button
-              onClick={handleClearLogs}
-              className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
-              title='Limpiar consola'
-            >
-              <Icons.trash className='w-3.5 h-3.5' />
-              <span className='hidden sm:inline'>Limpiar</span>
-            </button>
-
-            <button
-              onClick={() => setIsTerminalOpen(!isTerminalOpen)}
-              className='text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-md hover:bg-slate-800 transition-colors'
-            >
-              {isTerminalOpen ? 'Ocultar' : 'Mostrar'}
-            </button>
-          </div>
-        </div>
-
-        {/* Cuerpo de la Terminal */}
-        {isTerminalOpen ? (
-          <div className='p-4 font-mono text-[12px] leading-relaxed text-slate-200 overflow-y-auto space-y-1 h-[260px] sm:h-[300px]'>
-            {logs.length === 0 ? (
-              <div className='text-slate-500 italic py-8 text-center'>
-                Consola lista. Pulsa "Iniciar Scraping" para visualizar la salida en tiempo real.
-              </div>
-            ) : (
-              logs.map((log, index) => {
-                let colorClass = 'text-slate-300';
-                if (log.includes('✔') || log.includes('COMPLETED') || log.includes('éxito')) {
-                  colorClass = 'text-emerald-400 font-medium';
-                } else if (log.includes('⚠') || log.includes('WAITING') || log.includes('Aviso')) {
-                  colorClass = 'text-amber-300 font-medium';
-                } else if (log.includes('✖') || log.includes('🚨') || log.includes('Error')) {
-                  colorClass = 'text-rose-400 font-semibold';
-                } else if (log.includes('🚀') || log.includes('===') || log.includes('SISTEMA')) {
-                  colorClass = 'text-cyan-300 font-semibold';
-                }
-
-                return (
-                  <div key={index} className={`break-all ${colorClass}`}>
-                    {log}
-                  </div>
-                );
-              })
-            )}
-            <div ref={logsEndRef} />
-          </div>
-        ) : (
-          <div className='px-4 py-2 bg-[#0c101a] text-[11px] text-slate-400 font-mono truncate flex items-center justify-between'>
-            <span>
-              Último log:{' '}
-              <span className='text-slate-300'>
-                {logs[logs.length - 1] || 'Sin eventos recientes'}
-              </span>
-            </span>
-            <button
-              onClick={() => setIsTerminalOpen(true)}
-              className='text-emerald-400 hover:underline font-semibold'
-            >
-              Expandir terminal
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* SECCIÓN INFERIOR: CENTRO DE MIGRACIÓN & PUBLICACIÓN AL CATÁLOGO WEB */}
-      <div className='space-y-4 pt-4 border-t border-border'>
-        <div className='flex flex-wrap items-center justify-between gap-3'>
-          <div>
-            <h2 className='text-xl font-bebas tracking-wide text-foreground flex items-center gap-2'>
-              <Icons.box className='w-5 h-5 text-[#E63946]' />
-              CENTRO DE MIGRACIÓN & PUBLICACIÓN AL CATÁLOGO WEB
-            </h2>
-            <p className='text-xs text-muted-foreground'>
-              Sincroniza los productos extraídos hacia la base de datos oficial (PostgreSQL /
-              Supabase Dokploy). Auto-crea categorías recursivas y actualiza precios y stock sin
-              duplicados.
-            </p>
-          </div>
-
-          <div className='flex items-center gap-2'>
-            <CatalogResetDialog onSuccess={fetchDbStats} />
-          </div>
-        </div>
-
-        {/* Tarjetas de Métricas de Productos: Total, Nuevos, No Nuevos */}
-        <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-          <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
-            <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
-              <Icons.package className='w-3.5 h-3.5 text-muted-foreground' />
-              Total Importado
-            </span>
-            <div className='text-2xl font-bebas text-foreground mt-1'>
-              {dbStats?.total_products ?? 0}
-            </div>
-            <span className='text-[11px] text-muted-foreground'>
-              Artículos listos para publicar
-            </span>
-          </div>
-
-          <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
-            <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
-              <Icons.add className='w-3.5 h-3.5 text-emerald-500' />
-              Productos Nuevos
-            </span>
-            <div className='text-2xl font-bebas text-emerald-500 mt-1'>
-              {lastMigrationInfo
-                ? lastMigrationInfo.inserted
-                : Math.max(0, (dbStats?.total_products ?? 0) - webProductCount)}
-            </div>
-            <span className='text-[11px] text-emerald-500/80 font-medium'>
-              {lastMigrationInfo
-                ? 'Nuevos publicados en la última migración'
-                : 'Por publicar por primera vez en la web'}
-            </span>
-          </div>
-
-          <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
-            <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
-              <Icons.refresh className='w-3.5 h-3.5 text-[#D4A017]' />
-              Existentes (No Nuevos)
-            </span>
-            <div className='text-2xl font-bebas text-[#D4A017] mt-1'>
-              {lastMigrationInfo
-                ? lastMigrationInfo.updated
-                : Math.min(dbStats?.total_products ?? 0, webProductCount)}
-            </div>
-            <span className='text-[11px] text-[#D4A017]/80 font-medium'>
-              {lastMigrationInfo?.preserved
-                ? `${lastMigrationInfo.preserved} existentes con precios protegidos`
-                : 'Ya registrados (se actualizará stock)'}
-            </span>
-          </div>
-        </div>
-
-        {/* PANEL PRINCIPAL: PUBLICAR / MIGRAR A LA TIENDA WEB */}
-        <div className='p-4 sm:p-5 rounded-xl bg-card border-2 border-[#E63946]/30 shadow-md space-y-4 relative overflow-hidden'>
-          <div className='flex flex-wrap items-center justify-between gap-2'>
-            <div className='flex items-center gap-2.5'>
-              <div className='w-8 h-8 rounded-lg bg-[#E63946] text-white flex items-center justify-center font-bold shadow-sm'>
-                <Icons.arrowRight className='w-4 h-4' />
-              </div>
-              <div>
-                <h3 className='text-sm font-bold text-foreground font-gotham'>
-                  Publicación al Catálogo Web Oficial (Supabase)
-                </h3>
-                <p className='text-[11px] text-muted-foreground'>
-                  Crea automáticamente categorías recursivas y actualiza costos, PVP y stock sin
-                  duplicar productos.
-                </p>
-              </div>
-            </div>
-
-            {lastMigrationInfo && !isMigrating && (
-              <span className='px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'>
-                ✓ {lastMigrationInfo.total} sincronizados ({lastMigrationInfo.inserted} nuevos,{' '}
-                {lastMigrationInfo.updated} actualizados)
-              </span>
-            )}
-          </div>
-
-          {/* BARRA DE CARGA / PROGRESO CUANDO SE PUBLICA O MIGRA */}
-          {isMigrating && (
-            <div className='p-4 rounded-xl bg-[#E63946]/5 border border-[#E63946]/30 space-y-2.5 animate-in fade-in duration-300'>
-              <div className='flex items-center justify-between text-xs font-bold text-foreground'>
-                <div className='flex items-center gap-2 text-[#E63946]'>
-                  <Icons.spinner className='w-4 h-4 animate-spin' />
-                  <span>Publicando y Sincronizando con Supabase...</span>
+              {/* Barra de Estado Inferior */}
+              <div className='px-4 py-2 bg-[#121826] border-t border-border/50 flex items-center justify-between text-[11px] text-slate-400 shrink-0'>
+                <div className='flex items-center gap-2'>
+                  <span className='w-2 h-2 rounded-full bg-emerald-400' />
+                  <span>
+                    {viewMode === 'vnc'
+                      ? 'Transmisión WebSockets Segura activa (Ratón y Teclado habilitados)'
+                      : 'Modo Captura Estática (Actualización cada 2 seg)'}
+                  </span>
                 </div>
-                <span className='font-mono text-muted-foreground text-[11px]'>
-                  Por favor espera unos segundos
+                <div className='flex items-center gap-3 font-mono text-[10px]'>
+                  <span>Escala Nativa: 1280x800</span>
+                  <span>•</span>
+                  <span>Zoom actual: {isFit ? 'Ajustado a ventana' : `${zoomLevel}%`}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECCIÓN COLAPSABLE: TERMINAL EN VIVO */}
+          <div className='rounded-2xl border border-border bg-[#0a0d14] overflow-hidden shadow-xs'>
+            <div className='flex items-center justify-between px-4 py-3 bg-[#10141f] border-b border-slate-800 text-xs'>
+              <div className='flex items-center gap-3'>
+                <button
+                  onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+                  className='flex items-center gap-2 text-foreground font-bold hover:text-[#E63946] transition-colors'
+                >
+                  <Icons.terminal className='w-4 h-4 text-emerald-400' />
+                  <span>Terminal y Consola de Eventos</span>
+                  <span className='text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono font-normal'>
+                    {logs.length} líneas
+                  </span>
+                </button>
+                <span className='text-slate-600 hidden sm:inline'>|</span>
+                <span className='text-slate-400 font-mono text-[11px] hidden sm:inline'>
+                  python scraping-coronel/main.py
                 </span>
               </div>
-              <div className='w-full h-2.5 bg-muted rounded-full overflow-hidden relative'>
-                <div className='h-full bg-gradient-to-r from-[#E63946] via-[#FF85A2] to-[#E63946] rounded-full animate-pulse w-full' />
+
+              <div className='flex items-center gap-2'>
+                <label className='flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none mr-2'>
+                  <input
+                    type='checkbox'
+                    checked={autoScroll}
+                    onChange={(e) => setAutoScroll(e.target.checked)}
+                    className='rounded border-slate-700 bg-slate-900 text-[#E63946] focus:ring-0 w-3 h-3'
+                  />
+                  <span className='hidden sm:inline'>Auto-scroll</span>
+                </label>
+
+                <button
+                  onClick={handleCopyLogs}
+                  className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
+                  title='Copiar logs'
+                >
+                  <Icons.copy className='w-3.5 h-3.5' />
+                  <span className='hidden sm:inline'>Copiar</span>
+                </button>
+
+                <button
+                  onClick={handleClearLogs}
+                  className='text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2.5 py-1 rounded-md hover:bg-slate-800'
+                  title='Limpiar consola'
+                >
+                  <Icons.trash className='w-3.5 h-3.5' />
+                  <span className='hidden sm:inline'>Limpiar</span>
+                </button>
+
+                <button
+                  onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+                  className='text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-md hover:bg-slate-800 transition-colors'
+                >
+                  {isTerminalOpen ? 'Ocultar' : 'Mostrar'}
+                </button>
               </div>
-              <p className='text-[11px] text-muted-foreground text-center'>
-                Procesando taxonomías recursivas, optimizando imágenes e integrando precios según la
-                política seleccionada.
-              </p>
-            </div>
-          )}
-
-          <div className='flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/60 text-xs'>
-            {/* Selector de Ámbito / Categoría (por defecto Todo el Catálogo) */}
-            <div className='flex items-center gap-2'>
-              <span className='text-muted-foreground font-medium'>Seleccionar:</span>
-              <select
-                value={migrationCategory}
-                onChange={(e) => setMigrationCategory(e.target.value)}
-                disabled={isMigrating}
-                className='px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
-              >
-                <option value='all'>
-                  Todo el Catálogo ({dbStats?.total_products ?? 0} artículos)
-                </option>
-                {dbStats?.categories?.map((cat) => (
-                  <option key={cat.name} value={cat.name}>
-                    {cat.name} ({cat.count} prods)
-                  </option>
-                ))}
-              </select>
             </div>
 
-            {/* Botón Principal de Publicación al Catálogo Web */}
-            <button
-              onClick={handleMigrateToWeb}
-              disabled={isMigrating || (dbStats?.total_products ?? 0) === 0}
-              className='px-5 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95'
-            >
-              <Icons.refresh className={`w-4 h-4 ${isMigrating ? 'animate-spin' : ''}`} />
-              <span>
-                {isMigrating
-                  ? 'Publicando en Catálogo Web...'
-                  : '🚀 Publicar al Catálogo Web'}
-              </span>
-            </button>
+            {/* Cuerpo de la Terminal */}
+            {isTerminalOpen ? (
+              <div className='p-4 font-mono text-[12px] leading-relaxed text-slate-200 overflow-y-auto space-y-1 h-[260px] sm:h-[300px]'>
+                {logs.length === 0 ? (
+                  <div className='text-slate-500 italic py-8 text-center'>
+                    Consola lista. Pulsa "Iniciar Scraping" para visualizar la salida en tiempo
+                    real.
+                  </div>
+                ) : (
+                  logs.map((log, index) => {
+                    let colorClass = 'text-slate-300';
+                    if (log.includes('✔') || log.includes('COMPLETED') || log.includes('éxito')) {
+                      colorClass = 'text-emerald-400 font-medium';
+                    } else if (
+                      log.includes('⚠') ||
+                      log.includes('WAITING') ||
+                      log.includes('Aviso')
+                    ) {
+                      colorClass = 'text-amber-300 font-medium';
+                    } else if (log.includes('✖') || log.includes('🚨') || log.includes('Error')) {
+                      colorClass = 'text-rose-400 font-semibold';
+                    } else if (
+                      log.includes('🚀') ||
+                      log.includes('===') ||
+                      log.includes('SISTEMA')
+                    ) {
+                      colorClass = 'text-cyan-300 font-semibold';
+                    }
+
+                    return (
+                      <div key={index} className={`break-all ${colorClass}`}>
+                        {log}
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={logsEndRef} />
+              </div>
+            ) : (
+              <div className='px-4 py-2 bg-[#0c101a] text-[11px] text-slate-400 font-mono truncate flex items-center justify-between'>
+                <span>
+                  Último log:{' '}
+                  <span className='text-slate-300'>
+                    {logs[logs.length - 1] || 'Sin eventos recientes'}
+                  </span>
+                </span>
+                <button
+                  onClick={() => setIsTerminalOpen(true)}
+                  className='text-emerald-400 hover:underline font-semibold'
+                >
+                  Expandir terminal
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Tratamiento de Precios al Migrar */}
-          <div className='w-full pt-2.5 mt-1 border-t border-border/40 flex flex-wrap items-center justify-between gap-2 bg-muted/20 p-2.5 rounded-lg'>
-            <div className='flex items-center gap-1.5'>
-              <Icons.lock className='w-3.5 h-3.5 text-[#D4A017]' />
-              <span className='font-bold text-foreground text-[11px]'>
-                Tratamiento de Precios al Migrar:
-              </span>
+          {/* SECCIÓN INFERIOR: CENTRO DE MIGRACIÓN & PUBLICACIÓN AL CATÁLOGO WEB */}
+          <div className='space-y-4 pt-4 border-t border-border'>
+            <div className='flex flex-wrap items-center justify-between gap-3'>
+              <div>
+                <h2 className='text-xl font-bebas tracking-wide text-foreground flex items-center gap-2'>
+                  <Icons.box className='w-5 h-5 text-[#E63946]' />
+                  CENTRO DE MIGRACIÓN & PUBLICACIÓN AL CATÁLOGO WEB
+                </h2>
+                <p className='text-xs text-muted-foreground'>
+                  Sincroniza los productos extraídos hacia la base de datos oficial (PostgreSQL /
+                  Supabase Dokploy). Auto-crea categorías recursivas y actualiza precios y stock sin
+                  duplicados.
+                </p>
+              </div>
+
+              <div className='flex items-center gap-2'>
+                <CatalogResetDialog onSuccess={fetchDbStats} />
+              </div>
             </div>
-            <div className='flex flex-wrap items-center gap-2'>
-              <button
-                type='button'
-                onClick={() => setPriceStrategy('only_new')}
-                className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
-                  priceStrategy === 'only_new'
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
-                    : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                }`}
-                title='Si el producto ya existe en la tienda, mantiene sus precios intactos. Solo aplica nuevos márgenes a los NUEVOS.'
-              >
-                🛡️ Solo Nuevos (Respetar Precios Existentes)
-              </button>
-              <button
-                type='button'
-                onClick={() => setPriceStrategy('overwrite_all')}
-                className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
-                  priceStrategy === 'overwrite_all'
-                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
-                    : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                }`}
-                title='Recalcula y sobrescribe los precios de TODOS los productos, tanto nuevos como existentes.'
-              >
-                🔄 Sobrescribir Todo
-              </button>
-              <button
-                type='button'
-                onClick={() => setPriceStrategy('stock_only')}
-                className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
-                  priceStrategy === 'stock_only'
-                    ? 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold shadow-xs'
-                    : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                }`}
-                title='Solo actualiza la cantidad de stock en los productos existentes sin tocar sus precios ni descripciones.'
-              >
-                📦 Solo Stock en Existentes
-              </button>
+
+            {/* Tarjetas de Métricas de Productos: Total, Nuevos, No Nuevos */}
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+              <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.package className='w-3.5 h-3.5 text-muted-foreground' />
+                  Total Importado
+                </span>
+                <div className='text-2xl font-bebas text-foreground mt-1'>
+                  {dbStats?.total_products ?? 0}
+                </div>
+                <span className='text-[11px] text-muted-foreground'>
+                  Artículos listos para publicar
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.add className='w-3.5 h-3.5 text-emerald-500' />
+                  Productos Nuevos
+                </span>
+                <div className='text-2xl font-bebas text-emerald-500 mt-1'>
+                  {lastMigrationInfo
+                    ? lastMigrationInfo.inserted
+                    : Math.max(0, (dbStats?.total_products ?? 0) - webProductCount)}
+                </div>
+                <span className='text-[11px] text-emerald-500/80 font-medium'>
+                  {lastMigrationInfo
+                    ? 'Nuevos publicados en la última migración'
+                    : 'Por publicar por primera vez en la web'}
+                </span>
+              </div>
+
+              <div className='p-4 rounded-xl bg-card border border-border shadow-xs'>
+                <span className='text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1.5'>
+                  <Icons.refresh className='w-3.5 h-3.5 text-[#D4A017]' />
+                  Existentes (No Nuevos)
+                </span>
+                <div className='text-2xl font-bebas text-[#D4A017] mt-1'>
+                  {lastMigrationInfo
+                    ? lastMigrationInfo.updated
+                    : Math.min(dbStats?.total_products ?? 0, webProductCount)}
+                </div>
+                <span className='text-[11px] text-[#D4A017]/80 font-medium'>
+                  {lastMigrationInfo?.preserved
+                    ? `${lastMigrationInfo.preserved} existentes con precios protegidos`
+                    : 'Ya registrados (se actualizará stock)'}
+                </span>
+              </div>
+            </div>
+
+            {/* PANEL PRINCIPAL: PUBLICAR / MIGRAR A LA TIENDA WEB */}
+            <div className='p-4 sm:p-5 rounded-xl bg-card border-2 border-[#E63946]/30 shadow-md space-y-4 relative overflow-hidden'>
+              <div className='flex flex-wrap items-center justify-between gap-2'>
+                <div className='flex items-center gap-2.5'>
+                  <div className='w-8 h-8 rounded-lg bg-[#E63946] text-white flex items-center justify-center font-bold shadow-sm'>
+                    <Icons.arrowRight className='w-4 h-4' />
+                  </div>
+                  <div>
+                    <h3 className='text-sm font-bold text-foreground font-gotham'>
+                      Publicación al Catálogo Web Oficial (Supabase)
+                    </h3>
+                    <p className='text-[11px] text-muted-foreground'>
+                      Crea automáticamente categorías recursivas y actualiza costos, PVP y stock sin
+                      duplicar productos.
+                    </p>
+                  </div>
+                </div>
+
+                {lastMigrationInfo && !isMigrating && (
+                  <span className='px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'>
+                    ✓ {lastMigrationInfo.total} sincronizados ({lastMigrationInfo.inserted} nuevos,{' '}
+                    {lastMigrationInfo.updated} actualizados)
+                  </span>
+                )}
+              </div>
+
+              {/* BARRA DE CARGA / PROGRESO CUANDO SE PUBLICA O MIGRA */}
+              {isMigrating && (
+                <div className='p-4 rounded-xl bg-[#E63946]/5 border border-[#E63946]/30 space-y-2.5 animate-in fade-in duration-300'>
+                  <div className='flex items-center justify-between text-xs font-bold text-foreground'>
+                    <div className='flex items-center gap-2 text-[#E63946]'>
+                      <Icons.spinner className='w-4 h-4 animate-spin' />
+                      <span>Publicando y Sincronizando con Supabase...</span>
+                    </div>
+                    <span className='font-mono text-muted-foreground text-[11px]'>
+                      Por favor espera unos segundos
+                    </span>
+                  </div>
+                  <div className='w-full h-2.5 bg-muted rounded-full overflow-hidden relative'>
+                    <div className='h-full bg-gradient-to-r from-[#E63946] via-[#FF85A2] to-[#E63946] rounded-full animate-pulse w-full' />
+                  </div>
+                  <p className='text-[11px] text-muted-foreground text-center'>
+                    Procesando taxonomías recursivas, optimizando imágenes e integrando precios
+                    según la política seleccionada.
+                  </p>
+                </div>
+              )}
+
+              <div className='flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/60 text-xs'>
+                {/* Selector de Ámbito / Categoría (por defecto Todo el Catálogo) */}
+                <div className='flex items-center gap-2'>
+                  <span className='text-muted-foreground font-medium'>Seleccionar:</span>
+                  <select
+                    value={migrationCategory}
+                    onChange={(e) => setMigrationCategory(e.target.value)}
+                    disabled={isMigrating}
+                    className='px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold outline-none focus:ring-1 focus:ring-[#E63946] cursor-pointer'
+                  >
+                    <option value='all'>
+                      Todo el Catálogo ({dbStats?.total_products ?? 0} artículos)
+                    </option>
+                    {dbStats?.categories?.map((cat) => (
+                      <option key={cat.name} value={cat.name}>
+                        {cat.name} ({cat.count} prods)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Botón Principal de Publicación al Catálogo Web */}
+                <button
+                  onClick={handleMigrateToWeb}
+                  disabled={isMigrating || (dbStats?.total_products ?? 0) === 0}
+                  className='px-5 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#c92a37] text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95'
+                >
+                  <Icons.refresh className={`w-4 h-4 ${isMigrating ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isMigrating ? 'Publicando en Catálogo Web...' : '🚀 Publicar al Catálogo Web'}
+                  </span>
+                </button>
+              </div>
+
+              {/* Tratamiento de Precios al Migrar */}
+              <div className='w-full pt-2.5 mt-1 border-t border-border/40 flex flex-wrap items-center justify-between gap-2 bg-muted/20 p-2.5 rounded-lg'>
+                <div className='flex items-center gap-1.5'>
+                  <Icons.lock className='w-3.5 h-3.5 text-[#D4A017]' />
+                  <span className='font-bold text-foreground text-[11px]'>
+                    Tratamiento de Precios al Migrar:
+                  </span>
+                </div>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <button
+                    type='button'
+                    onClick={() => setPriceStrategy('only_new')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
+                      priceStrategy === 'only_new'
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
+                        : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                    title='Si el producto ya existe en la tienda, mantiene sus precios intactos. Solo aplica nuevos márgenes a los NUEVOS.'
+                  >
+                    🛡️ Solo Nuevos (Respetar Precios Existentes)
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setPriceStrategy('overwrite_all')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
+                      priceStrategy === 'overwrite_all'
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
+                        : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                    title='Recalcula y sobrescribe los precios de TODOS los productos, tanto nuevos como existentes.'
+                  >
+                    🔄 Sobrescribir Todo
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setPriceStrategy('stock_only')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] transition-all border cursor-pointer ${
+                      priceStrategy === 'stock_only'
+                        ? 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400 font-bold shadow-xs'
+                        : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                    title='Solo actualiza la cantidad de stock en los productos existentes sin tocar sus precios ni descripciones.'
+                  >
+                    📦 Solo Stock en Existentes
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  ) : (
+      ) : (
         /* PESTAÑA 2: SINCRONIZACIÓN AUTOMÁTICA DE STOCK (CRON & EXISTENCIAS) */
         <div className='space-y-6'>
           {/* 1. TARJETA PRINCIPAL DE CONTROL DEL CRON */}
@@ -1419,8 +1426,9 @@ export default function CoronelScraperPage() {
                     </span>
                   </div>
                   <p className='text-xs text-muted-foreground mt-1 max-w-2xl'>
-                    Recorre periódicamente el catálogo global de Coronel Mayorista para refrescar existencias,
-                    recalcular precios de venta si el costo de proveedor varió, y marcar discontinuados con stock = 0 en el catálogo oficial.
+                    Recorre periódicamente el catálogo global de Coronel Mayorista para refrescar
+                    existencias, recalcular precios de venta si el costo de proveedor varió, y
+                    marcar discontinuados con stock = 0 en el catálogo oficial.
                   </p>
 
                   {/* Fechas de ejecución y tiempos */}
@@ -1544,7 +1552,8 @@ export default function CoronelScraperPage() {
                     <h4 className='font-bold text-xs text-foreground'>Barrido de ~726 Páginas</h4>
                   </div>
                   <p className='text-[11px] text-muted-foreground leading-relaxed'>
-                    El microservicio recorre autónomamente todo el catálogo de Coronel sin esperas manuales, censando los SKUs y costos vigentes de proveedor.
+                    El microservicio recorre autónomamente todo el catálogo de Coronel sin esperas
+                    manuales, censando los SKUs y costos vigentes de proveedor.
                   </p>
                 </div>
                 <span className='text-[10px] text-blue-400 font-semibold mt-2.5 flex items-center gap-1'>
@@ -1561,7 +1570,9 @@ export default function CoronelScraperPage() {
                     <h4 className='font-bold text-xs text-foreground'>Preservación de Márgenes</h4>
                   </div>
                   <p className='text-[11px] text-muted-foreground leading-relaxed'>
-                    Si el costo del proveedor cambia, el recálculo matemático se aplica automáticamente según el margen preestablecido de cada artículo. Si el costo no cambió, no se tocan los precios.
+                    Si el costo del proveedor cambia, el recálculo matemático se aplica
+                    automáticamente según el margen preestablecido de cada artículo. Si el costo no
+                    cambió, no se tocan los precios.
                   </p>
                 </div>
                 <span className='text-[10px] text-emerald-400 font-semibold mt-2.5 flex items-center gap-1'>
@@ -1575,10 +1586,13 @@ export default function CoronelScraperPage() {
                     <div className='w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-xs'>
                       3
                     </div>
-                    <h4 className='font-bold text-xs text-foreground'>Detección de Discontinuados</h4>
+                    <h4 className='font-bold text-xs text-foreground'>
+                      Detección de Discontinuados
+                    </h4>
                   </div>
                   <p className='text-[11px] text-muted-foreground leading-relaxed'>
-                    Los artículos que ya no existen en Coronel reciben automáticamente stock = 0. En la web se marcan como Agotados u ocultos, protegiendo tus ventas de faltantes.
+                    Los artículos que ya no existen en Coronel reciben automáticamente stock = 0. En
+                    la web se marcan como Agotados u ocultos, protegiendo tus ventas de faltantes.
                   </p>
                 </div>
                 <span className='text-[10px] text-rose-400 font-semibold mt-2.5 flex items-center gap-1'>
@@ -1595,7 +1609,8 @@ export default function CoronelScraperPage() {
                     <h4 className='font-bold text-xs text-foreground'>Cruce Oficial EAN-13</h4>
                   </div>
                   <p className='text-[11px] text-muted-foreground leading-relaxed'>
-                    Indexa en memoria la última lista oficial de Excel para vincular códigos de barra EAN-13 numéricos y costos base de proveedor de forma automática.
+                    Indexa en memoria la última lista oficial de Excel para vincular códigos de
+                    barra EAN-13 numéricos y costos base de proveedor de forma automática.
                   </p>
                 </div>
                 <span className='text-[10px] text-purple-400 font-semibold mt-2.5 flex items-center gap-1'>
@@ -1700,7 +1715,9 @@ export default function CoronelScraperPage() {
                   </span>
                 </div>
                 <p className='text-xs text-muted-foreground mt-0.5'>
-                  La tabla pública <code className='text-emerald-400 font-mono'>products</code> en PostgreSQL se encuentra sincronizada de forma atómica y concurrente mediante ThreadPoolExecutor.
+                  La tabla pública <code className='text-emerald-400 font-mono'>products</code> en
+                  PostgreSQL se encuentra sincronizada de forma atómica y concurrente mediante
+                  ThreadPoolExecutor.
                 </p>
               </div>
             </div>
@@ -1767,11 +1784,17 @@ export default function CoronelScraperPage() {
                             {idx === 0 && cronEnabled ? 'Cron Automático' : 'Sincronización'}
                           </span>
                         </td>
-                        <td className='px-4 py-2.5 text-foreground'>{item.total_scraped?.toLocaleString()}</td>
-                        <td className='px-4 py-2.5 text-emerald-400 font-bold'>{item.active_stock}</td>
+                        <td className='px-4 py-2.5 text-foreground'>
+                          {item.total_scraped?.toLocaleString()}
+                        </td>
+                        <td className='px-4 py-2.5 text-emerald-400 font-bold'>
+                          {item.active_stock}
+                        </td>
                         <td className='px-4 py-2.5 text-rose-400 font-bold'>{item.stock_zero}</td>
                         <td className='px-4 py-2.5 text-[#D4A017]'>{item.prices_recalculated}</td>
-                        <td className='px-4 py-2.5 text-muted-foreground'>{item.duration_formatted}</td>
+                        <td className='px-4 py-2.5 text-muted-foreground'>
+                          {item.duration_formatted}
+                        </td>
                         <td className='px-4 py-2.5 text-right'>
                           <span className='px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold'>
                             ✓ 100% Éxito
@@ -1889,7 +1912,8 @@ export default function CoronelScraperPage() {
               <div className='p-4 font-mono text-[12px] leading-relaxed text-slate-200 overflow-y-auto space-y-1 h-[220px]'>
                 {logs.length === 0 ? (
                   <div className='text-slate-500 italic py-8 text-center'>
-                    Consola de stock lista. Pulsa "Ejecutar Ahora (Auto)" para visualizar el barrido de páginas en tiempo real.
+                    Consola de stock lista. Pulsa "Ejecutar Ahora (Auto)" para visualizar el barrido
+                    de páginas en tiempo real.
                   </div>
                 ) : (
                   logs.map((log, index) => {
@@ -1900,7 +1924,11 @@ export default function CoronelScraperPage() {
                       colorClass = 'text-amber-300 font-medium';
                     } else if (log.includes('✖') || log.includes('🚨') || log.includes('Error')) {
                       colorClass = 'text-rose-400 font-semibold';
-                    } else if (log.includes('⏱️') || log.includes('CRONÓMETRO') || log.includes('Procesando página')) {
+                    } else if (
+                      log.includes('⏱️') ||
+                      log.includes('CRONÓMETRO') ||
+                      log.includes('Procesando página')
+                    ) {
                       colorClass = 'text-cyan-300 font-semibold';
                     }
 
@@ -1925,7 +1953,8 @@ export default function CoronelScraperPage() {
                   MONITOR DE EXISTENCIAS Y DISCONTINUADOS EN LA WEB (SUPABASE)
                 </h2>
                 <p className='text-xs text-muted-foreground'>
-                  Auditoría en tiempo real de productos activos vs agotados (stock 0) sincronizados en la base de datos de producción.
+                  Auditoría en tiempo real de productos activos vs agotados (stock 0) sincronizados
+                  en la base de datos de producción.
                 </p>
               </div>
 
@@ -1969,9 +1998,7 @@ export default function CoronelScraperPage() {
                   <span className='w-2 h-2 rounded-full bg-emerald-400' />
                   Política de Artículos Activos
                 </span>
-                <div className='text-2xl font-bebas text-emerald-400 mt-1'>
-                  Stock = 999
-                </div>
+                <div className='text-2xl font-bebas text-emerald-400 mt-1'>Stock = 999</div>
                 <span className='text-[11px] text-muted-foreground'>
                   Visibles y habilitados para venta en la tienda
                 </span>
@@ -1982,9 +2009,7 @@ export default function CoronelScraperPage() {
                   <span className='w-2 h-2 rounded-full bg-rose-400' />
                   Política de Discontinuados
                 </span>
-                <div className='text-2xl font-bebas text-rose-400 mt-1'>
-                  Stock = 0
-                </div>
+                <div className='text-2xl font-bebas text-rose-400 mt-1'>Stock = 0</div>
                 <span className='text-[11px] text-muted-foreground'>
                   Agotados en catálogo / Protegidos de compras
                 </span>
@@ -1998,7 +2023,11 @@ export default function CoronelScraperPage() {
                 <strong className='text-foreground font-semibold'>
                   Regla de Preservación de Historiales de Pedidos:
                 </strong>{' '}
-                La sincronización automática de stock nunca elimina productos de la base de datos para no romper órdenes ni historiales de compra previos. Los productos agotados o discontinuados por el proveedor reciben <code className='text-rose-400 font-mono font-bold'>stock = 0</code> automáticamente, impidiendo que los usuarios los agreguen al carrito.
+                La sincronización automática de stock nunca elimina productos de la base de datos
+                para no romper órdenes ni historiales de compra previos. Los productos agotados o
+                discontinuados por el proveedor reciben{' '}
+                <code className='text-rose-400 font-mono font-bold'>stock = 0</code>{' '}
+                automáticamente, impidiendo que los usuarios los agreguen al carrito.
               </div>
             </div>
           </div>

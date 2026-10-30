@@ -10,12 +10,10 @@ const DEFAULT_SUPABASE_SERVICE_ROLE_KEY =
 
 const rawSupabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_PUBLIC_URL ||
   (process.env.SUPABASE_HOST ? `https://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
 
-const SUPABASE_URL =
-  rawSupabaseUrl.startsWith('http://') && rawSupabaseUrl.includes('press-cloud.com')
-    ? rawSupabaseUrl.replace('http://', 'https://')
-    : rawSupabaseUrl;
+const SUPABASE_URL = rawSupabaseUrl.replace(/^http:\/\//i, 'https://');
 
 // Clave con privilegios de servicio para mutaciones del backend (bypasses RLS)
 const SUPABASE_SERVICE_KEY =
@@ -24,9 +22,7 @@ const SUPABASE_SERVICE_KEY =
   DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
 
 const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.ANON_KEY ||
-  DEFAULT_SUPABASE_ANON_KEY;
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 // Memoria local para catálogo garantizando que siempre haya productos visibles
 let localCatalog: StoreProduct[] = [...INITIAL_PRODUCTS];
@@ -148,8 +144,12 @@ export async function fetchStoreProductsWithMeta(
       if (local) {
         return {
           ...prod,
-          ...(local.retail_margin_pct !== undefined && { retail_margin_pct: local.retail_margin_pct }),
-          ...(local.wholesale_margin_pct !== undefined && { wholesale_margin_pct: local.wholesale_margin_pct }),
+          ...(local.retail_margin_pct !== undefined && {
+            retail_margin_pct: local.retail_margin_pct
+          }),
+          ...(local.wholesale_margin_pct !== undefined && {
+            wholesale_margin_pct: local.wholesale_margin_pct
+          }),
           ...(local.retail_price !== undefined && { retail_price: local.retail_price }),
           ...(local.wholesale_price !== undefined && { wholesale_price: local.wholesale_price }),
           ...(local.stock !== undefined && { stock: local.stock })
@@ -475,16 +475,19 @@ export async function updateStoreProductsStock(
           const allTargetIds = rows.map((r: any) => String(r.id));
           for (let i = 0; i < allTargetIds.length; i += 50) {
             const chunk = allTargetIds.slice(i, i + 50);
-            const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${chunk.join(',')})`, {
-              method: 'PATCH',
-              headers: {
-                apikey: authKey,
-                Authorization: `Bearer ${authKey}`,
-                'Content-Type': 'application/json',
-                Prefer: 'return=minimal'
-              },
-              body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
-            });
+            const patchRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/products?id=in.(${chunk.join(',')})`,
+              {
+                method: 'PATCH',
+                headers: {
+                  apikey: authKey,
+                  Authorization: `Bearer ${authKey}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'return=minimal'
+                },
+                body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
+              }
+            );
             if (patchRes.ok) {
               updatedCount += chunk.length;
             } else {
@@ -514,16 +517,19 @@ export async function updateStoreProductsStock(
     try {
       for (let i = 0; i < ids.length; i += 50) {
         const chunk = ids.slice(i, i + 50);
-        const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/products?id=in.(${chunk.join(',')})`, {
-          method: 'PATCH',
-          headers: {
-            apikey: authKey,
-            Authorization: `Bearer ${authKey}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=minimal'
-          },
-          body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
-        });
+        const patchRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/products?id=in.(${chunk.join(',')})`,
+          {
+            method: 'PATCH',
+            headers: {
+              apikey: authKey,
+              Authorization: `Bearer ${authKey}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal'
+            },
+            body: JSON.stringify({ stock: Number(stock), updated_at: new Date().toISOString() })
+          }
+        );
         if (patchRes.ok) {
           updatedCount += chunk.length;
         } else {
@@ -632,7 +638,8 @@ export async function updateStoreProductsMargins(
           await Promise.all(
             dbItems.map((item: any) => {
               const cost = Number(
-                item.cost_price || (item.retail_price ? Math.round(Number(item.retail_price) / 1.4) : 0)
+                item.cost_price ||
+                  (item.retail_price ? Math.round(Number(item.retail_price) / 1.4) : 0)
               );
               const newRetailPrice =
                 retailMargin !== undefined
@@ -750,7 +757,8 @@ export async function updateStoreProductMarginsMassive(
           await Promise.all(
             dbItems.map((item: any) => {
               const cost = Number(
-                item.cost_price || (item.retail_price ? Math.round(Number(item.retail_price) / 1.4) : 0)
+                item.cost_price ||
+                  (item.retail_price ? Math.round(Number(item.retail_price) / 1.4) : 0)
               );
               const newRetailPrice =
                 retailMargin !== undefined
@@ -820,7 +828,9 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
               name: c.name,
               description: c.description || '',
               icon: c.icon || 'package',
-              imageUrl: c.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80',
+              imageUrl:
+                c.image_url ||
+                'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80',
               subcategories: []
             });
           }
@@ -911,4 +921,3 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
 
   return Array.from(categoriesMap.values());
 }
-

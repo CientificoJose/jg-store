@@ -2,14 +2,12 @@ const DEFAULT_SUPABASE_URL = 'https://jg-store-bd.press-cloud.com';
 const DEFAULT_SUPABASE_SERVICE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A';
 
-const rawStorageUrl =
+const rawSupabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_PUBLIC_URL ||
   (process.env.SUPABASE_HOST ? `https://${process.env.SUPABASE_HOST}` : DEFAULT_SUPABASE_URL);
 
-const SUPABASE_URL =
-  rawStorageUrl.startsWith('http://') && rawStorageUrl.includes('press-cloud.com')
-    ? rawStorageUrl.replace('http://', 'https://')
-    : rawStorageUrl;
+const SUPABASE_URL = rawSupabaseUrl.replace(/^http:\/\//i, 'https://');
 
 const SUPABASE_KEY =
   process.env.SERVICE_ROLE_KEY ||
@@ -73,7 +71,9 @@ export async function uploadImageToSupabaseStorage(
     const response = await fetch(normalizedUrl, fetchOptions);
 
     if (!response.ok) {
-      console.warn(`[storage] No se pudo descargar la imagen de ${normalizedUrl}: HTTP ${response.status}`);
+      console.warn(
+        `[storage] No se pudo descargar la imagen de ${normalizedUrl}: HTTP ${response.status}`
+      );
       return sourceUrl;
     }
 
@@ -85,11 +85,12 @@ export async function uploadImageToSupabaseStorage(
     }
 
     // Sanitizar nombre de archivo
-    let cleanFileName = fileName
-      .replace(/[^a-zA-Z0-9._-]/g, '_')
-      .replace(/_+/g, '_');
+    let cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
 
-    if (!cleanFileName.toLowerCase().endsWith('.jpg') && !cleanFileName.toLowerCase().endsWith('.png')) {
+    if (
+      !cleanFileName.toLowerCase().endsWith('.jpg') &&
+      !cleanFileName.toLowerCase().endsWith('.png')
+    ) {
       cleanFileName += '.jpg';
     }
 

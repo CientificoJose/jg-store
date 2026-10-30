@@ -350,3 +350,31 @@ graph TD
   - **Selección Global Maestro (`isAllSelected`):** Selección completa de los productos filtrados o de todo el catálogo al marcar el checkbox maestro de cabecera, con contador dinámico y deselección instantánea.
   - **Fijación de Stock Masivo Robusta:** Endpoint `/api/products/stock` y `updateStoreProductsStock` actualizados para procesar en lotes de 50 en PostgREST con validación de estado, soporte para modo global `selectAll: true` con filtros jerárquicos y sincronización de memoria local.
   - **Refinamiento en Coronel (`/dashboard/coronel`):** Ocultado checkbox de descarga de fotos en disco (activo por defecto), eliminados inputs redundantes de margen en la sección de migración y suprimida la palabra "SQLite" en textos públicos de la UI.
+
+### 32. 🟢 Solución noVNC WebSocket, Saneamiento de Base de Datos y Redespliegue Dokploy (`novnc-db-repair-and-dokploy-deploy`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **noVNC sin Desconexión en iframe:** Integrado el token de autenticación directamente dentro del path del WebSocket (`websockify?token=...`) en `src/app/dashboard/coronel/page.tsx` y mapeado `$http_origin` en `scraping-coronel/nginx.conf`, solventando la desconexión provocada por el bloqueo de cookies de terceros en iframes.
+  - **Diagnóstico y Sanación de PostgreSQL Supabase tras Reversión del VPS:**
+    - Corregida la propiedad de archivos a `100:101` (`postgres:postgres`).
+    - Subsanados errores de LSN y segmentos faltantes de `pg_subtrans` mediante `dd` y alineación con `pg_resetwal -f -x 1162500`.
+    - Purgadas 37 relaciones huérfanas en `pg_class` y `pg_attribute`, ejecutado `VACUUM FULL` y `reindexdb` completo con cero fallos.
+    - Aplicadas todas las migraciones: categorías en 3 niveles, recursividad infinita, costos, márgenes duales y órdenes.
+  - **Despliegue y Orquestación Dokploy:**
+    - Subida a GitHub (`main`) y compilación Next.js verificada con `bun`.
+    - Redespliegue de los servicios `cutimage-jgstore-shop-yogyps` (Tienda/Dashboard) y `coronel-scraper-6qhe5i` (Scraper) ejecutado vía Dokploy MCP y convergido en Swarm.
+
+### 33. 🟢 Reparación de Inserción y Migración de Productos Coronel a Supabase (`coronel-migration-https-fix`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Identificación de Redirección HTTP 308:** Se descubrió que la URL de Supabase con `http://` disparaba una redirección 308 de Traefik hacia `https://`, lo que por norma WHATWG en `fetch()` eliminaba las cabeceras `Authorization` y `apikey`, haciendo que PostgREST rechazara las inserciones con error `401 42501 (RLS policy violation)`.
+  - **Normalización a HTTPS:** Se forzó `https://` en todas las URLs de Supabase en `store-service.ts`, `supabase-storage.ts`, `migrate/route.ts`, `reset/route.ts` y `orders/api/service.ts`.
+  - **Columna `images` en Base de Datos:** Se añadió `images TEXT[] DEFAULT '{}'` a `public.products` y se recargó la caché de PostgREST, eliminando el error `PGRST204`.
+  - **Captura Detallada de Errores:** Se implementó `lastError` en el bucle de migración para reportar de inmediato cualquier error HTTP de PostgREST.
+
+### 34. 🟢 Resiliencia en Vaciado del Catálogo Supabase (`catalog-reset-resilience-fix`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Diagnóstico de Error 42P01:** Se identificó que `/api/catalog/reset` ejecutaba `DELETE FROM public.favorites;` y `DELETE FROM public.product_variants;`, tablas que no existen en la base de datos (los favoritos son locales vía Zustand/localStorage). Al estar dentro de una transacción `BEGIN...COMMIT`, PostgreSQL abortaba el vaciado completo.
+  - **Ejecución Dinámica Condicional:** Se implementó un bloque `DO $purge$ ... END $purge$;` que consulta `information_schema.tables` y solo emite `DELETE` sobre las tablas existentes en orden de claves foráneas (`products` ➔ `sub_subcategories` ➔ `subcategories` ➔ `categories`), garantizando un vaciado limpio y 100% libre de errores.
+
