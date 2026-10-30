@@ -23,14 +23,14 @@ describe('Acceso Exclusivo de Administrador con Clerk (`/admin`)', () => {
     expect(storeHeaderContent.includes('<span>Admin</span>')).toBe(false);
   });
 
-  it('middleware.ts debe existir y proteger las rutas del dashboard', () => {
-    const middlewarePath = path.resolve(process.cwd(), 'src/middleware.ts');
-    expect(fs.existsSync(middlewarePath)).toBe(true);
+  it('proxy.ts (interceptor Next.js 16) debe existir y proteger las rutas del dashboard', () => {
+    const proxyPath = path.resolve(process.cwd(), 'src/proxy.ts');
+    expect(fs.existsSync(proxyPath)).toBe(true);
 
-    const middlewareContent = fs.readFileSync(middlewarePath, 'utf-8');
-    expect(middlewareContent.includes('/dashboard(.*)')).toBe(true);
-    expect(middlewareContent.includes('clerkMiddleware')).toBe(true);
-    expect(middlewareContent.includes('auth.protect()')).toBe(true);
+    const proxyContent = fs.readFileSync(proxyPath, 'utf-8');
+    expect(proxyContent.includes('/dashboard(.*)')).toBe(true);
+    expect(proxyContent.includes('clerkMiddleware')).toBe(true);
+    expect(proxyContent.includes('auth.protect()')).toBe(true);
   });
 
   it('.env.local debe configurar el sign-in url en /admin y la redirección al dashboard', () => {

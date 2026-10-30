@@ -1,16 +1,23 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-export function proxy(_req: NextRequest) {
-  return NextResponse.next();
-}
+// Protegemos únicamente las rutas administrativas del dashboard
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)'
+]);
+
+export const proxy = clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    await auth.protect();
+  }
+});
 
 export default proxy;
 
 export const config = {
   matcher: [
+    // Omitir archivos estáticos y rutas internas de Next.js
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Ejecutar siempre para rutas API
     '/(api|trpc)(.*)'
   ]
 };
-
