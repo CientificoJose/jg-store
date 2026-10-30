@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { SignIn as ClerkSignIn, useUser, SignOutButton } from '@clerk/nextjs';
+import { SignIn as ClerkSignIn, useUser, useClerk } from '@clerk/nextjs';
 import { BrandLogo } from '@/components/brand/logo';
 import { Icons } from '@/components/icons';
 import { InteractiveGridPattern } from './interactive-grid';
@@ -12,35 +12,39 @@ import { buttonVariants } from '@/components/ui/button';
 
 export function AdminSignInView() {
   const { isSignedIn, isLoaded, user } = useUser();
+  const { signOut } = useClerk();
   const router = useRouter();
-  const [hasDirectSession, setHasDirectSession] = useState(false);
 
-  // Verificar si ya tiene sesión activa (Clerk o sesión directa)
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase() || '';
+  const isApprovedAdmin = Boolean(
+    user?.publicMetadata?.role === 'admin' ||
+    user?.publicMetadata?.approved === true ||
+    userEmail === 'davidalejandrogoncaxd@gmail.com' ||
+    userEmail === 'admin@jgstore.com.ar'
+  );
+
+  // Redirigir automáticamente solo si el usuario ya está autenticado Y aprobado como admin
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const isDirectActive = document.cookie.includes('jg_admin_session=active');
-      setHasDirectSession(isDirectActive);
-      if (isDirectActive || (isLoaded && isSignedIn)) {
-        const timer = setTimeout(() => {
-          router.push('/dashboard/overview');
-        }, 500);
-        return () => clearTimeout(timer);
+    if (isLoaded && isSignedIn && isApprovedAdmin) {
+      const timer = setTimeout(() => {
+        router.push('/dashboard/overview');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoaded, isSignedIn, isApprovedAdmin, router]);
+
+  const handleSignOut = async () => {
+    try {
+      if (typeof document !== 'undefined') {
+        document.cookie = 'jg_admin_session=; path=/; max-age=0; SameSite=Lax';
+      }
+      await signOut({ redirectUrl: '/admin' });
+    } catch {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/admin';
       }
     }
-  }, [isLoaded, isSignedIn, router]);
-
-  const handleDirectAdminLogin = () => {
-    document.cookie = 'jg_admin_session=active; path=/; max-age=604800; SameSite=Lax';
-    setHasDirectSession(true);
-    router.push('/dashboard/overview');
   };
-
-  const handleClearDirectSession = () => {
-    document.cookie = 'jg_admin_session=; path=/; max-age=0; SameSite=Lax';
-    setHasDirectSession(false);
-  };
-
-  const isUserAuthenticated = (isLoaded && isSignedIn) || hasDirectSession;
 
   return (
     <div className='relative flex min-h-screen flex-col items-center justify-center overflow-hidden md:grid lg:max-w-none lg:grid-cols-2 lg:px-0 font-gotham bg-background'>
@@ -115,8 +119,8 @@ export function AdminSignInView() {
                 💳
               </div>
               <div>
-                <p className='font-semibold text-foreground text-xs'>Configuración Bancaria & Promociones</p>
-                <p className='text-[11px] text-muted-foreground'>CBU/Alias, 10% OFF automático, banners rotativos y contacto.</p>
+                <p className='font-semibold text-foreground text-xs'>Seguridad y Roles Protegidos con Clerk</p>
+                <p className='text-[11px] text-muted-foreground'>Acceso restringido únicamente a usuarios autorizados por el Administrador.</p>
               </div>
             </div>
           </div>
@@ -140,92 +144,102 @@ export function AdminSignInView() {
             </span>
           </div>
 
-          {isUserAuthenticated ? (
-            /* Estado cuando el usuario ya se encuentra autenticado */
-            <div className='w-full p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-xl text-center space-y-5 animate-in fade-in duration-200'>
-              <div className='w-14 h-14 mx-auto rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner'>
-                <Icons.check className='w-7 h-7' />
-              </div>
-              <div className='space-y-1.5'>
-                <h3 className='text-lg font-bold text-foreground'>Sesión de Administrador Activa</h3>
-                <p className='text-xs text-muted-foreground'>
-                  Hola, <strong className='text-foreground'>{user?.fullName || user?.primaryEmailAddress?.emailAddress || 'Administrador JG'}</strong>. Tienes acceso autorizado al sistema.
-                </p>
-              </div>
+          {isLoaded && isSignedIn ? (
+            isApprovedAdmin ? (
+              /* Caso A: Usuario Autenticado Y APROBADO como Administrador */
+              <div className='w-full p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-xl text-center space-y-5 animate-in fade-in duration-200'>
+                <div className='w-14 h-14 mx-auto rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner'>
+                  <Icons.check className='w-7 h-7' />
+                </div>
+                <div className='space-y-1.5'>
+                  <div className='inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold tracking-wide uppercase border border-emerald-500/20'>
+                    <span className='w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse' />
+                    Administrador Autorizado
+                  </div>
+                  <h3 className='text-lg font-bold text-foreground'>Sesión Activa</h3>
+                  <p className='text-xs text-muted-foreground'>
+                    Hola, <strong className='text-foreground'>{user?.fullName || userEmail}</strong>. Tienes acceso autorizado al panel de control.
+                  </p>
+                </div>
 
-              <div className='flex flex-col gap-2.5 pt-2'>
-                <button
-                  type='button'
-                  onClick={() => router.push('/dashboard/overview')}
-                  className='w-full h-10 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-[#E63946]/25 transition-all cursor-pointer'
-                >
-                  <Icons.dashboard className='w-4 h-4' />
-                  <span>Entrar al Panel de Control</span>
-                </button>
-                <div className='w-full'>
-                  {isSignedIn ? (
-                    <SignOutButton redirectUrl='/admin'>
-                      <button
-                        type='button'
-                        onClick={handleClearDirectSession}
-                        className='w-full h-9 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer'
-                      >
-                        Cerrar Sesión
-                      </button>
-                    </SignOutButton>
-                  ) : (
-                    <button
-                      type='button'
-                      onClick={handleClearDirectSession}
-                      className='w-full h-9 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer'
-                    >
-                      Cerrar Sesión
-                    </button>
-                  )}
+                <div className='flex flex-col gap-2.5 pt-2'>
+                  <button
+                    type='button'
+                    onClick={() => router.push('/dashboard/overview')}
+                    className='w-full h-10 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-[#E63946]/25 transition-all cursor-pointer'
+                  >
+                    <Icons.dashboard className='w-4 h-4' />
+                    <span>Entrar al Panel de Control</span>
+                  </button>
+                  <button
+                    type='button'
+                    onClick={handleSignOut}
+                    className='w-full h-9 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors cursor-pointer flex items-center justify-center gap-1.5'
+                  >
+                    <Icons.logout className='w-3.5 h-3.5' />
+                    <span>Cerrar Sesión</span>
+                  </button>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Caso B: Usuario Autenticado en Clerk pero PENDIENTE DE APROBACIÓN */
+              <div className='w-full p-6 sm:p-8 rounded-2xl bg-card border border-amber-500/30 shadow-xl text-center space-y-5 animate-in fade-in duration-200'>
+                <div className='w-14 h-14 mx-auto rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-inner'>
+                  <Icons.lock className='w-7 h-7' />
+                </div>
+                <div className='space-y-1.5'>
+                  <div className='inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold tracking-wide uppercase border border-amber-500/20'>
+                    <span className='w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse' />
+                    Solicitud Pendiente de Aprobación
+                  </div>
+                  <h3 className='text-lg font-bold text-foreground'>Cuenta en Revisión</h3>
+                  <p className='text-xs text-muted-foreground'>
+                    Iniciaste sesión con <strong className='text-foreground'>{userEmail}</strong>.
+                  </p>
+                </div>
+
+                <div className='p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left text-xs text-muted-foreground space-y-1.5 leading-relaxed'>
+                  <p className='font-semibold text-foreground text-[11px] flex items-center gap-1.5'>
+                    <span>⚠️</span> Acceso Restringido por Seguridad
+                  </p>
+                  <p className='text-[11px]'>
+                    Tu cuenta ha sido registrada en Clerk con éxito. Para proteger la administración de JG Store, el <strong>Administrador Principal</strong> debe autorizar tu cuenta en el panel de Clerk antes de que puedas ingresar al panel.
+                  </p>
+                </div>
+
+                <div className='flex flex-col gap-2.5 pt-1'>
+                  <button
+                    type='button'
+                    onClick={() => window.location.reload()}
+                    className='w-full h-10 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-amber-600/25 transition-all cursor-pointer'
+                  >
+                    <Icons.refresh className='w-4 h-4' />
+                    <span>Comprobar Estado de Aprobación</span>
+                  </button>
+                  <button
+                    type='button'
+                    onClick={handleSignOut}
+                    className='w-full h-9 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors cursor-pointer flex items-center justify-center gap-1.5'
+                  >
+                    <Icons.logout className='w-3.5 h-3.5' />
+                    <span>Cerrar Sesión</span>
+                  </button>
+                </div>
+              </div>
+            )
           ) : (
-            /* Formulario de Inicio de Sesión de Clerk y Acceso Directo */
+            /* Formulario Exclusivo de Inicio de Sesión de Clerk */
             <div className='w-full flex flex-col items-center space-y-4'>
               <div className='mb-2 text-center space-y-1'>
                 <h2 className='text-xl font-bebas tracking-wide text-foreground uppercase'>
                   Iniciar Sesión como Administrador
                 </h2>
                 <p className='text-xs text-muted-foreground'>
-                  Ingresa tus credenciales autorizadas o utiliza el acceso administrativo
+                  Ingresa con tu correo o cuenta de Google autorizada en Clerk
                 </p>
               </div>
 
-              {/* Botón de Acceso Directo de Administrador (Garantía de ingreso inmediato) */}
-              <div className='w-full p-4 rounded-2xl bg-card/80 border border-border/80 shadow-md space-y-2.5 text-center'>
-                <div className='inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold tracking-wide uppercase border border-emerald-500/20'>
-                  <span className='w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse' />
-                  Acceso Inmediato Autorizado
-                </div>
-                <button
-                  type='button'
-                  onClick={handleDirectAdminLogin}
-                  className='w-full h-11 px-4 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs flex items-center justify-center gap-2.5 shadow-lg shadow-[#E63946]/25 transition-all cursor-pointer transform hover:-translate-y-0.5'
-                >
-                  <Icons.dashboard className='w-4 h-4' />
-                  <span>Entrar al Panel de Control como Administrador</span>
-                </button>
-                <p className='text-[10px] text-muted-foreground leading-tight'>
-                  Acceso exclusivo para el administrador de JG Store. Te lleva directamente al panel de productos, órdenes y configuración.
-                </p>
-              </div>
-
-              {/* Separador */}
-              <div className='w-full flex items-center gap-3 my-1'>
-                <div className='flex-1 h-px bg-border/60' />
-                <span className='text-[10px] text-muted-foreground uppercase font-bold tracking-wider'>
-                  O con cuenta de Clerk
-                </span>
-                <div className='flex-1 h-px bg-border/60' />
-              </div>
-
-              {/* Formulario de Clerk protegido con Suspense */}
+              {/* Formulario Oficial de Clerk */}
               <div className='w-full flex justify-center'>
                 <Suspense
                   fallback={

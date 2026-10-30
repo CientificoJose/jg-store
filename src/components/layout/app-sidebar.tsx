@@ -44,6 +44,19 @@ export default function AppSidebar() {
   const router = useRouter();
   const filteredGroups = useFilteredNavGroups(navGroups);
 
+  const handleSignOut = async () => {
+    try {
+      if (typeof document !== 'undefined') {
+        document.cookie = 'jg_admin_session=; path=/; max-age=0; SameSite=Lax';
+      }
+      await signOut({ redirectUrl: '/admin' });
+    } catch {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/admin';
+      }
+    }
+  };
+
   React.useEffect(() => {
     // Side effects based on sidebar state changes
   }, [isOpen]);
@@ -179,9 +192,12 @@ export default function AppSidebar() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => signOut({ redirectUrl: '/admin' })}>
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className='cursor-pointer text-red-500 hover:text-red-600 focus:text-red-600 focus:bg-red-500/10'
+                  >
                     <Icons.logout aria-hidden className='mr-2 h-4 w-4' />
-                    Sign out
+                    Cerrar sesión
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>

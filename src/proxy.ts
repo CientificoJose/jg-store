@@ -6,13 +6,7 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export const proxy = clerkMiddleware(async (auth, req) => {
-  // 1. Acceso de administrador directo mediante cookie de sesión autorizada
-  const adminSession = req.cookies.get('jg_admin_session')?.value;
-  if (adminSession === 'active') {
-    return;
-  }
-
-  // 2. Verificación con Clerk en rutas administrativas protegidas
+  // Verificación con Clerk en rutas administrativas protegidas
   if (isProtectedRoute(req)) {
     try {
       await auth.protect();
