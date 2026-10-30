@@ -126,7 +126,7 @@ export async function uploadImageToSupabaseStorage(
  * Sube un buffer de imagen directamente a Supabase Storage y retorna la URL pública.
  */
 export async function uploadBufferToSupabaseStorage(
-  buffer: ArrayBuffer | Buffer,
+  buffer: ArrayBuffer | Uint8Array | Buffer,
   fileName: string,
   contentType: string = 'image/jpeg'
 ): Promise<string> {
@@ -140,6 +140,15 @@ export async function uploadBufferToSupabaseStorage(
     cleanFileName += '.jpg';
   }
 
+  // Asegurar compatibilidad con BodyInit de fetch (DOM / Node / Bun)
+  const bodyPayload = (
+    buffer instanceof ArrayBuffer
+      ? buffer
+      : buffer instanceof Uint8Array
+      ? buffer
+      : (buffer as unknown as BodyInit)
+  ) as BodyInit;
+
   try {
     const uploadRes = await fetch(
       `${SUPABASE_URL}/storage/v1/object/${PRODUCTS_BUCKET}/${cleanFileName}`,
@@ -151,7 +160,7 @@ export async function uploadBufferToSupabaseStorage(
           'Content-Type': contentType,
           'x-upsert': 'true'
         },
-        body: buffer
+        body: bodyPayload
       }
     );
 
