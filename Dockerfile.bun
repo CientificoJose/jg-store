@@ -63,6 +63,7 @@ RUN mkdir .next && chown bun:bun .next
 # Copy standalone output and static files
 COPY --from=builder --chown=bun:bun /app/.next/standalone ./
 COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
+COPY --from=builder --chown=bun:bun /app/.env* ./
 
 # Run as non-root user
 USER bun

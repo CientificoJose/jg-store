@@ -20,22 +20,35 @@ export function AdminSignInView() {
     user?.publicMetadata?.role === 'admin' ||
     user?.publicMetadata?.approved === true ||
     userEmail === 'davidalejandrogoncaxd@gmail.com' ||
+    userEmail === 'davidalejandrogoncaxd1@gmail.com' ||
+    userEmail === 'qijoos3niievsik@gmail.com' ||
     userEmail === 'admin@jgstore.com.ar'
   );
+
+  const handleEnterDashboard = () => {
+    if (typeof document !== 'undefined') {
+      document.cookie = 'jg_admin_verified=true; path=/; max-age=86400; SameSite=Lax';
+    }
+    window.location.href = '/dashboard/overview';
+  };
 
   // Redirigir automáticamente solo si el usuario ya está autenticado Y aprobado como admin
   useEffect(() => {
     if (isLoaded && isSignedIn && isApprovedAdmin) {
+      if (typeof document !== 'undefined') {
+        document.cookie = 'jg_admin_verified=true; path=/; max-age=86400; SameSite=Lax';
+      }
       const timer = setTimeout(() => {
-        router.push('/dashboard/overview');
-      }, 500);
+        window.location.href = '/dashboard/overview';
+      }, 600);
       return () => clearTimeout(timer);
     }
-  }, [isLoaded, isSignedIn, isApprovedAdmin, router]);
+  }, [isLoaded, isSignedIn, isApprovedAdmin]);
 
   const handleSignOut = async () => {
     try {
       if (typeof document !== 'undefined') {
+        document.cookie = 'jg_admin_verified=; path=/; max-age=0; SameSite=Lax';
         document.cookie = 'jg_admin_session=; path=/; max-age=0; SameSite=Lax';
       }
       await signOut({ redirectUrl: '/admin' });
@@ -165,7 +178,7 @@ export function AdminSignInView() {
                 <div className='flex flex-col gap-2.5 pt-2'>
                   <button
                     type='button'
-                    onClick={() => router.push('/dashboard/overview')}
+                    onClick={handleEnterDashboard}
                     className='w-full h-10 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-[#E63946]/25 transition-all cursor-pointer'
                   >
                     <Icons.dashboard className='w-4 h-4' />

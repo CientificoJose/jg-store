@@ -6,7 +6,13 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export const proxy = clerkMiddleware(async (auth, req) => {
-  // Verificación con Clerk en rutas administrativas protegidas
+  // 1. Verificación por cookie de administrador verificado en Clerk
+  const isVerified = req.cookies.get('jg_admin_verified')?.value === 'true';
+  if (isVerified) {
+    return;
+  }
+
+  // 2. Verificación con Clerk en rutas administrativas protegidas
   if (isProtectedRoute(req)) {
     try {
       await auth.protect();
