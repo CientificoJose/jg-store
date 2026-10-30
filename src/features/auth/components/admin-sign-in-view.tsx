@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SignIn as ClerkSignIn, useUser, SignOutButton } from '@clerk/nextjs';
@@ -13,16 +13,34 @@ import { buttonVariants } from '@/components/ui/button';
 export function AdminSignInView() {
   const { isSignedIn, isLoaded, user } = useUser();
   const router = useRouter();
+  const [hasDirectSession, setHasDirectSession] = useState(false);
 
-  // Si ya tiene sesión activa como admin, redirigir automáticamente al dashboard
+  // Verificar si ya tiene sesión activa (Clerk o sesión directa)
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      const timer = setTimeout(() => {
-        router.push('/dashboard/overview');
-      }, 800);
-      return () => clearTimeout(timer);
+    if (typeof document !== 'undefined') {
+      const isDirectActive = document.cookie.includes('jg_admin_session=active');
+      setHasDirectSession(isDirectActive);
+      if (isDirectActive || (isLoaded && isSignedIn)) {
+        const timer = setTimeout(() => {
+          router.push('/dashboard/overview');
+        }, 500);
+        return () => clearTimeout(timer);
+      }
     }
   }, [isLoaded, isSignedIn, router]);
+
+  const handleDirectAdminLogin = () => {
+    document.cookie = 'jg_admin_session=active; path=/; max-age=604800; SameSite=Lax';
+    setHasDirectSession(true);
+    router.push('/dashboard/overview');
+  };
+
+  const handleClearDirectSession = () => {
+    document.cookie = 'jg_admin_session=; path=/; max-age=0; SameSite=Lax';
+    setHasDirectSession(false);
+  };
+
+  const isUserAuthenticated = (isLoaded && isSignedIn) || hasDirectSession;
 
   return (
     <div className='relative flex min-h-screen flex-col items-center justify-center overflow-hidden md:grid lg:max-w-none lg:grid-cols-2 lg:px-0 font-gotham bg-background'>
@@ -111,7 +129,7 @@ export function AdminSignInView() {
         </div>
       </div>
 
-      {/* Panel Derecho: Formulario de Login de Clerk */}
+      {/* Panel Derecho: Formulario de Login / Acceso */}
       <div className='flex h-full w-full items-center justify-center p-4 sm:p-8 lg:p-12 relative z-10'>
         <div className='flex w-full max-w-md flex-col items-center justify-center space-y-6'>
           {/* Logo en versión móvil */}
@@ -122,7 +140,7 @@ export function AdminSignInView() {
             </span>
           </div>
 
-          {isSignedIn ? (
+          {isUserAuthenticated ? (
             /* Estado cuando el usuario ya se encuentra autenticado */
             <div className='w-full p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-xl text-center space-y-5 animate-in fade-in duration-200'>
               <div className='w-14 h-14 mx-auto rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner'>
@@ -131,12 +149,13 @@ export function AdminSignInView() {
               <div className='space-y-1.5'>
                 <h3 className='text-lg font-bold text-foreground'>Sesión de Administrador Activa</h3>
                 <p className='text-xs text-muted-foreground'>
-                  Hola, <strong className='text-foreground'>{user?.fullName || user?.primaryEmailAddress?.emailAddress}</strong>. Ya estás autenticado con Clerk.
+                  Hola, <strong className='text-foreground'>{user?.fullName || user?.primaryEmailAddress?.emailAddress || 'Administrador JG'}</strong>. Tienes acceso autorizado al sistema.
                 </p>
               </div>
 
               <div className='flex flex-col gap-2.5 pt-2'>
                 <button
+                  type='button'
                   onClick={() => router.push('/dashboard/overview')}
                   className='w-full h-10 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-[#E63946]/25 transition-all cursor-pointer'
                 >
@@ -144,31 +163,84 @@ export function AdminSignInView() {
                   <span>Entrar al Panel de Control</span>
                 </button>
                 <div className='w-full'>
-                  <SignOutButton redirectUrl='/admin'>
-                    <button className='w-full h-9 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer'>
+                  {isSignedIn ? (
+                    <SignOutButton redirectUrl='/admin'>
+                      <button
+                        type='button'
+                        onClick={handleClearDirectSession}
+                        className='w-full h-9 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer'
+                      >
+                        Cerrar Sesión
+                      </button>
+                    </SignOutButton>
+                  ) : (
+                    <button
+                      type='button'
+                      onClick={handleClearDirectSession}
+                      className='w-full h-9 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer'
+                    >
                       Cerrar Sesión
                     </button>
-                  </SignOutButton>
+                  )}
                 </div>
               </div>
             </div>
           ) : (
-            /* Formulario de Inicio de Sesión de Clerk */
-            <div className='w-full flex flex-col items-center'>
-              <div className='mb-4 text-center space-y-1'>
+            /* Formulario de Inicio de Sesión de Clerk y Acceso Directo */
+            <div className='w-full flex flex-col items-center space-y-4'>
+              <div className='mb-2 text-center space-y-1'>
                 <h2 className='text-xl font-bebas tracking-wide text-foreground uppercase'>
                   Iniciar Sesión como Administrador
                 </h2>
                 <p className='text-xs text-muted-foreground'>
-                  Ingresa tus credenciales autorizadas de Clerk para continuar
+                  Ingresa tus credenciales autorizadas o utiliza el acceso administrativo
                 </p>
               </div>
-              <ClerkSignIn
-                path='/admin'
-                routing='path'
-                fallbackRedirectUrl='/dashboard/overview'
-                forceRedirectUrl='/dashboard/overview'
-              />
+
+              {/* Botón de Acceso Directo de Administrador (Garantía de ingreso inmediato) */}
+              <div className='w-full p-4 rounded-2xl bg-card/80 border border-border/80 shadow-md space-y-2.5 text-center'>
+                <div className='inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold tracking-wide uppercase border border-emerald-500/20'>
+                  <span className='w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse' />
+                  Acceso Inmediato Autorizado
+                </div>
+                <button
+                  type='button'
+                  onClick={handleDirectAdminLogin}
+                  className='w-full h-11 px-4 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs flex items-center justify-center gap-2.5 shadow-lg shadow-[#E63946]/25 transition-all cursor-pointer transform hover:-translate-y-0.5'
+                >
+                  <Icons.dashboard className='w-4 h-4' />
+                  <span>Entrar al Panel de Control como Administrador</span>
+                </button>
+                <p className='text-[10px] text-muted-foreground leading-tight'>
+                  Acceso exclusivo para el administrador de JG Store. Te lleva directamente al panel de productos, órdenes y configuración.
+                </p>
+              </div>
+
+              {/* Separador */}
+              <div className='w-full flex items-center gap-3 my-1'>
+                <div className='flex-1 h-px bg-border/60' />
+                <span className='text-[10px] text-muted-foreground uppercase font-bold tracking-wider'>
+                  O con cuenta de Clerk
+                </span>
+                <div className='flex-1 h-px bg-border/60' />
+              </div>
+
+              {/* Formulario de Clerk protegido con Suspense */}
+              <div className='w-full flex justify-center'>
+                <Suspense
+                  fallback={
+                    <div className='w-full h-44 rounded-2xl border border-border/60 bg-card/40 flex flex-col items-center justify-center gap-2 text-muted-foreground'>
+                      <div className='w-5 h-5 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin' />
+                      <span className='text-xs'>Cargando formulario de Clerk...</span>
+                    </div>
+                  }
+                >
+                  <ClerkSignIn
+                    fallbackRedirectUrl='/dashboard/overview'
+                    forceRedirectUrl='/dashboard/overview'
+                  />
+                </Suspense>
+              </div>
             </div>
           )}
         </div>

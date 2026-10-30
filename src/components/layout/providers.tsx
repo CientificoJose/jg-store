@@ -15,19 +15,22 @@ export default function Providers({
     <>
       <ActiveThemeProvider initialTheme={activeThemeValue}>
         <ClerkProvider
+          publishableKey={
+            process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+            'pk_test_c2hpbmluZy1uYXJ3aGFsLTk2MzAuY2xlcmsuYWNjb3VudHMuZGV2JA'
+          }
+          signInUrl='/admin'
+          signUpUrl='/admin'
+          signInFallbackRedirectUrl='/dashboard/overview'
+          signUpFallbackRedirectUrl='/dashboard/overview'
           appearance={{
             variables: {
               colorPrimary: 'var(--primary)',
-              colorPrimaryForeground: 'var(--primary-foreground)',
-              colorDanger: 'var(--destructive)',
-              colorBackground: 'var(--card)',
               colorForeground: 'var(--foreground)',
-              colorMuted: 'var(--muted)',
-              colorMutedForeground: 'var(--muted-foreground)',
-              colorInput: 'var(--input)',
+              colorBackground: 'var(--card)',
+              colorInput: 'var(--background)',
               colorInputForeground: 'var(--foreground)',
-              colorBorder: 'var(--border)',
-              colorRing: 'var(--ring)',
+              colorDanger: 'var(--destructive)',
               fontFamily: 'var(--font-sans)'
             }
           }}
