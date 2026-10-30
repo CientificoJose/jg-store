@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Logo } from '@/components/brand/logo';
 import { Icons } from '@/components/icons';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
@@ -104,7 +105,17 @@ export function StoreFooter({ onSelectCategory, onResetHome }: StoreFooterProps)
 
         {/* Barra Inferior */}
         <div className="mt-12 pt-6 border-t border-border/80 flex flex-col sm:flex-row items-center justify-between text-xs text-[#6C757D] gap-4">
-          <p>© {new Date().getFullYear()} JG Store Polirubro • República Argentina. Todos los derechos reservados.</p>
+          <p className="flex items-center gap-1.5 flex-wrap">
+            <span>© {new Date().getFullYear()} JG Store Polirubro • República Argentina. Todos los derechos reservados.</span>
+            <Link
+              href="/admin"
+              className="text-[#6C757D]/25 hover:text-[#E63946] transition-colors p-0.5 rounded cursor-pointer"
+              title="Acceso Administrativo"
+              aria-label="Acceso Administrativo"
+            >
+              <Icons.settings className="w-3 h-3" />
+            </Link>
+          </p>
           <div className="flex items-center gap-4">
             <span>24 Departamentos</span>
             <span>•</span>

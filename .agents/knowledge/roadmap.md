@@ -430,7 +430,14 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - Acordeón de resumen del pedido con desglose de productos, cantidades, precios, modalidad de entrega (retiro/envío) y tipo de factura (A/B).
   - Botón de imprimir comprobante (`window.print()`).
   - Configuración de datos bancarios (`bankName`, `bankAccountHolder`, `bankCbu`, `bankAlias`) editable desde el panel de control (`/dashboard/config/general`).
-  - Pruebas automatizadas en `src/tests/order-success.test.ts` pasando al 100%.
+- [x] **Portal Exclusivo de Administrador con Clerk (`/admin`) y Ocultamiento en Tienda Pública:**
+  - **Ocultamiento Total para Clientes:** Eliminado el botón visible "Admin" de la cabecera pública (`StoreHeader`), de modo que ningún usuario normal ve enlaces de acceso administrativo mientras navega o compra.
+  - **Ruta Privada Dedicada (`/admin`):** Creada la ruta `/admin/[[...admin]]` con interfaz institucional de JG Store y directivas `robots: { index: false, follow: false }` para que no sea indexada por buscadores.
+  - **Autenticación con Clerk & Redirección:** Integrado el componente `<ClerkSignIn path="/admin" />` con redirección automática forzada a `/dashboard/overview` al autenticarse exitosamente.
+  - **Detección de Sesión Activa:** Si el administrador ya cuenta con sesión abierta, es recibido con un indicador esmeralda y redirigido en 800ms directo al panel de control.
+  - **Protección de Rutas con Middleware:** Implementado `src/middleware.ts` mediante `clerkMiddleware` y `auth.protect()` para resguardar `/dashboard(.*)`. Cualquier intento de ingresar directo al dashboard sin iniciar sesión redirige automáticamente a `/admin`.
+  - **Acceso Discreto en Footer:** Incorporado un enlace sutil y casi invisible en el pie de página junto al copyright para facilitar el acceso rápido del dueño de la tienda desde cualquier dispositivo.
+  - **Pruebas Automatizadas:** 5 pruebas unitarias en `src/tests/admin-auth.test.ts` pasando al 100%.
 
 ---
 

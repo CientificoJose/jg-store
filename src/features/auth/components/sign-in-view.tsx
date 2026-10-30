@@ -16,13 +16,13 @@ export default function SignInViewPage() {
   return (
     <div className='relative flex min-h-screen flex-col items-center justify-center overflow-hidden md:grid lg:max-w-none lg:grid-cols-2 lg:px-0'>
       <Link
-        href='/examples/authentication'
+        href='/'
         className={cn(
-          buttonVariants({ variant: 'ghost' }),
-          'absolute top-4 right-4 hidden md:top-8 md:right-8'
+          buttonVariants({ variant: 'ghost', size: 'sm' }),
+          'absolute top-4 right-4 z-20 flex items-center gap-1.5 rounded-xl border border-border/80 bg-card/80 text-xs font-semibold'
         )}
       >
-        Login
+        <span>Volver a la Tienda</span>
       </Link>
       <div className='relative hidden h-full flex-col p-10 lg:flex dark:border-r'>
         <div className='absolute inset-0 bg-sidebar' />
@@ -46,7 +46,7 @@ export default function SignInViewPage() {
       </div>
       <div className='flex h-full items-center justify-center p-4 lg:p-8'>
         <div className='flex w-full max-w-md flex-col items-center justify-center space-y-6'>
-          <ClerkSignInForm />
+          <ClerkSignInForm fallbackRedirectUrl='/dashboard/overview' forceRedirectUrl='/dashboard/overview' />
         </div>
       </div>
     </div>

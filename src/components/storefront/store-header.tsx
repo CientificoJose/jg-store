@@ -263,15 +263,6 @@ export function StoreHeader({
               )}
             </Link>
 
-            {/* Enlace al Panel Administrativo */}
-            <Link
-              href="/dashboard/overview"
-              title="Panel Administrativo"
-              className="h-10 px-3 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-semibold text-[#6C757D] hover:text-foreground hidden lg:flex items-center gap-1.5 transition-colors"
-            >
-              <Icons.dashboard className="w-3.5 h-3.5" />
-              <span>Admin</span>
-            </Link>
 
             {/* Botón del Carrito con Rojo Pasión y Dorado */}
             <button
