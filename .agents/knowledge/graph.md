@@ -16,6 +16,7 @@ graph TD
     subgraph Memoria [Memoria & Continuidad]
         CS[🟢 Sistema de Continuidad en Repo]
         BUN[🟢 Runtime: Bun]
+        GFY[🟢 Motor Graphify: 5293 Nodos / 10207 Aristas]
     end
 
     subgraph Fundacion [Infraestructura & UI]
@@ -25,6 +26,11 @@ graph TD
 
     subgraph Datos [Persistencia & Datos]
         DB["🟢 PostgreSQL & Supabase Dokploy"]
+        ST["🟢 Supabase Storage (Imágenes 99.4%)"]
+    end
+
+    subgraph Scraper [Scraping & Sincronización]
+        SC["🟢 Scraper Coronel (Python FastAPI/Chromium)"]
     end
 
     subgraph Pendientes [Tareas Pendientes Activas]
@@ -32,24 +38,33 @@ graph TD
     end
 
     JG --> CS
+    JG --> GFY
     JG --> FE
     CS --> BUN
+    CS --> GFY
     BUN --> FE
     
     JG --> BM
     JG --> BR
     JG --> DB
+    JG --> SC
     JG -.-> CL
     
     BM --> FE
     BR --> FE
     DB --> BM
+    DB --> ST
+    SC --> DB
+    SC --> ST
     CL -.-> BM
+    GFY -.-> FE
+    GFY -.-> DB
+    GFY -.-> SC
 
     classDef completed fill:#22c55e,stroke:#15803d,color:#fff;
     classDef pending fill:#eab308,stroke:#a16207,color:#000;
     
-    class CS,BUN,FE,BR,BM,DB completed;
+    class CS,BUN,GFY,FE,BR,BM,DB,ST,SC completed;
     class CL pending;
 ```
 
@@ -377,4 +392,45 @@ graph TD
 * **Detalles:**
   - **Diagnóstico de Error 42P01:** Se identificó que `/api/catalog/reset` ejecutaba `DELETE FROM public.favorites;` y `DELETE FROM public.product_variants;`, tablas que no existen en la base de datos (los favoritos son locales vía Zustand/localStorage). Al estar dentro de una transacción `BEGIN...COMMIT`, PostgreSQL abortaba el vaciado completo.
   - **Ejecución Dinámica Condicional:** Se implementó un bloque `DO $purge$ ... END $purge$;` que consulta `information_schema.tables` y solo emite `DELETE` sobre las tablas existentes en orden de claves foráneas (`products` ➔ `sub_subcategories` ➔ `subcategories` ➔ `categories`), garantizando un vaciado limpio y 100% libre de errores.
+
+### 35. 🟢 Reparación Integral de Supabase Storage (`supabase-storage-repair`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Reconstrucción de Catálogo `storage.buckets`:** Tras la reversión del VPS, la relación `storage.buckets` (OID 17660) desapareció de `pg_class`, provocando que cualquier petición a `/storage/v1/object/public/products/...` o intento de subida arrojara `503 DatabaseSchemaMismatch (relation "buckets" does not exist)`. Se reconstruyó la tabla en `pg_class` y `pg_attribute` con sus 11 columnas y tipos nativos, reindexando `storage.buckets` y reactivando el bucket público `products` con permisos completos para `service_role`, `anon`, `authenticated` y `supabase_storage_admin`.
+  - **Restauración de Atributos Extendidos (`xattr`):** Al haberse restaurado sin `--xattrs`, los 889 archivos físicos de productos en `/var/lib/storage` habían perdido sus metadatos (`user.supabase.content-type`), provocando errores `ENODATA: The extended attribute does not exist`. Se ejecutó un script en el VPS para asignarles automáticamente su `content-type` (`image/jpeg`, etc.) y `cache-control: no-cache`.
+  - **Subida y Normalización de Imágenes:** Se subió la foto original de `BIC-919.jpg` (31.218 bytes) y se normalizaron las 6.408 URLs de productos en la base de datos a `https://` directo.
+
+### 36. 🟢 Módulo de Auditoría de Imágenes de Productos (`product-images-audit-module`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Módulo Central (`src/lib/product-audit.ts`):** Función `auditProductImages(options)` que cruza todos los productos del catálogo contra los archivos reales en el bucket `products` de Supabase Storage, clasificando cada artículo en:
+    - `with_image`: Producto con imagen confirmada y accesible en Storage.
+    - `missing_image`: Producto con URL vacía o imagen de relleno genérica de Unsplash.
+    - `broken_storage`: Producto con URL asignada a Storage pero cuyo archivo físico no existe en el bucket (error 404).
+  - **Funciones Auxiliares Exportadas:** `getProductsWithoutImage()` y `getProductsWithImage()` disponibles en `@/lib/product-audit` y re-exportadas en `@/lib/store-service`.
+  - **Endpoint API (`/api/products/images-audit`):** Endpoint GET con soporte para filtros (`?filter=all|with_image|without_image|broken`), paginación (`?page=1&limit=100`), solo resumen (`?summary_only=true`) y filtro por categoría/búsqueda.
+  - **Herramienta CLI con Bun (`scripts/audit-product-images.ts`):** Script de consola ejecutable mediante `bun run scripts/audit-product-images.ts` que muestra en segundos una tabla detallada con métricas, porcentajes, muestras de artículos y opción de exportación a JSON (`--export`).
+
+### 37. 🟢 Carga Masiva y Sanitización de Imágenes en Supabase Storage (`product-images-bulk-upload`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Subida Paralela Multihilo (20 Workers):** Se ejecutó un pipeline paralelo en Python directamente dentro del contenedor del scraper en el VPS, transfiriendo 6.174 imágenes JPG a Supabase Storage en menos de 3 minutos.
+  - **Sanitización de Caracteres Especiales (Ñ):** Detección de la restricción de caracteres de Supabase Storage (error `400 InvalidKey` ante caracteres no-ASCII como la `Ñ`). Se normalizaron automáticamente las 30 imágenes afectadas (ej. `SEÑ...` -> `SEN...`) tanto en los nombres de archivo subidos a Storage como en la columna `image_url` de PostgreSQL (`UPDATE public.products SET image_url = REPLACE(image_url, 'Ñ', 'N')`).
+  - **Auditoría Final de Cobertura:** El catálogo general de 6.408 productos pasó de un 4.4% de imágenes confirmadas (279) a un **99.4% de cobertura real y verificada (6.369 productos con imagen visible)**.
+
+### 38. 🟢 Integración de Graphify (Graphify-Labs/graphify) como Motor de Grafo de Conocimiento Automatizado (`graphify-engine`)
+* **Estado:** Completado.
+* **Detalles:**
+  - **Instalación y Extractores AST:** Instalación de `graphifyy` con extractores Tree-Sitter para TypeScript, JavaScript, Python, Bash, JSON y SQL (`tree-sitter-sql` para esquemas y migraciones de Supabase/PostgreSQL).
+  - **Integración Nativa con Google Antigravity & Husky:**
+    - Regla siempre activa en [`.agents/rules/graphify.md`](../rules/graphify.md) que orienta a los agentes a consultar el grafo (`graphify query`, `graphify path`, `graphify explain`) antes de explorar el código a ciegas.
+    - Flujo de trabajo en [`.agents/workflows/graphify.md`](../workflows/graphify.md) y skill oficial en [`.agents/skills/graphify/SKILL.md`](../skills/graphify/SKILL.md).
+    - Hooks de Husky (`post-commit`, `post-checkout`, `post-merge`, `post-rewrite`) y merge driver en `.gitattributes` para reconstruir y resolver conflictos del grafo de forma automática e incremental con cada commit (sin costo de tokens ni LLM).
+  - **Artefactos del Grafo Generados (`graphify-out/`):**
+    - `graph.json`: 5.293 nodos, 10.207 aristas y 499 comunidades mapeando la arquitectura completa del proyecto (UI Next.js, API routes, servicios de datos, crawler Python y esquemas SQL).
+    - `GRAPH_REPORT.md`: Auditoría arquitectónica y mapa de comunidades con identificación de "God Nodes" (`cn()`, `Button()`, `Icons`, `Card()`, `PageContainer()`).
+    - `graph.html`: Mapa visual e interactivo de navegación de código navegable en el navegador.
+  - **Scripts en `package.json`:** Comandos `bun run graphify`, `bun run graphify:update` y `bun run graphify:report` disponibles para desarrolladores.
+
+
 

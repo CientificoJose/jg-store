@@ -1,7 +1,8 @@
 # JG Store - Instrucciones para Gemini / Antigravity
 
 Consulte el protocolo de continuidad y conocimiento del proyecto:
-* **Grafo de Conocimiento:** [`.agents/knowledge/graph.md`](file://./.agents/knowledge/graph.md)
+* **Grafo de Conocimiento Arquitectónico:** [`.agents/knowledge/graph.md`](file://./.agents/knowledge/graph.md) y [`.agents/knowledge/graph.json`](file://./.agents/knowledge/graph.json)
+* **Grafo de Código AST (Graphify):** [`graphify-out/GRAPH_REPORT.md`](file://./graphify-out/GRAPH_REPORT.md) y regla [`.agents/rules/graphify.md`](file://./.agents/rules/graphify.md) (consultar con `graphify query "<término>"` o `graphify path "<A>" "<B>"` antes de búsquedas masivas)
 * **Roadmap Activo:** [`.agents/knowledge/roadmap.md`](file://./.agents/knowledge/roadmap.md)
 * **Decisiones (ADR):** [`.agents/knowledge/decisions.md`](file://./.agents/knowledge/decisions.md)
 * **Skill de Continuidad:** [`.agents/skills/project-continuity/SKILL.md`](file://./.agents/skills/project-continuity/SKILL.md)

@@ -1,31 +1,41 @@
 {
   "project": {
-    "name": "JS Store",
+    "name": "JG Store",
     "description": "Plataforma de comercio electrónico en Argentina (ARS) con abastecimiento vía scraping de Coronel y venta dual B2B / B2C",
     "repository": "https://github.com/CientificoJose/jg-store",
-    "lastUpdated": "2026-09-14"
+    "lastUpdated": "2026-11-02",
+    "graphify": {
+      "version": "0.9.100",
+      "status": "active",
+      "outputPath": "graphify-out/graph.json",
+      "reportPath": "graphify-out/GRAPH_REPORT.md",
+      "htmlPath": "graphify-out/graph.html",
+      "nodesCount": 5293,
+      "edgesCount": 10207,
+      "communitiesCount": 499
+    }
   },
   "nodes": [
     {
       "id": "business-model",
       "type": "Domain",
       "title": "Modelo de Negocio B2B + B2C (Coronel ARS)",
-      "status": "in-progress",
-      "description": "Reventa y distribución en Argentina (ARS) basada en catálogo extraído por scraping de Coronel con márgenes diferenciales para detal y mayor."
+      "status": "completed",
+      "description": "Reventa y distribución en Argentina (ARS) con precios diferenciados (detal vs mayorista), barra de progreso mayorista ($50.000 ARS), Factura A/B y medios de pago locales."
     },
     {
       "id": "branding",
       "type": "Identity",
       "title": "Branding & Activos Visuales (JG-STORE Polirubro)",
       "status": "completed",
-      "description": "Logotipo vectorial SVG oficial, isotipo, paleta Rosado & Blanco y tema CSS jg-store."
+      "description": "Logotipo vectorial SVG oficial, isotipo, paleta institucional (#E63946, #FF85A2, #D4A017, #F8F8F7, #6C757D), modo diurno/nocturno y tipografías Bebas Neue + Gotham."
     },
     {
       "id": "frontend-foundation",
       "type": "Architecture",
-      "title": "Base Frontend (Next.js + shadcn/ui)",
+      "title": "Base Frontend (Next.js 16 + shadcn/ui)",
       "status": "completed",
-      "description": "Plantilla next-shadcn-dashboard-starter integrada sobre Next.js 16 (App Router), Tailwind CSS v4 y componentes shadcn/ui."
+      "description": "Plantilla next-shadcn-dashboard-starter integrada sobre Next.js 16 (App Router), Tailwind CSS v4, shadcn/ui, TanStack Table y TanStack Form."
     },
     {
       "id": "package-manager",
@@ -35,25 +45,60 @@
       "description": "Uso obligatorio de Bun en todo el ciclo de desarrollo por velocidad y compatibilidad nativa con TypeScript."
     },
     {
-      "id": "auth-clerk",
-      "type": "Integration",
-      "title": "Autenticación con Clerk",
-      "status": "completed",
-      "description": "Conexión y configuración de Clerk para login, sesiones y roles de usuario. ClerkProvider, proxy Next.js 16 y vistas /sign-in y /sign-up totalmente operativas."
-    },
-    {
       "id": "backend-database",
       "type": "Backend",
-      "title": "Base de Datos y API",
-      "status": "pending",
-      "description": "Definición del motor de base de datos (PostgreSQL/Supabase/Firebase/Prisma/Drizzle) y APIs de productos y pedidos."
+      "title": "Base de Datos Dokploy PostgreSQL & Supabase REST",
+      "status": "completed",
+      "description": "PostgreSQL 17.6 en VPS Dokploy con PostgREST (/rest/v1), tablas normalizadas en 3 niveles (categories, subcategories, sub_subcategories, products), vistas y RLS."
+    },
+    {
+      "id": "supabase-storage",
+      "type": "Storage",
+      "title": "Supabase Storage (Imágenes de Catálogo)",
+      "status": "completed",
+      "description": "Bucket público S3 'products' con 6.174 imágenes transferidas, normalización HTTPS, atributos xattr restaurados y cobertura verificada del 99.4%."
+    },
+    {
+      "id": "scraper-coronel",
+      "type": "Scraper",
+      "title": "Scraper Coronel (Python FastAPI/Chromium)",
+      "status": "completed",
+      "description": "Servicio de extracción de catálogo, stock y precios de Distribuidora Coronel con panel noVNC y endpoints de migración hacia Supabase."
+    },
+    {
+      "id": "storefront-b2b-b2c",
+      "type": "Storefront",
+      "title": "Storefront y Experiencia de Compra Dual",
+      "status": "completed",
+      "description": "Catálogo de 24 categorías, barra de búsqueda con Enter, filtros estilo Mercado Libre, ficha de producto grande, carrito hasta 5XL y checkout por WhatsApp."
+    },
+    {
+      "id": "orders-management",
+      "type": "Dashboard",
+      "title": "Panel Administrativo de Pedidos y Cotizaciones",
+      "status": "completed",
+      "description": "Gestión de pedidos en /dashboard/orders con soporte Factura A/B, detalle de ítems, cálculo de ahorro mayorista y tracking de estados."
+    },
+    {
+      "id": "graphify-knowledge-engine",
+      "type": "Tooling",
+      "title": "Motor Graphify (Graphify-Labs/graphify)",
+      "status": "completed",
+      "description": "Grafo de código AST automatizado con 2.605 nodos y 7.390 relaciones, visualizador graph.html, hooks de commit Husky y reglas Antigravity activas."
     },
     {
       "id": "continuity-system",
       "type": "Governance",
       "title": "Sistema de Continuidad y Memoria en Repo",
       "status": "completed",
-      "description": "Grafo de conocimiento, bitácora de decisiones y skill de sincronización para que cualquier IA o colaborador retome el contexto sin pérdidas."
+      "description": "Grafo de conocimiento, bitácora de decisiones (ADR), roadmap y skills para que cualquier IA o colaborador retome el contexto sin pérdidas."
+    },
+    {
+      "id": "auth-clerk",
+      "type": "Integration",
+      "title": "Autenticación con Clerk",
+      "status": "pending",
+      "description": "Conexión de Clerk en pausa/pendiente por directiva del usuario hasta requerimiento expreso."
     },
     {
       "id": "customer-account-settings",
@@ -66,8 +111,8 @@
   "edges": [
     {
       "from": "business-model",
-      "to": "frontend-foundation",
-      "relation": "drives-ui-views"
+      "to": "storefront-b2b-b2c",
+      "relation": "drives-pricing-and-checkout"
     },
     {
       "from": "branding",
@@ -75,19 +120,39 @@
       "relation": "styles-theme"
     },
     {
-      "from": "auth-clerk",
-      "to": "business-model",
-      "relation": "enforces-user-roles-b2b-b2c"
-    },
-    {
-      "from": "backend-database",
-      "to": "business-model",
-      "relation": "persists-catalogs-and-orders"
-    },
-    {
       "from": "package-manager",
       "to": "frontend-foundation",
       "relation": "executes-and-builds"
+    },
+    {
+      "from": "backend-database",
+      "to": "storefront-b2b-b2c",
+      "relation": "serves-catalog-data"
+    },
+    {
+      "from": "backend-database",
+      "to": "orders-management",
+      "relation": "persists-orders"
+    },
+    {
+      "from": "supabase-storage",
+      "to": "storefront-b2b-b2c",
+      "relation": "serves-product-images"
+    },
+    {
+      "from": "scraper-coronel",
+      "to": "backend-database",
+      "relation": "migrates-catalog-and-stock"
+    },
+    {
+      "from": "scraper-coronel",
+      "to": "supabase-storage",
+      "relation": "syncs-downloaded-images"
+    },
+    {
+      "from": "graphify-knowledge-engine",
+      "to": "continuity-system",
+      "relation": "powers-codebase-navigation"
     },
     {
       "from": "continuity-system",
@@ -95,9 +160,14 @@
       "relation": "tracks-roadmap"
     },
     {
-      "from": "customer-account-settings",
+      "from": "auth-clerk",
       "to": "business-model",
-      "relation": "stores-buyer-profile"
+      "relation": "enforces-user-roles-b2b-b2c"
+    },
+    {
+      "from": "customer-account-settings",
+      "to": "storefront-b2b-b2c",
+      "relation": "enables-buyer-portal"
     }
   ]
 }

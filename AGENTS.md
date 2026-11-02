@@ -4,10 +4,11 @@
 > **PROTOCOLO DE MEMORIA Y CONTINUIDAD DEL PROYECTO (OBLIGATORIO):**
 > Antes de ejecutar cualquier tarea o proponer cambios, todo asistente de IA debe consultar:
 > 1. **Grafo de Conocimiento:** [`.agents/knowledge/graph.md`](./.agents/knowledge/graph.md) y [`.agents/knowledge/graph.json`](./.agents/knowledge/graph.json)
-> 2. **Roadmap & Backlog Activo:** [`.agents/knowledge/roadmap.md`](./.agents/knowledge/roadmap.md)
-> 3. **Registro de Decisiones (ADR):** [`.agents/knowledge/decisions.md`](./.agents/knowledge/decisions.md)
-> 4. **Reglas Comerciales (Mayor y Detal):** [`.agents/knowledge/business-rules.md`](./.agents/knowledge/business-rules.md)
-> 5. **Skill de Continuidad:** [`.agents/skills/project-continuity/SKILL.md`](./.agents/skills/project-continuity/SKILL.md)
+> 2. **Grafo de Código Automatizado (Graphify):** [`graphify-out/GRAPH_REPORT.md`](./graphify-out/GRAPH_REPORT.md) y regla [`.agents/rules/graphify.md`](./.agents/rules/graphify.md) (consultar con `graphify query "<pregunta>"` o `graphify path "<A>" "<B>"` antes de inspeccionar código masivo).
+> 3. **Roadmap & Backlog Activo:** [`.agents/knowledge/roadmap.md`](./.agents/knowledge/roadmap.md)
+> 4. **Registro de Decisiones (ADR):** [`.agents/knowledge/decisions.md`](./.agents/knowledge/decisions.md)
+> 5. **Reglas Comerciales (Mayor y Detal):** [`.agents/knowledge/business-rules.md`](./.agents/knowledge/business-rules.md)
+> 6. **Skill de Continuidad:** [`.agents/skills/project-continuity/SKILL.md`](./.agents/skills/project-continuity/SKILL.md)
 >
 > **REGLAS CRÍTICAS DEL USUARIO:**
 > - **Runtime & Paquetes:** Usar SIEMPRE `bun` (`bun install`, `bun add`, `bun dev`, `bun run build`). En Windows invocar mediante `& "$env:USERPROFILE\.bun\bin\bun.exe"`. Prohibido generar `package-lock.json` o usar Node/npm como sustituto.
@@ -15,7 +16,7 @@
 > - **Lógica B2B / B2C:** Todo módulo de catálogo, precios y órdenes debe contemplar la diferenciación entre venta al detal y al mayor.
 > - **Flujo Git Local-First:** Todos los cambios deben realizarse y probarse estrictamente en local. PROHIBIDO hacer push automático a GitHub. Cuando el usuario solicite subir los cambios a GitHub, hacerlo en un solo comando directamente sobre la rama principal (`main`). Ver [`.agents/skills/git-local-first/SKILL.md`](./.agents/skills/git-local-first/SKILL.md).
 > - **Identidad Visual y Colores:** Respetar la paleta institucional (#E63946, #FF85A2, #D4A017, #F8F8F7, #6C757D) y tipografías (Bebas Neue Cyrillic para títulos/display y Gotham para textos/UI). Ver [`.agents/skills/brand-design-system/SKILL.md`](./.agents/skills/brand-design-system/SKILL.md).
-> - **Al finalizar cada tarea:** Actualizar `.agents/knowledge/roadmap.md` y `.agents/knowledge/graph.md` con los avances.
+> - **Al finalizar cada tarea:** Actualizar `.agents/knowledge/roadmap.md` y `.agents/knowledge/graph.md` con los avances y mantener sincronizado el grafo con `graphify update .`.
 > - **Prohibido Servidores Externos:** PROHIBIDO invocar bajo ninguna circunstancia los servidores MCP de `vps-lavarmicoche` o `n8n-mcp-lavarmicoche`. Toda interacción con la base de datos se realiza exclusivamente a través de la API REST de PostgREST / Supabase de JG Store.
 
 ---

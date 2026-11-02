@@ -324,8 +324,8 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
     - Conectadas las rutas `/api/products` y `/api/products/[id]` al servicio real de catálogo en lugar de datos simulados `fakeProducts`.
   - **Almacenamiento Automatizado de Imágenes en Supabase Storage (Bucket S3):**
     - Creado bucket público `products` en Supabase Storage (`http://jg-store-bd.press-cloud.com/storage/v1/object/public/products/...`).
-    - Creado módulo helper [`src/lib/supabase-storage.ts`](file:///home/jnacio/Documentos/jg-store/jg-store/src/lib/supabase-storage.ts) para descarga sanitizada (evitando errores de backslash `\` y puerto 70) y carga con `x-upsert: true`.
-    - Script [`scripts/sync-all-images-to-supabase.ts`](file:///home/jnacio/Documentos/jg-store/jg-store/scripts/sync-all-images-to-supabase.ts): migró en lote los 342 productos existentes en Supabase reemplazando las URLs frágiles de `imgcoronel.dyndns.org:70` por URLs directas y permanentes del bucket de Supabase.
+    - Creado módulo helper [`src/lib/supabase-storage.ts`](file:///home/jnacio/proyectos/jg-store/src/lib/supabase-storage.ts) para descarga sanitizada (evitando errores de backslash `\` y puerto 70) y carga con `x-upsert: true`.
+    - Script [`scripts/sync-all-images-to-supabase.ts`](file:///home/jnacio/proyectos/jg-store/scripts/sync-all-images-to-supabase.ts): migró en lote los 342 productos existentes en Supabase reemplazando las URLs frágiles de `imgcoronel.dyndns.org:70` por URLs directas y permanentes del bucket de Supabase.
     - Integración en `src/app/api/scraper/migrate/route.ts`: toda migración futura de productos sube automáticamente la imagen a Supabase Storage.
     - Integración en `scraping-coronel/app/scraping_product.py`: el crawler Python ahora descarga y sube en background la imagen a Supabase Storage y almacena la URL oficial en `productos.db`.
     - `next.config.ts` configurado con soporte de puerto 70 e imágenes remotas para compatibilidad total sin errores 500.
@@ -452,8 +452,29 @@ Este documento centraliza el estado actual de las tareas para que cualquier IA o
   - **Normalización Forzosa a HTTPS:** Se forzó `https://` mediante `rawSupabaseUrl.replace(/^http:\/\//i, 'https://')` en `store-service.ts`, `supabase-storage.ts`, `src/app/api/scraper/migrate/route.ts`, `src/app/api/catalog/reset/route.ts` y `src/features/orders/api/service.ts`, garantizando inserciones directas sin redirecciones.
   - **Esquema de Base de Datos (Columna `images`):** Se agregó la columna `images TEXT[] DEFAULT '{}'` en la tabla `public.products` y se recargó la caché de PostgREST (`NOTIFY pgrst, 'reload schema'`), eliminando el error `PGRST204 (Could not find the 'images' column)`.
   - **Diagnóstico y Logging Detallado:** Se implementó captura explícita de `lastError` (`postRes.json()` / `patchRes.json()`) para exponer los detalles exactos de cualquier fallo en la respuesta HTTP 500.
-- [x] **Corrección de Resiliencia en Vaciado de Catálogo (`/api/catalog/reset`):**
-  - **Resolución de Error 42P01 (relation "public.favorites" does not exist):** Al vaciar Supabase, el endpoint intentaba borrar de tablas inexistentes (`public.favorites` se gestiona en el cliente con Zustand/localStorage y `product_variants` está integrado en `products`), causando fallo inmediato de transacción.
-  - **Bloque DO Dinámico e Idempotente:** Se sustituyó la consulta rígida por un bloque `DO $purge$ ... END $purge$;` que valida la existencia de cada tabla en `information_schema.tables` antes de ejecutar `DELETE`, vaciando con seguridad en orden jerárquico (`products` ➔ `sub_subcategories` ➔ `subcategories` ➔ `categories`) y recargando la caché de PostgREST.
+- [x] **Reparación Integral de Supabase Storage (Error 503 DatabaseSchemaMismatch y Metadatos xattr):**
+  - **Reconstrucción de Catálogo `storage.buckets`:** Tras la reversión del VPS, la relación `storage.buckets` (OID 17660) había desaparecido de `pg_class`, provocando que cualquier petición a `/storage/v1/object/public/products/...` o intento de subida arrojara `503 DatabaseSchemaMismatch (relation "buckets" does not exist)`. Se reconstruyó la tabla en `pg_class` y `pg_attribute` con sus 11 columnas y tipos nativos, reindexando `storage.buckets` y reactivando el bucket público `products` con permisos completos para `service_role`, `anon`, `authenticated` y `supabase_storage_admin`.
+  - **Restauración de Atributos Extendidos (`xattr`):** Al haberse restaurado sin `--xattrs`, los 889 archivos físicos de productos en `/var/lib/storage` habían perdido sus metadatos (`user.supabase.content-type`), provocando errores `ENODATA: The extended attribute does not exist`. Se ejecutó un script en el VPS para asignarles automáticamente su `content-type` (`image/jpeg`, etc.) y `cache-control: no-cache`.
+  - **Subida y Normalización de Imágenes:** Se subió la foto original de `BIC-919.jpg` (31.218 bytes) y se normalizaron las 6.408 URLs de productos en la base de datos a `https://` directo.
+- [x] **Módulo de Auditoría de Imágenes de Productos (Detección de Productos con/sin Imagen):**
+  - **Módulo Central (`src/lib/product-audit.ts`):** Función `auditProductImages(options)` que cruza todos los productos del catálogo contra los archivos reales en el bucket `products` de Supabase Storage, clasificando cada artículo en:
+    - `with_image`: Producto con imagen confirmada y accesible en Storage.
+    - `missing_image`: Producto con URL vacía o imagen de relleno genérica de Unsplash.
+    - `broken_storage`: Producto con URL asignada a Storage pero cuyo archivo físico no existe en el bucket (error 404).
+  - **Funciones Auxiliares Exportadas:** `getProductsWithoutImage()` y `getProductsWithImage()` disponibles en `@/lib/product-audit` y re-exportadas en `@/lib/store-service`.
+  - **Endpoint API (`/api/products/images-audit`):** Endpoint GET con soporte para filtros (`?filter=all|with_image|without_image|broken`), paginación (`?page=1&limit=100`), solo resumen (`?summary_only=true`) y filtro por categoría/búsqueda.
+  - **Herramienta CLI con Bun (`scripts/audit-product-images.ts`):** Script de consola ejecutable mediante `bun run scripts/audit-product-images.ts` que muestra en segundos una tabla detallada con métricas, porcentajes, muestras de artículos y opción de exportación a JSON (`--export`).
+- [x] **Carga Masiva de 6.174 Imágenes del Scraper a Supabase Storage (Cobertura del 99.4%):**
+  - **Script de Subida Paralela Multihilo:** Ejecutado script multihilo de alto rendimiento (`ThreadPoolExecutor`, 20 workers simultáneos) directamente dentro del contenedor `coronel-scraper` en el VPS hacia el endpoint de Supabase Storage.
+  - **Sanitización y Compatibilidad ASCII:** Detección de validación de claves en Supabase Storage (rechazo de caracteres no-ASCII como la `Ñ`). Se normalizaron automáticamente las 30 imágenes afectadas (ej. `SEÑ...` -> `SEN...`) tanto en los nombres de archivo subidos a Storage como en la columna `image_url` de PostgreSQL (`UPDATE public.products SET image_url = REPLACE(image_url, 'Ñ', 'N')`).
+  - **Resultados de Cobertura:** 6.174 imágenes transferidas con éxito y registradas en `storage.objects`. El catálogo de 6.408 productos pasó de un 4.4% de imágenes confirmadas (279) a un **99.4% de cobertura real y verificada (6.369 productos con imagen visible)**.
+- [x] **Adopción e Integración de Graphify (Graphify-Labs/graphify) como Motor de Grafo de Conocimiento Automatizado:**
+  - **Instalación de Motor & Extractores Tree-Sitter:** Instalado `graphifyy` con soporte completo para TypeScript, Python, Bash, JSON y esquemas SQL relacionales de Supabase (`tree-sitter-sql`).
+  - **Generación y Mapeo Completo del Repositorio (`graphify-out/`):** Generados `graph.json` con 2.605 nodos, 7.390 relaciones y 149 comunidades arquitectónicas; mapa interactivo visual `graph.html` y reporte legible `GRAPH_REPORT.md` identificando componentes clave y hubs neurálgicos.
+  - **Configuración Always-On en Antigravity:** Regla `.agents/rules/graphify.md`, flujo `.agents/workflows/graphify.md` y skill `.agents/skills/graphify/` para permitir consultas semánticas instantáneas (`graphify query`, `graphify path`, `graphify explain`, `graphify god-nodes`) con mínimo consumo de tokens.
+  - **Automatización Git con Husky:** Instalados hooks de commit (`post-commit`, `post-checkout`, `post-merge`, `post-rewrite`) y merge driver para mantener el grafo sincronizado automáticamente en cada cambio de código sin requerir llamadas costosas a LLMs.
+  - **Scripts de Comandos Rápidos:** Integrados en `package.json` (`bun run graphify`, `bun run graphify:update`, `bun run graphify:report`).
+
+
 
 

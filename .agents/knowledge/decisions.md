@@ -49,3 +49,16 @@ Este documento registra las decisiones clave tomadas en el proyecto para que cua
 * **Decisión:** El usuario indicó mantener la tarea en pausa temporalmente para definir con precisión la metodología operativa y formatos comerciales antes de implementarla.
 * **Consecuencias:** No se bloquea el desarrollo de otros módulos de la tienda; la propuesta y especificación quedan documentadas para su reactivación inmediata cuando el usuario lo determine.
 
+---
+
+## ADR 006: Adopción de Graphify (Graphify-Labs/graphify) como Motor de Grafo de Código y Arquitectura
+* **Fecha:** 2026-11-02
+* **Estado:** Aceptado
+* **Contexto:** El crecimiento del repositorio (Next.js 16, backend REST Supabase, crawler Python, migraciones SQL en 3 niveles, servicios de catálogo y auditoría) requería un grafo de conocimiento automatizado, determinista y de bajo consumo de tokens para navegar dependencias de código y arquitectura sin tener que leer archivos masivos.
+* **Decisión:** Adoptar `graphify` (`Graphify-Labs/graphify`, paquete PyPI `graphifyy`) como motor de extracción AST local mediante Tree-Sitter (TypeScript, Python, SQL, Bash, JSON). Configurar reglas siempre activas en `.agents/rules/graphify.md`, flujos en `.agents/workflows/graphify.md`, skills en `.agents/skills/graphify/` y hooks de git con Husky (`post-commit`, `post-merge`) para actualización automática e incremental sin costo de API.
+* **Consecuencias:**
+  - Se genera un grafo reproducible en `graphify-out/graph.json` con más de 2.600 nodos y 7.300 conexiones.
+  - Se proveen herramientas instantáneas de navegación (`graphify query`, `graphify path`, `graphify explain`, `graphify god-nodes`).
+  - Se genera visualización interactiva en `graphify-out/graph.html` y reporte legible en `graphify-out/GRAPH_REPORT.md`.
+  - Se complementa perfectamente la memoria arquitectónica de alto nivel (`.agents/knowledge/`) con el mapa estructural detallado de funciones y archivos (`graphify-out/`).
+

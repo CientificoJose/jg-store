@@ -933,3 +933,16 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
 
   return Array.from(categoriesMap.values());
 }
+
+// Re-exportar módulo de auditoría de imágenes
+export {
+  auditProductImages,
+  getProductsWithoutImage,
+  getProductsWithImage
+} from './product-audit';
+export type {
+  ProductImageAuditItem,
+  ProductImageAuditSummary,
+  ProductImageAuditResult,
+  AuditOptions
+} from './product-audit';

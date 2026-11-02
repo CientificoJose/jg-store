@@ -15,7 +15,8 @@ Esta skill asegura que cualquier agente de IA (Antigravity, Claude, Cursor, etc.
 Antes de responder o escribir código, la IA **DEBE**:
 
 1. **Leer la Memoria del Proyecto:**
-   * Grafo visual: [`.agents/knowledge/graph.md`](../knowledge/graph.md)
+   * Grafo visual & arquitectónico: [`.agents/knowledge/graph.md`](../knowledge/graph.md) y [`.agents/knowledge/graph.json`](../knowledge/graph.json)
+   * Grafo de código AST automatizado: Consultar con `graphify query "<término/pregunta>"` o `graphify path "<A>" "<B>"` antes de inspeccionar código masivo (ver [`.agents/rules/graphify.md`](../rules/graphify.md) y [`graphify-out/GRAPH_REPORT.md`](../../graphify-out/GRAPH_REPORT.md)).
    * Estado y Backlog de tareas: [`.agents/knowledge/roadmap.md`](../knowledge/roadmap.md)
    * Decisiones tomadas: [`.agents/knowledge/decisions.md`](../knowledge/decisions.md)
    * Reglas de negocio: [`.agents/knowledge/business-rules.md`](../knowledge/business-rules.md)
@@ -36,6 +37,7 @@ Cada vez que se complete una tarea significativa o se tome una nueva decisión t
    * Añadir nuevas tareas al backlog si surgieron requerimientos adicionales.
 2. **Actualizar el Grafo de Conocimiento:**
    * Cambiar el estado de los nodos (`pending` ➔ `completed`) en [`.agents/knowledge/graph.json`](../knowledge/graph.json) y en [`.agents/knowledge/graph.md`](../knowledge/graph.md).
+   * Actualizar el grafo AST de código ejecutando `graphify update .` o `bun run graphify:update` (o dejar que el hook `post-commit` de Husky lo haga automáticamente al commitear).
 3. **Registrar Decisiones:**
    * Si se adoptó una librería, base de datos o arquitectura nueva, redactar un nuevo ADR en [`.agents/knowledge/decisions.md`](../knowledge/decisions.md).
 4. **Git Commit & Push:**
