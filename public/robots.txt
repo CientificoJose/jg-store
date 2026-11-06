@@ -1,6 +1,10 @@
 User-agent: *
+Allow: /
 Disallow: /auth
 Disallow: /dashboard
 Disallow: /sign-in
 Disallow: /sign-up
-Disallow: /v1/
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://jg-stores.com/sitemap.xml

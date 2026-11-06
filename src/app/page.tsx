@@ -2,10 +2,29 @@ import { Metadata } from 'next';
 import { StoreFront } from '@/components/storefront/store-front';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  title: 'JG Store | Venta al Detal y Mayorista B2B - 24 Departamentos',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://jg-stores.com'),
+  title: 'JG Store 🛍️ Distribuidora Mayorista y Detal | Precios Directos',
   description:
-    'Tienda online y distribuidora de JG Store. Precios al detal y al mayor con descuentos automáticos por volumen, 24 departamentos comerciales y pedidos directos vía WhatsApp.'
+    '¡Comprá al mejor precio directo de fábrica e importador! 24 departamentos en librería, bazar, juguetería, tecnología y más. Descuentos por volumen y envíos a todo el país.',
+  alternates: {
+    canonical: 'https://jg-stores.com'
+  },
+  openGraph: {
+    title: 'JG Store 🛍️ Distribuidora Mayorista y Detal | Precios Directos',
+    description:
+      '¡Comprá al mejor precio directo de fábrica e importador! 24 departamentos comerciales, descuentos por volumen y envíos a todo el país.',
+    url: 'https://jg-stores.com',
+    siteName: 'JG Store Polirrubro',
+    images: [
+      {
+        url: '/icon.png',
+        width: 512,
+        height: 512,
+        alt: 'JG Store Polirrubro Oficial'
+      }
+    ],
+    type: 'website'
+  }
 };
 
 export default function HomePage() {
