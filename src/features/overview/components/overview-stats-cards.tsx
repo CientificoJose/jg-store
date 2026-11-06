@@ -19,7 +19,7 @@ export function OverviewStatsCards() {
   const { data: productsData } = useQuery(productsQueryOptions({ limit: 100 }));
   const { data: ordersData } = useQuery(ordersQueryOptions({ limit: 100 }));
 
-  const totalProducts = productsData?.total_count ?? productsData?.products?.length ?? 0;
+  const totalProducts = productsData?.total_products ?? productsData?.products?.length ?? 0;
   const totalStockUnits = productsData?.products?.reduce((acc, p) => acc + (p.stock || 0), 0) ?? 0;
 
   const orders = ordersData?.orders || [];

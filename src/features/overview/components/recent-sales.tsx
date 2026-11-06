@@ -72,12 +72,12 @@ export function RecentSales() {
                     </span>
                     <span
                       className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
-                        order.status === 'completada'
+                        order.order_status === 'completada'
                           ? 'bg-emerald-500/10 text-emerald-600'
                           : 'bg-amber-500/10 text-amber-600'
                       }`}
                     >
-                      {order.status === 'completada' ? 'Completada' : 'En proceso'}
+                      {order.order_status === 'completada' ? 'Completada' : 'En proceso'}
                     </span>
                   </div>
                 </div>
