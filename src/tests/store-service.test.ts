@@ -18,10 +18,10 @@ describe('Servicio de Catálogo y Productos JG Store (`store-service`)', () => {
   });
 
   it('debe filtrar correctamente por departamento oficial (Nivel 1)', async () => {
-    const res = await fetchStoreProductsWithMeta({ category: 'aromatizacion-velas' });
+    const res = await fetchStoreProductsWithMeta({ category: 'libreria' });
     expect(res.products.length).toBeGreaterThan(0);
     for (const p of res.products) {
-      expect(p.category_slug).toBe('aromatizacion-velas');
+      expect(p.category_slug).toBe('libreria');
     }
   });
 

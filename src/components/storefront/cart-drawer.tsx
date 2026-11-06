@@ -231,7 +231,7 @@ export function CartDrawer() {
                 Tu carrito está vacío
               </h3>
               <p className='text-xs sm:text-sm text-[#6C757D] mt-2 max-w-sm font-gotham leading-relaxed'>
-                Explora nuestros 24 rubros comerciales oficiales y agrega productos con precios al
+                Explora nuestras categorías comerciales oficiales y agrega productos con precios al
                 detal o descuentos por volumen mayorista.
               </p>
               <button

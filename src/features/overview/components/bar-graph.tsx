@@ -1,7 +1,6 @@
 'use client';
 
 import { Bar, BarChart, XAxis } from 'recharts';
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
@@ -11,39 +10,112 @@ import {
 } from '@/components/ui/chart';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ordersQueryOptions } from '@/features/orders/api/queries';
 
-const chartData = [
-  { month: 'January', desktop: 186, mobile: 80 },
-  { month: 'February', desktop: 305, mobile: 200 },
-  { month: 'March', desktop: 237, mobile: 120 },
-  { month: 'April', desktop: 73, mobile: 190 },
-  { month: 'May', desktop: 209, mobile: 130 },
-  { month: 'June', desktop: 214, mobile: 140 }
+const MONTH_NAMES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre'
 ];
 
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
+  detal: {
+    label: 'Ventas al Detal',
     color: 'var(--chart-1)'
   },
-  mobile: {
-    label: 'Mobile',
+  mayor: {
+    label: 'Ventas al Mayor',
     color: 'var(--chart-2)'
   }
 } satisfies ChartConfig;
 
 export function BarGraph() {
+  const { data: ordersData } = useQuery(ordersQueryOptions({ limit: 100 }));
+  const orders = ordersData?.orders || [];
+
+  const { chartData, totalOps, totalWholesale, totalRetail } = useMemo(() => {
+    const validOrders = orders.filter((o) => o.order_status !== 'cancelada');
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Generar ventana de los últimos 6 meses cronológicos
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(currentYear, currentMonth - i, 1);
+      last6Months.push({
+        monthIndex: d.getMonth(),
+        year: d.getFullYear(),
+        name: MONTH_NAMES[d.getMonth()]
+      });
+    }
+
+    const data = last6Months.map((m) => {
+      const monthOrders = validOrders.filter((o) => {
+        if (!o.created_at) return false;
+        const d = new Date(o.created_at);
+        return d.getMonth() === m.monthIndex && d.getFullYear() === m.year;
+      });
+
+      const detalCount = monthOrders.filter((o) => o.order_type === 'retail').length;
+      const mayorCount = monthOrders.filter((o) => o.order_type === 'wholesale').length;
+
+      return {
+        month: m.name,
+        detal: detalCount,
+        mayor: mayorCount
+      };
+    });
+
+    const wCount = validOrders.filter((o) => o.order_type === 'wholesale').length;
+    const rCount = validOrders.filter((o) => o.order_type === 'retail').length;
+
+    return {
+      chartData: data,
+      totalOps: validOrders.length,
+      totalWholesale: wCount,
+      totalRetail: rCount
+    };
+  }, [orders]);
+
   return (
-    <Card>
+    <Card className='font-gotham border border-border/80 shadow-xs'>
       <CardHeader>
-        <CardTitle>
-          Bar Chart - Multiple
-          <Badge variant='outline'>
-            <Icons.trendingDown />
-            -5.2%
-          </Badge>
+        <CardTitle className='text-base font-bold text-foreground flex items-center justify-between'>
+          <span>Volumen Comercial por Semestre</span>
+          {totalOps > 0 ? (
+            <Badge
+              variant='outline'
+              className='bg-blue-500/10 text-blue-600 border-blue-500/20 text-[11px] font-bold'
+            >
+              <Icons.trendingUp className='w-3 h-3 mr-1' />
+              {totalOps} Operaciones B2B / B2C
+            </Badge>
+          ) : (
+            <Badge
+              variant='outline'
+              className='bg-muted/60 text-muted-foreground border-border text-[11px] font-medium'
+            >
+              0 Operaciones registradas
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>January - June 2025</CardDescription>
+        <CardDescription className='text-xs text-muted-foreground'>
+          {totalOps > 0
+            ? `${totalWholesale} ventas al mayor y ${totalRetail} ventas al detal registradas en el período.`
+            : 'Comparativa de ventas al detal vs pedidos mayoristas basada en órdenes reales.'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -67,18 +139,26 @@ export function BarGraph() {
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator='dashed' hideLabel />}
+              content={
+                <ChartTooltipContent
+                  indicator='dashed'
+                  formatter={(value, name) => {
+                    const label = name === 'detal' ? 'Venta Detal' : 'Venta Mayorista';
+                    return [`${value} pedidos`, label];
+                  }}
+                />
+              }
             />
             <Bar
-              dataKey='desktop'
+              dataKey='detal'
               color='var(--chart-1)'
-              fill='var(--color-desktop)'
+              fill='var(--color-detal)'
               shape={<CustomHatchedBar isHatched={false} />}
               radius={4}
             />
             <Bar
-              dataKey='mobile'
-              fill='var(--color-mobile)'
+              dataKey='mayor'
+              fill='var(--color-mayor)'
               shape={<CustomHatchedBar />}
               radius={4}
             />
@@ -96,7 +176,6 @@ const CustomHatchedBar = (
   }
 ) => {
   const { fill, x, y, width, height, dataKey } = props;
-
   const isHatched = props.isHatched ?? true;
 
   return (
@@ -128,6 +207,7 @@ const CustomHatchedBar = (
     </>
   );
 };
+
 const DottedBackgroundPattern = () => {
   return (
     <pattern
@@ -142,3 +222,5 @@ const DottedBackgroundPattern = () => {
     </pattern>
   );
 };
+
+export default BarGraph;

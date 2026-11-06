@@ -26,7 +26,6 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
   // Selector de cantidad
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
-  const [selectedVariantColor, setSelectedVariantColor] = useState<string>('Estándar');
 
   // Galería de imágenes reales del producto
   const galleryImages =
@@ -48,6 +47,13 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
   const wholesaleDiscountPct = Math.round(
     ((product.retail_price - product.wholesale_price) / product.retail_price) * 100
   );
+
+  const paymentPromoText =
+    useStoreConfigStore((s) => s.landing.paymentPromoText) ||
+    'Cualquier tipo de pago • 3 cuotas sin interés con tarjeta • 10% OFF por transferencia';
+  const transferDiscountPct = useStoreConfigStore((s) => s.landing.transferDiscountPct) ?? 10;
+  const showPaymentPromo = useStoreConfigStore((s) => s.landing.showPaymentPromo) ?? true;
+  const transferPrice = Number((activeUnitPrice * (1 - transferDiscountPct / 100)).toFixed(2));
 
   // Manejadores
   const handleQuantityChange = (newQty: number) => {
@@ -128,31 +134,37 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                   <button
                     key={idx}
                     onClick={() => setSelectedImageIndex(idx)}
-                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
+                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 overflow-hidden transition-all cursor-pointer bg-white dark:bg-card p-1 ${
                       selectedImageIndex === idx
                         ? 'border-[#E63946] ring-2 ring-[#E63946]/20'
                         : 'border-border/80 hover:border-[#6C757D]'
                     }`}
                   >
-                    <Image
-                      src={imgUrl}
-                      alt={`${product.name} miniatura ${idx + 1}`}
-                      fill
-                      className='object-cover'
-                    />
+                    <div className='relative w-full h-full'>
+                      <Image
+                        src={imgUrl}
+                        alt={`${product.name} miniatura ${idx + 1}`}
+                        fill
+                        sizes='64px'
+                        className='object-contain'
+                      />
+                    </div>
                   </button>
                 ))}
               </div>
 
-              {/* Visor de Foto Grande con Zoom */}
-              <div className='relative flex-1 aspect-square rounded-2xl overflow-hidden bg-muted/20 border border-border/60 group'>
-                <Image
-                  src={galleryImages[selectedImageIndex]}
-                  alt={product.name}
-                  fill
-                  priority
-                  className='object-cover group-hover:scale-105 transition-transform duration-500'
-                />
+              {/* Visor de Foto Grande Proporcional (Sin deformar ni cortar la imagen) */}
+              <div className='relative flex-1 aspect-square rounded-2xl overflow-hidden bg-white dark:bg-card border border-border/60 group p-4 sm:p-6 flex items-center justify-center'>
+                <div className='relative w-full h-full'>
+                  <Image
+                    src={galleryImages[selectedImageIndex]}
+                    alt={product.name}
+                    fill
+                    priority
+                    sizes='(max-width: 1024px) 100vw, 50vw'
+                    className='object-contain transition-transform duration-300 group-hover:scale-105'
+                  />
+                </div>
 
                 {/* Badge de Stock o Descuento */}
                 <div className='absolute top-3 left-3 flex flex-col gap-1.5 z-10'>
@@ -193,19 +205,11 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
             {/* COLUMNA 2: Información Central del Producto (6 columnas) */}
             <div className='lg:col-span-6 flex flex-col justify-between'>
               <div>
-                {/* Renglón Superior: Estado y Reputación */}
+                {/* Renglón Superior: Estado */}
                 <div className='flex items-center gap-2 text-xs text-[#6C757D] mb-2'>
                   <span className='font-semibold text-emerald-600 dark:text-emerald-400'>
                     Nuevo
                   </span>
-                  <span>•</span>
-                  <span>+500 vendidos</span>
-                  <span>•</span>
-                  <div className='flex items-center gap-1 text-[#D4A017]'>
-                    <Icons.star className='w-3.5 h-3.5 fill-current' />
-                    <span className='font-bold'>4.9</span>
-                    <span className='text-[#6C757D]'>(128 opiniones)</span>
-                  </div>
                 </div>
 
                 {/* Título del Producto */}
@@ -213,10 +217,10 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                   {product.name}
                 </h1>
 
-                {/* SKU, Código de Barras y Categoría */}
+                {/* Categoría y Código de Barras */}
                 <div className='flex flex-wrap items-center gap-3 mt-2 text-xs text-[#6C757D]'>
                   <span>
-                    Código SKU: <strong className='font-mono text-foreground'>{product.sku}</strong>
+                    Rubro: <strong className='text-[#E63946]'>{product.category_name}</strong>
                   </span>
                   {product.barcode && (
                     <>
@@ -227,10 +231,6 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                       </span>
                     </>
                   )}
-                  <span>•</span>
-                  <span>
-                    Rubro: <strong className='text-[#E63946]'>{product.category_name}</strong>
-                  </span>
                 </div>
 
                 {/* BLOQUE DE PRECIOS MERCADO LIBRE DUAL (Detal vs Mayor) */}
@@ -271,37 +271,28 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                     </div>
                   </div>
 
-                  {/* Aviso de Cuotas y Medios de Pago */}
-                  <div className='mt-3 flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold'>
-                    <Icons.creditCard className='w-4 h-4 shrink-0' />
-                    <span>
-                      Mercado Pago, cuotas con tarjeta o 10% OFF por Transferencia (CBU / Alias).
-                    </span>
-                  </div>
+                  {/* Aviso de Cuotas y Medios de Pago Dinámico */}
+                  {showPaymentPromo && (
+                    <div className='mt-3 pt-3 border-t border-border/60 space-y-1.5'>
+                      <div className='flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold'>
+                        <Icons.creditCard className='w-4 h-4 shrink-0 text-emerald-500' />
+                        <span>{paymentPromoText}</span>
+                      </div>
+                      {transferDiscountPct > 0 && (
+                        <div className='flex items-center gap-2 text-xs'>
+                          <span className='text-[#6C757D]'>Abonando por transferencia:</span>
+                          <strong className='font-bold text-emerald-600 dark:text-emerald-400 text-sm font-mono'>
+                            {formatPrice(transferPrice)}
+                          </strong>
+                          <span className='px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 uppercase'>
+                            {transferDiscountPct}% OFF
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* SELECTOR DE VARIANTES / COLOR */}
-                <div className='mt-6'>
-                  <span className='text-xs font-bold text-foreground block mb-2'>
-                    Color / Modelo:{' '}
-                    <strong className='text-[#E63946]'>{selectedVariantColor}</strong>
-                  </span>
-                  <div className='flex flex-wrap gap-2'>
-                    {['Negro Mate', 'Azul Marino', 'Rosa Pastel', 'Blanco'].map((col) => (
-                      <button
-                        key={col}
-                        onClick={() => setSelectedVariantColor(col)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                          selectedVariantColor === col
-                            ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm'
-                            : 'bg-card border-border hover:bg-muted text-foreground'
-                        }`}
-                      >
-                        {col}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 {/* CAJA DE COMPRA (BUY BOX MERCADO LIBRE) */}
                 <div className='mt-6 p-4 sm:p-5 rounded-2xl bg-card border-2 border-border/80 shadow-md'>
@@ -454,10 +445,6 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                 Características Técnicas
               </h2>
               <div className='rounded-xl border border-border/80 overflow-hidden divide-y divide-border/60 text-xs'>
-                <div className='flex justify-between p-3 bg-muted/30'>
-                  <span className='text-[#6C757D]'>SKU Oficial</span>
-                  <span className='font-mono font-bold text-foreground'>{product.sku}</span>
-                </div>
                 <div className='flex justify-between p-3'>
                   <span className='text-[#6C757D]'>Rubro</span>
                   <span className='font-semibold text-foreground'>{product.category_name}</span>

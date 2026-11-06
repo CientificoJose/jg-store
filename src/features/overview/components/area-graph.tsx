@@ -1,7 +1,6 @@
 'use client';
 
-import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
-
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
@@ -11,46 +10,98 @@ import {
 } from '@/components/ui/chart';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ordersQueryOptions } from '@/features/orders/api/queries';
 
-const chartData = [
-  { month: 'January', desktop: 342, mobile: 245 },
-  { month: 'February', desktop: 876, mobile: 654 },
-  { month: 'March', desktop: 512, mobile: 387 },
-  { month: 'April', desktop: 629, mobile: 521 },
-  { month: 'May', desktop: 458, mobile: 412 },
-  { month: 'June', desktop: 781, mobile: 598 },
-  { month: 'July', desktop: 394, mobile: 312 },
-  { month: 'August', desktop: 925, mobile: 743 },
-  { month: 'September', desktop: 647, mobile: 489 },
-  { month: 'October', desktop: 532, mobile: 476 },
-  { month: 'November', desktop: 803, mobile: 687 },
-  { month: 'December', desktop: 271, mobile: 198 }
+const MONTH_NAMES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre'
 ];
 
 const chartConfig = {
-  desktop: {
-    label: 'Desktop',
+  monto: {
+    label: 'Facturación ($ ARS)',
     color: 'var(--chart-1)'
   },
-  mobile: {
-    label: 'Mobile',
+  pedidos: {
+    label: 'Pedidos Realizados',
     color: 'var(--chart-2)'
   }
 } satisfies ChartConfig;
 
 export function AreaGraph() {
+  const { data: ordersData, isLoading } = useQuery(ordersQueryOptions({ limit: 100 }));
+  const orders = ordersData?.orders || [];
+
+  const { chartData, totalOrdersCount, totalRevenue } = useMemo(() => {
+    const validOrders = orders.filter((o) => o.order_status !== 'cancelada');
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    const data = MONTH_NAMES.map((month, idx) => {
+      const ordersInMonth = validOrders.filter((o) => {
+        if (!o.created_at) return false;
+        const d = new Date(o.created_at);
+        return d.getMonth() === idx && d.getFullYear() === currentYear;
+      });
+
+      const monto = ordersInMonth.reduce((acc, o) => acc + (o.total_amount || 0), 0);
+      const pedidos = ordersInMonth.length;
+
+      return {
+        month,
+        monto,
+        pedidos
+      };
+    });
+
+    const totalRev = validOrders.reduce((acc, o) => acc + (o.total_amount || 0), 0);
+
+    return {
+      chartData: data,
+      totalOrdersCount: validOrders.length,
+      totalRevenue: totalRev
+    };
+  }, [orders]);
+
   return (
-    <Card>
+    <Card className='font-gotham border border-border/80 shadow-xs'>
       <CardHeader>
-        <CardTitle>
-          Dotted Area Chart
-          <Badge variant='outline'>
-            <Icons.trendingUp />
-            -5.2%
-          </Badge>
+        <CardTitle className='text-base font-bold text-foreground flex items-center justify-between'>
+          <span>Evolución de Ventas y Facturación</span>
+          {totalOrdersCount > 0 ? (
+            <Badge
+              variant='outline'
+              className='bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[11px] font-bold'
+            >
+              <Icons.trendingUp className='w-3 h-3 mr-1' />
+              {totalOrdersCount} ventas confirmadas
+            </Badge>
+          ) : (
+            <Badge
+              variant='outline'
+              className='bg-muted/60 text-muted-foreground border-border text-[11px] font-medium'
+            >
+              0 ventas registradas
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>Showing total visitors for the last 6 months</CardDescription>
+        <CardDescription className='text-xs text-muted-foreground'>
+          {totalOrdersCount > 0
+            ? `Total facturado acumulado: $${totalRevenue.toLocaleString('es-AR')} ARS en ventas reales.`
+            : 'Ventas reales facturadas y pedidos confirmados en base a datos de Supabase.'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -63,27 +114,39 @@ export function AreaGraph() {
               tickMargin={8}
               tickFormatter={(value) => value.slice(0, 3)}
             />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  formatter={(value, name) => {
+                    if (name === 'monto') {
+                      return [`$${Number(value).toLocaleString('es-AR')}`, 'Facturación'];
+                    }
+                    return [`${value} pedidos`, 'Pedidos'];
+                  }}
+                />
+              }
+            />
             <defs>
               <DottedBackgroundPattern config={chartConfig} />
             </defs>
             <Area
-              dataKey='mobile'
+              dataKey='monto'
               type='natural'
-              fill='url(#dotted-background-pattern-mobile)'
+              fill='url(#dotted-background-pattern-monto)'
               fillOpacity={0.4}
-              stroke='var(--color-mobile)'
+              stroke='var(--color-monto)'
               stackId='a'
-              strokeWidth={0.8}
+              strokeWidth={1.5}
             />
             <Area
-              dataKey='desktop'
+              dataKey='pedidos'
               type='natural'
-              fill='url(#dotted-background-pattern-desktop)'
+              fill='url(#dotted-background-pattern-pedidos)'
               fillOpacity={0.4}
-              stroke='var(--color-desktop)'
-              stackId='a'
-              strokeWidth={0.8}
+              stroke='var(--color-pedidos)'
+              stackId='b'
+              strokeWidth={1.5}
             />
           </AreaChart>
         </ChartContainer>
@@ -114,3 +177,5 @@ const DottedBackgroundPattern = ({ config }: { config: ChartConfig }) => {
     </>
   );
 };
+
+export default AreaGraph;

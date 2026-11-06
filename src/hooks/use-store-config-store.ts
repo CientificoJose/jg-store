@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface StoreFaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface AboutUsConfig {
+  mission: string;
+  vision: string;
+  team: string;
+  values: string;
+  history: string;
+  storePhotos: string[];
+  faqs: StoreFaqItem[];
+}
+
 export interface ProductRowConfig {
   id: string;
   title: string;
@@ -30,6 +46,11 @@ export interface GeneralStoreConfig {
 }
 
 export interface LandingStoreConfig {
+  paymentPromoText?: string;
+  transferDiscountPct?: number;
+  showPaymentPromo?: boolean;
+  catalogSectionTitle?: string;
+  catalogMaxProducts?: number;
   showCategoryCards: boolean;
   showCategoryPillsBar: boolean;
   categoryStyle: 'photos' | 'pills';
@@ -41,6 +62,7 @@ export interface LandingStoreConfig {
   showInStockSidebarFilter?: boolean;
   showWholesaleSidebarFilter?: boolean;
   productRows: ProductRowConfig[];
+  aboutUs?: AboutUsConfig;
 }
 
 export interface ThemeStoreConfig {
@@ -73,14 +95,7 @@ const DEFAULT_ROWS: ProductRowConfig[] = [
     enabled: true,
     limit: 8
   },
-  {
-    id: 'row-wholesale',
-    title: '⚡ Oportunidades Mayoristas B2B',
-    subtitle: 'Máximo margen de ganancia para revendedores con descuentos de hasta 40%.',
-    type: 'wholesale',
-    enabled: true,
-    limit: 8
-  },
+
   {
     id: 'row-bazar',
     title: '☕ Bazar & Cafetería Térmica',
@@ -125,6 +140,11 @@ const DEFAULT_CONFIG: {
     bankAlias: 'JG.STORE.PAGOS'
   },
   landing: {
+    paymentPromoText: 'Cualquier tipo de pago • 3 cuotas sin interés con tarjeta • 10% OFF por transferencia',
+    transferDiscountPct: 10,
+    showPaymentPromo: false,
+    catalogSectionTitle: 'Catálogo de Productos',
+    catalogMaxProducts: 20,
     showCategoryCards: true,
     showCategoryPillsBar: false,
     categoryStyle: 'photos', // Fotos estilo SHOPLUXE
@@ -136,6 +156,56 @@ const DEFAULT_CONFIG: {
     showWholesaleHeaderToggle: false, // Ocultado por solicitud (activable desde panel de config)
     showInStockSidebarFilter: false, // Ocultado por solicitud (activable desde panel de config)
     showWholesaleSidebarFilter: false, // Ocultado por solicitud (activable desde panel de config)
+    aboutUs: {
+      mission:
+        'Proveer a nuestros clientes la más alta variedad de productos al mejor precio del mercado, garantizando calidad, rapidez en las entregas y atención cercana y transparente.',
+      vision:
+        'Convertirnos en la tienda y polirrubro de referencia nacional, innovando continuamente en catálogo, tecnología de compras y servicio personalizado.',
+      team:
+        'Contamos con un equipo apasionado de especialistas comerciales, logística y atención al cliente, listos para asesorarte en cada compra y garantizar que tus productos lleguen en tiempo y forma.',
+      values:
+        'Confianza, transparencia, compromiso con nuestros clientes, pasión por el servicio y precios justos.',
+      history:
+        'Nacidos con la visión de acercar los mejores productos directo a familias y clientes, crecimos paso a paso gracias a la confianza de miles de compradores que nos eligen día a día.',
+      storePhotos: [
+        'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=1200&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1200&auto=format&fit=crop&q=80'
+      ],
+      faqs: [
+        {
+          id: 'faq-1',
+          question: '¿Cuáles son los medios de pago aceptados?',
+          answer:
+            'Aceptamos cualquier tipo de pago: Mercado Pago, tarjetas de crédito y débito (hasta 3 cuotas sin interés), y transferencia bancaria directa (CBU / Alias) con descuento especial.'
+        },
+        {
+          id: 'faq-2',
+          question: '¿Cómo accedo al 10% OFF por transferencia?',
+          answer:
+            'Al momento de abonar por transferencia bancaria (CBU / Alias) o coordinar tu pedido por WhatsApp, se aplica automáticamente el descuento del 10% sobre tu total.'
+        },
+        {
+          id: 'faq-3',
+          question: '¿Tienen local físico para retiro presencial?',
+          answer:
+            '¡Sí! Contamos con local físico y depósito central donde podés retirar tus compras coordinadas sin costo adicional dentro de los horarios de atención.'
+        },
+        {
+          id: 'faq-4',
+          question: '¿Cómo se realizan los envíos y cuáles son los tiempos de entrega?',
+          answer:
+            'Despachamos rápidamente a todo el país mediante correo Andreani y expresos al interior con número de seguimiento en tiempo real.'
+        },
+        {
+          id: 'faq-5',
+          question: '¿Los productos tienen garantía?',
+          answer:
+            'Todos nuestros artículos cuentan con control previo de empaque y garantía oficial de fábrica ante cualquier defecto.'
+        }
+      ]
+    },
     productRows: DEFAULT_ROWS
   },
   theme: {

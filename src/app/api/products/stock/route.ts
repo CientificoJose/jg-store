@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const safeStock = Math.min(15, Math.max(0, Number(stock)));
+    const safeStock = Math.max(0, Math.round(Number(stock)));
 
     const result = await updateStoreProductsStock({
       ids: targetIds,
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       updated_count: result.count,
-      message: `Stock actualizado a ${safeStock} en ${result.count} productos (máx. permitido: 15)`
+      message: `Stock actualizado a ${safeStock} en ${result.count} productos`
     });
   } catch (error: any) {
     console.error('Error en /api/products/stock:', error);

@@ -248,7 +248,7 @@ export function ProductCommandBar({ totalProducts }: ProductCommandBarProps) {
 
   // Fijar stock masivo a todos los productos del ámbito o catálogo
   const handleApplyGlobalStock = async () => {
-    const safeStock = Math.min(15, Math.max(0, Number(globalStock)));
+    const safeStock = Math.max(0, Math.round(Number(globalStock)));
     setIsApplyingStock(true);
     try {
       const res = await fetch('/api/products/stock', {

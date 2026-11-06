@@ -121,7 +121,7 @@ export function CategoryShowcase({
               </h2>
             </div>
             <p className="text-xs text-[#6C757D] mt-0.5">
-              Accede directamente a los {categories.length} rubros comerciales de JG Store
+              Accede directamente a las {categories.length} categorías oficiales de JG Store
             </p>
           </div>
 
@@ -206,7 +206,7 @@ export function CategoryShowcase({
                   : 'bg-card border-border hover:bg-muted text-foreground'
               }`}
             >
-              Todos los rubros ({categories.length})
+              Todas las categorías ({categories.length})
             </button>
             {categories.map((cat) => (
               <button

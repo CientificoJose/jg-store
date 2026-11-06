@@ -64,7 +64,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   return (
     <div className="group flex flex-col justify-between rounded-2xl bg-card border border-border/80 hover:border-[#E63946]/50 hover:shadow-xl hover:shadow-[#E63946]/10 transition-all duration-300 overflow-hidden font-gotham">
       {/* Contenedor Superior: Imagen y Badges */}
-      <div className="relative aspect-square w-full overflow-hidden bg-muted/30">
+      <div className="relative aspect-square w-full overflow-hidden bg-white dark:bg-card/60 p-2.5">
         <Link
           href={`/producto/${product.id}`}
           className="block w-full h-full relative cursor-pointer"
@@ -74,7 +74,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             alt={product.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-contain group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
         </Link>
@@ -149,9 +149,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             <span className="font-semibold text-[#E63946]">
               {product.category_name}
             </span>
-            <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-[#6C757D]">
-              {product.sku}
-            </span>
+
           </div>
 
           <h3 className="font-semibold text-sm sm:text-base text-foreground line-clamp-2 leading-snug group-hover:text-[#E63946] transition-colors">

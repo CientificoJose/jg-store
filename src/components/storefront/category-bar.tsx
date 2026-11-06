@@ -24,7 +24,7 @@ export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarP
             }`}
           >
             <Icons.product className="w-4 h-4" />
-            <span>Todos los Rubros</span>
+            <span>Todas las Categorías</span>
           </button>
 
           {/* 24 Categorías */}

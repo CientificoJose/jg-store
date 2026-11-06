@@ -1147,6 +1147,16 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
     featured: true,
     subcategories: [
       {
+        id: 'indu-lenceria',
+        category_id: 'indumentaria',
+        category_slug: 'indumentaria',
+        slug: 'lenceria',
+        name: 'Lencería y Ropa Interior',
+        description: 'Prendas íntimas, conjuntos, lencería y ropa interior',
+        icon: 'heart',
+        display_order: 0
+      },
+      {
         id: 'indu-medias',
         category_id: 'indumentaria',
         category_slug: 'indumentaria',
@@ -1289,68 +1299,254 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
     featured: true,
     subcategories: [
       {
-        id: 'lib-cuadernos',
+        id: 'lib-escritura',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'escritura',
+        name: 'Escritura y Marcadores',
+        description: 'Bolígrafos, microfibras, lápices, resaltadores y plumas',
+        icon: 'pencil',
+        display_order: 1
+      },
+      {
+        id: 'lib-papel-goma-eva',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'papel-suelto-y-goma-eva',
+        name: 'Papel Suelto y Goma Eva',
+        description: 'Goma eva lisa y con brillo, cartulinas, afiches y papel de forrar',
+        icon: 'layers',
+        display_order: 2
+      },
+      {
+        id: 'lib-carpetas-biblioratos',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'carpetas-y-biblioratos',
+        name: 'Carpetas y Biblioratos',
+        description: 'Carpetas escolares de 3 aros, biblioratos oficio y carpetas de archivo',
+        icon: 'folder',
+        display_order: 3
+      },
+      {
+        id: 'lib-papeleria-escolar',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'papeleria-escolar',
+        name: 'Papelería Escolar y Cuadernos',
+        description: 'Cuadernos espiralados, repuestos de hojas y libretas',
+        icon: 'pencil',
+        display_order: 4
+      },
+      {
+        id: 'lib-etiquetas',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'etiquetas',
+        name: 'Etiquetas y Rótulos',
+        description: 'Etiquetas autoadhesivas escolares, comerciales y de precios',
+        icon: 'tags',
+        display_order: 5
+      },
+      {
+        id: 'lib-encuadernacion',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'encuadernacion',
+        name: 'Encuadernación (Tapas y Espirales)',
+        description: 'Tapas de polipropileno A4 y oficio, espirales plásticos de todas las medidas',
+        icon: 'layers',
+        display_order: 6
+      },
+      {
+        id: 'lib-insumos-oficina',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'insumos-de-oficina',
+        name: 'Insumos de Oficina',
+        description: 'Abrochadoras, broches, clips, portaminas, bandas elásticas y accesorios',
+        icon: 'briefcase',
+        display_order: 7
+      },
+      {
+        id: 'lib-calculadoras',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'calculadoras',
+        name: 'Calculadoras',
+        description: 'Calculadoras científicas y de escritorio comerciales',
+        icon: 'cpu',
+        display_order: 8
+      },
+      {
+        id: 'lib-sellos-tintas',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'sellos-tintas-y-almohadillas',
+        name: 'Sellos, Tintas y Almohadillas',
+        description: 'Sellos automáticos, almohadillas entintadas y frascos de tinta',
+        icon: 'stamp',
+        display_order: 9
+      },
+      {
+        id: 'lib-talonarios',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'talonarios',
+        name: 'Talonarios Comerciales',
+        description: 'Talonarios de pagaré, recibos, remitos y comandas',
+        icon: 'billing',
+        display_order: 10
+      },
+      {
+        id: 'lib-resmas',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'resmas',
+        name: 'Resmas de Papel',
+        description: 'Resmas A4, Oficio y Carta de 75g y 80g de primera calidad',
+        icon: 'fileText',
+        display_order: 11
+      },
+      {
+        id: 'lib-abrochadoras',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'abrochadoras-y-perforadoras',
+        name: 'Abrochadoras y Perforadoras',
+        description: 'Perforadoras de 2 y 4 orificios, abrochadoras de sobremesa y pinzas',
+        icon: 'wrench',
+        display_order: 12
+      },
+      {
+        id: 'lib-adhesivos',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'adhesivos',
+        name: 'Adhesivos y Pegamentos',
+        description: 'Plasticolas, voligomas, barras adhesivas y silicona líquida',
+        icon: 'sparkle',
+        display_order: 13
+      },
+      {
+        id: 'lib-plastificados',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'plastificados-y-fundas',
+        name: 'Plastificados y Fundas',
+        description: 'Fundas pouches térmicas de plastificación carnet, A4 y oficio',
+        icon: 'shieldCheck',
+        display_order: 14
+      },
+      {
+        id: 'lib-pizarras',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'pizarras-y-pizarrones',
+        name: 'Pizarras y Pizarrones',
+        description: 'Pizarras blancas para marcador, de corcho y borradores',
+        icon: 'layout',
+        display_order: 15
+      },
+      {
+        id: 'lib-cintas',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'cintas-adhesivas',
+        name: 'Cintas Adhesivas',
+        description: 'Cintas transparentes, de embalar, bifaz y cinta de papel de enmascarar',
+        icon: 'tag',
+        display_order: 16
+      },
+      {
+        id: 'lib-artistica-escolar',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'artistica-escolar',
+        name: 'Artística Escolar',
+        description: 'Pinceles escolares, paletas de mezclar, témperas y acuarelas',
+        icon: 'palette',
+        display_order: 17
+      },
+      {
+        id: 'lib-geometria',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'geometria',
+        name: 'Reglas y Geometría',
+        description: 'Reglas de 20cm y 30cm, escuadras, transportadores y compases escolares',
+        icon: 'compass',
+        display_order: 18
+      },
+      {
+        id: 'lib-mapas',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'mapas',
+        name: 'Mapas Escolares',
+        description: 'Mapas físicos, políticos e históricos de Argentina, América y el Mundo',
+        icon: 'globe',
+        display_order: 19
+      },
+      {
+        id: 'lib-tijeras',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'tijeras-y-cortantes',
+        name: 'Tijeras y Cortantes',
+        description: 'Tijeras escolares punta roma, tijeras profesionales y cutters trinchetas',
+        icon: 'scissors',
+        display_order: 20
+      },
+      {
+        id: 'lib-rollos-papel',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'rollos-de-papel',
+        name: 'Rollos de Papel Térmico',
+        description: 'Rollos de papel térmico 80mm y 57mm para impresoras fiscales y posnet',
+        icon: 'printer',
+        display_order: 21
+      },
+      {
+        id: 'lib-vinilos',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'vinilos-decorativos',
+        name: 'Vinilos Decorativos',
+        description: 'Vinilos autoadhesivos de colores y laminados para forrar',
+        icon: 'image',
+        display_order: 22
+      },
+      {
+        id: 'lib-folios',
+        category_id: 'libreria',
+        category_slug: 'libreria',
+        slug: 'folios',
+        name: 'Folios y Protectores',
+        description: 'Folios transparentes A4 y Oficio reforzados',
+        icon: 'fileText',
+        display_order: 23
+      },
+      {
+        id: 'lib-cuadernos-repuestos',
         category_id: 'libreria',
         category_slug: 'libreria',
         slug: 'cuadernos-repuestos',
         name: 'Cuadernos y Repuestos',
         description: 'Cuadernos espiralados A4, repuestos N° 3 y libretas de notas',
         icon: 'pencil',
-        display_order: 1,
-        sub_subcategories: [
-          {
-            id: 'lib-cuadernos-espiral-a4',
-            subcategory_id: 'lib-cuadernos',
-            subcategory_slug: 'cuadernos-repuestos',
-            category_slug: 'libreria',
-            slug: 'cuadernos-espiralados-a4',
-            name: 'Cuadernos Espiralados A4',
-            description: 'Cuadernos tapa dura de 80 y 100 hojas microperforadas',
-            display_order: 1
-          },
-          {
-            id: 'lib-repuestos-n3',
-            subcategory_id: 'lib-cuadernos',
-            subcategory_slug: 'cuadernos-repuestos',
-            category_slug: 'libreria',
-            slug: 'repuestos-hojas-n3',
-            name: 'Repuestos de Hojas N° 3',
-            description: 'Packs de 480 y 96 hojas con banda reforzada rayadas y cuadriculadas',
-            display_order: 2
-          }
-        ]
+        display_order: 24
       },
       {
-        id: 'lib-escritura',
+        id: 'lib-escritura-marcadores',
         category_id: 'libreria',
         category_slug: 'libreria',
         slug: 'escritura-marcadores',
         name: 'Escritura y Marcadores',
         description: 'Bolígrafos punta fina, microfibras, resaltadores pastel y marcadores',
         icon: 'pencil',
-        display_order: 2,
-        sub_subcategories: [
-          {
-            id: 'lib-resaltadores-pastel',
-            subcategory_id: 'lib-escritura',
-            subcategory_slug: 'escritura-marcadores',
-            category_slug: 'libreria',
-            slug: 'resaltadores-tonos-pastel',
-            name: 'Sets de Resaltadores Pastel',
-            description: 'Kits de 6 colores pastel de punta biselada suave',
-            display_order: 1
-          },
-          {
-            id: 'lib-boligrafos-gel',
-            subcategory_id: 'lib-escritura',
-            subcategory_slug: 'escritura-marcadores',
-            category_slug: 'libreria',
-            slug: 'boligrafos-tinta-gel-borrables',
-            name: 'Bolígrafos Gel Borrables por Fricción',
-            description: 'Plumas con goma borradora incorporada y tinta termosensible',
-            display_order: 2
-          }
-        ]
+        display_order: 25
       }
     ]
   },

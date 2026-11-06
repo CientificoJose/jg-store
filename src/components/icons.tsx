@@ -80,6 +80,7 @@ import {
   IconTrash,
   IconTrendingDown,
   IconTrendingUp,
+  IconChartPie,
   IconTypography,
   IconUnderline,
   IconUpload,
@@ -243,6 +244,7 @@ export const Icons = {
   // Data / Charts
   trendingDown: IconTrendingDown,
   trendingUp: IconTrendingUp,
+  pieChart: IconChartPie,
   eyeOff: IconEyeOff,
   adjustments: IconAdjustmentsHorizontal,
 

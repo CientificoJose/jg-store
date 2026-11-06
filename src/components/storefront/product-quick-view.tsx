@@ -69,18 +69,16 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
           <Icons.close className="w-4 h-4" />
         </button>
 
-        {/* Imagen del producto */}
-        <div className="relative w-full md:w-1/2 aspect-square md:aspect-auto bg-muted/30">
-          <Image
-            src={product.image_url}
-            alt={product.name}
-            fill
-            className="object-cover"
-          />
-          <div className="absolute bottom-3 left-3 flex flex-col gap-1">
-            <span className="px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md text-white text-xs font-mono">
-              SKU: {product.sku}
-            </span>
+        {/* Imagen del producto Proporcional (Sin deformar) */}
+        <div className="relative w-full md:w-1/2 aspect-square md:aspect-auto bg-white dark:bg-card p-6 flex items-center justify-center">
+          <div className="relative w-full h-full min-h-[260px]">
+            <Image
+              src={product.image_url}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-contain"
+            />
           </div>
         </div>
 

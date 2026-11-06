@@ -270,7 +270,7 @@ export async function updateProductStock(
   newStock: number
 ): Promise<{ success: boolean; stock: number }> {
   // Limitar stock al rango válido (máximo 15 según regla comercial)
-  const safeStock = Math.min(15, Math.max(0, Number(newStock)));
+  const safeStock = Math.max(0, Math.round(Number(newStock)));
 
   // 1. Actualizar catálogo local
   const itemIndex = localCatalog.findIndex((p) => p.id === productId);
@@ -308,7 +308,7 @@ export async function createStoreProduct(
   const newProduct: StoreProduct = {
     ...data,
     id: data.id || `prod-${Date.now()}`,
-    stock: Math.min(15, Math.max(0, Number(data.stock ?? 0))),
+    stock: Math.max(0, Math.round(Number(data.stock ?? 0))),
     retail_price: Number(data.retail_price ?? 0),
     wholesale_price: Number(data.wholesale_price ?? 0),
     min_wholesale_qty: Number(data.min_wholesale_qty ?? 6),
@@ -350,7 +350,7 @@ export async function updateStoreProduct(
 
   const safeStock =
     data.stock !== undefined
-      ? Math.min(15, Math.max(0, Number(data.stock)))
+      ? Math.max(0, Math.round(Number(data.stock)))
       : localCatalog[index].stock;
 
   localCatalog[index] = {
@@ -445,10 +445,10 @@ export async function updateStoreProductsStock(
 
   if (Array.isArray(target)) {
     ids = target;
-    stock = Math.min(15, Math.max(0, Number(stockArg || 0)));
+    stock = Math.max(0, Math.round(Number(stockArg || 0)));
   } else if (typeof target === 'object' && target !== null) {
     ids = target.ids || [];
-    stock = Math.min(15, Math.max(0, Number(target.stock || 0)));
+    stock = Math.max(0, Math.round(Number(target.stock || 0)));
     selectAll = Boolean(target.selectAll);
     filters = target.filters;
   }

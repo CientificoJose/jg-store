@@ -1,7 +1,6 @@
 'use client';
 
 import { LabelList, Pie, PieChart } from 'recharts';
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartConfig,
@@ -11,81 +10,178 @@ import {
 } from '@/components/ui/chart';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
-
-const chartData = [
-  { browser: 'chrome', visitors: 275, fill: 'var(--color-chrome)' },
-  { browser: 'safari', visitors: 200, fill: 'var(--color-safari)' },
-  { browser: 'firefox', visitors: 187, fill: 'var(--color-firefox)' },
-  { browser: 'edge', visitors: 173, fill: 'var(--color-edge)' },
-  { browser: 'other', visitors: 90, fill: 'var(--color-other)' }
-];
-
-const chartConfig = {
-  visitors: {
-    label: 'Visitors'
-  },
-  chrome: {
-    label: 'Chrome',
-    color: 'var(--chart-1)'
-  },
-  safari: {
-    label: 'Safari',
-    color: 'var(--chart-2)'
-  },
-  firefox: {
-    label: 'Firefox',
-    color: 'var(--chart-3)'
-  },
-  edge: {
-    label: 'Edge',
-    color: 'var(--chart-4)'
-  },
-  other: {
-    label: 'Other',
-    color: 'var(--chart-5)'
-  }
-} satisfies ChartConfig;
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ordersQueryOptions } from '@/features/orders/api/queries';
 
 export function PieGraph() {
+  const { data: ordersData } = useQuery(ordersQueryOptions({ limit: 100 }));
+  const orders = ordersData?.orders || [];
+
+  const { chartData, chartConfig, hasData, totalOrdersCount } = useMemo(() => {
+    const validOrders = orders.filter((o) => o.order_status !== 'cancelada');
+    if (validOrders.length === 0) {
+      return {
+        chartData: [],
+        chartConfig: {
+          pedidos: { label: 'Participación (%)' }
+        } as ChartConfig,
+        hasData: false,
+        totalOrdersCount: 0
+      };
+    }
+
+    const total = validOrders.length;
+
+    // Calcular distribución real según logística y vía de pedido
+    let whatsappCount = 0;
+    let pickupCount = 0;
+    let shippingCount = 0;
+    let webCount = 0;
+
+    for (const o of validOrders) {
+      if (
+        o.notes?.toLowerCase().includes('whatsapp') ||
+        o.address?.toLowerCase().includes('whatsapp') ||
+        o.payment_method === 'bank_transfer'
+      ) {
+        whatsappCount++;
+      } else if (o.shipping_method === 'pickup') {
+        pickupCount++;
+      } else if (
+        o.shipping_method === 'andreani' ||
+        o.shipping_method === 'expreso_interior' ||
+        o.shipping_method === 'correo_argentino'
+      ) {
+        shippingCount++;
+      } else {
+        webCount++;
+      }
+    }
+
+    const items = [
+      {
+        canal: 'whatsapp',
+        label: 'WhatsApp Directo',
+        count: whatsappCount,
+        fill: 'var(--chart-1)'
+      },
+      {
+        canal: 'deposito',
+        label: 'Retiro en Depósito',
+        count: pickupCount,
+        fill: 'var(--chart-2)'
+      },
+      {
+        canal: 'envios',
+        label: 'Envíos a Domicilio',
+        count: shippingCount,
+        fill: 'var(--chart-3)'
+      },
+      {
+        canal: 'web',
+        label: 'Tienda Online Web',
+        count: webCount,
+        fill: 'var(--chart-4)'
+      }
+    ].filter((it) => it.count > 0);
+
+    const data = items.map((it) => ({
+      canal: it.canal,
+      pedidos: Math.round((it.count / total) * 100),
+      count: it.count,
+      fill: it.fill
+    }));
+
+    const config: ChartConfig = {
+      pedidos: { label: 'Participación (%)' }
+    };
+
+    items.forEach((it) => {
+      const pct = Math.round((it.count / total) * 100);
+      config[it.canal] = {
+        label: `${it.label} (${pct}%)`,
+        color: it.fill
+      };
+    });
+
+    return {
+      chartData: data,
+      chartConfig: config,
+      hasData: data.length > 0,
+      totalOrdersCount: total
+    };
+  }, [orders]);
+
   return (
-    <Card className='flex h-full flex-col'>
+    <Card className='flex h-full flex-col font-gotham border border-border/80 shadow-xs'>
       <CardHeader className='items-center pb-0'>
-        <CardTitle>
-          Pie Chart
-          <Badge variant='outline'>
-            <Icons.trendingUp />
-            +5.2%
-          </Badge>
-        </CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
-      </CardHeader>
-      <CardContent className='flex flex-1 items-center justify-center pb-0'>
-        <ChartContainer
-          config={chartConfig}
-          className='[&_.recharts-text]:fill-background mx-auto aspect-square max-h-[300px] min-h-[250px]'
-        >
-          <PieChart>
-            <ChartTooltip content={<ChartTooltipContent nameKey='visitors' hideLabel />} />
-            <Pie
-              data={chartData}
-              innerRadius={30}
-              dataKey='visitors'
-              radius={10}
-              cornerRadius={8}
-              paddingAngle={4}
+        <CardTitle className='text-base font-bold text-foreground flex items-center gap-2'>
+          <span>Canales de Compra y Atención</span>
+          {hasData ? (
+            <Badge
+              variant='outline'
+              className='bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold'
             >
-              <LabelList
-                dataKey='visitors'
-                stroke='none'
-                fontSize={12}
-                fontWeight={500}
-                fill='currentColor'
-                formatter={(value) => String(value ?? '')}
-              />
-            </Pie>
-          </PieChart>
-        </ChartContainer>
+              {totalOrdersCount} pedidos
+            </Badge>
+          ) : (
+            <Badge
+              variant='outline'
+              className='bg-muted/60 text-muted-foreground border-border text-[10px] font-medium'
+            >
+              0 pedidos
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription className='text-xs text-muted-foreground'>
+          {hasData
+            ? 'Distribución real de compras por vía de contacto y entrega.'
+            : 'Distribución de pedidos según vía y método de compra.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='flex flex-1 items-center justify-center pb-2 min-h-[240px]'>
+        {!hasData ? (
+          <div className='flex flex-col items-center justify-center py-8 text-center space-y-2'>
+            <div className='w-12 h-12 rounded-2xl bg-muted/60 text-muted-foreground flex items-center justify-center mx-auto'>
+              <Icons.pieChart className='w-6 h-6 text-muted-foreground' />
+            </div>
+            <p className='text-xs font-semibold text-foreground'>Sin pedidos registrados aún</p>
+            <p className='text-[11px] text-muted-foreground max-w-[220px] mx-auto'>
+              A medida que los clientes compren por WhatsApp o la tienda web, aquí se generará el
+              gráfico de porcentajes reales.
+            </p>
+          </div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className='[&_.recharts-text]:fill-background mx-auto aspect-square max-h-[300px] min-h-[240px]'
+          >
+            <PieChart>
+              <ChartTooltip content={<ChartTooltipContent nameKey='canal' hideLabel />} />
+              <Pie
+                data={chartData}
+                innerRadius={30}
+                dataKey='pedidos'
+                radius={10}
+                cornerRadius={8}
+                paddingAngle={4}
+              >
+                <LabelList
+                  dataKey='pedidos'
+                  stroke='none'
+                  fontSize={12}
+                  fontWeight={600}
+                  fill='currentColor'
+                  formatter={(value) => `${value}%`}
+                />
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );
 }
+
+export default PieGraph;

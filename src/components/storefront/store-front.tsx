@@ -21,6 +21,7 @@ import { INITIAL_PRODUCTS } from '@/constants/initial-catalog';
 
 export function StoreFront() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortOption, setSortOption] = useState<ProductSortOption>('popular');
   const [onlyInStock, setOnlyInStock] = useState<boolean>(false);
@@ -39,6 +40,7 @@ export function StoreFront() {
 
     fetchStoreProductsWithMeta({
       category: selectedCategory,
+      subcategory: selectedSubcategory,
       search: searchQuery,
       sort: sortOption,
       onlyInStock
@@ -57,7 +59,7 @@ export function StoreFront() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCategory, searchQuery, sortOption, onlyInStock]);
+  }, [selectedCategory, selectedSubcategory, searchQuery, sortOption, onlyInStock]);
 
   // Si se activa el filtro de favoritos, hacer scroll hacia el catálogo
   useEffect(() => {
@@ -69,13 +71,21 @@ export function StoreFront() {
     }
   }, [showOnlyFavorites]);
 
-  // Productos filtrados para visualización (con soporte de favoritos)
+
+  const landing = useStoreConfigStore((s) => s.landing);
+
+  // Productos filtrados para visualización (con soporte de favoritos y límite de 20 como máximo en catálogo general)
   const displayedProducts = useMemo(() => {
     if (showOnlyFavorites) {
       return products.filter((p) => favoriteIds.includes(p.id));
     }
+    // Si estamos en la vista general (sin búsqueda activa y sin categoría específica), limitar a 20 como máximo
+    if (selectedCategory === 'all' && selectedSubcategory === 'all' && !searchQuery.trim()) {
+      const maxLimit = landing.catalogMaxProducts ?? 20;
+      return products.slice(0, maxLimit);
+    }
     return products;
-  }, [products, showOnlyFavorites, favoriteIds]);
+  }, [products, showOnlyFavorites, favoriteIds, selectedCategory, selectedSubcategory, searchQuery, landing.catalogMaxProducts]);
 
   // Título dinámico de la sección
   const categoryTitle = useMemo(() => {
@@ -85,15 +95,22 @@ export function StoreFront() {
     if (searchQuery.trim()) {
       return `Resultados para "${searchQuery.trim()}"`;
     }
-    if (selectedCategory === 'all') {
-      return 'Todos los Departamentos y Productos';
+    if (selectedCategory === 'all' && selectedSubcategory === 'all') {
+      return landing.catalogSectionTitle || 'Catálogo de Productos';
     }
     const cat = CATEGORY_MAP.get(selectedCategory);
+    if (selectedSubcategory && selectedSubcategory !== 'all') {
+      const sub = cat?.subcategories?.find((s) => s.slug === selectedSubcategory);
+      if (sub) {
+        return `${cat?.name || 'Categoría'}: ${sub.name}`;
+      }
+    }
     return cat ? cat.name : 'Productos';
-  }, [showOnlyFavorites, displayedProducts.length, searchQuery, selectedCategory]);
+  }, [showOnlyFavorites, displayedProducts.length, searchQuery, selectedCategory, selectedSubcategory, landing.catalogSectionTitle]);
 
   const handleResetFilters = () => {
     setSelectedCategory('all');
+    setSelectedSubcategory('all');
     setSearchQuery('');
     setSortOption('popular');
     setOnlyInStock(false);
@@ -112,7 +129,6 @@ export function StoreFront() {
     return products.length > 0 ? products.slice(0, 8) : INITIAL_PRODUCTS.slice(0, 8);
   }, [products]);
 
-  const landing = useStoreConfigStore((s) => s.landing);
 
   // Computar productos para cada fila horizontal de la landing
   const getRowProducts = (row: (typeof landing.productRows)[0]) => {
@@ -133,11 +149,14 @@ export function StoreFront() {
   };
 
   const isSearching = searchQuery.trim().length > 0;
-  const isCategorySelected = selectedCategory && selectedCategory !== 'all';
+  const isCategorySelected =
+    (selectedCategory && selectedCategory !== 'all') ||
+    (selectedSubcategory && selectedSubcategory !== 'all');
   const isFilteredView = isSearching || isCategorySelected;
 
   const handleResetHome = () => {
     setSelectedCategory('all');
+    setSelectedSubcategory('all');
     setSearchQuery('');
     setShowOnlyFavorites(false);
     setOnlyInStock(false);
@@ -147,8 +166,9 @@ export function StoreFront() {
     }
   };
 
-  const handleSelectCategory = (cat: string) => {
+  const handleSelectCategory = (cat: string, subcat: string = 'all') => {
     setSelectedCategory(cat);
+    setSelectedSubcategory(subcat);
     setSearchQuery('');
     if (cat !== 'all') {
       setTimeout(() => {
@@ -166,10 +186,12 @@ export function StoreFront() {
       <StoreHeader
         searchQuery={searchQuery}
         selectedCategory={selectedCategory}
+        selectedSubcategory={selectedSubcategory}
         onSearchChange={(q) => {
           setSearchQuery(q);
           if (q.trim()) {
             setSelectedCategory('all');
+            setSelectedSubcategory('all');
           }
         }}
         onSelectCategory={handleSelectCategory}
@@ -265,6 +287,7 @@ export function StoreFront() {
 
       {/* Pantalla de Confirmación Post-Pedido (Éxito & Datos Bancarios 10% OFF) */}
       <OrderSuccessModal />
+
 
       {/* Pie de Página */}
       <StoreFooter

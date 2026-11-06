@@ -69,14 +69,6 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Carrusel y Banners',
-        url: '/dashboard/banners',
-        icon: 'media',
-        shortcut: ['b', 'n'],
-        isActive: false,
-        items: []
-      },
-      {
         title: 'Clientes y Usuarios',
         url: '/dashboard/users',
         icon: 'teams',
