@@ -649,3 +649,80 @@
     -webkit-text-fill-color: currentColor;
   }
 }
+
+/* =========================================================
+   REGLAS DE IMPRESIÓN PROFESIONAL (COMPROBANTES Y REMITOS)
+   Evita la duplicación de imágenes del catálogo y superposición de fondos
+   ========================================================= */
+@media print {
+  @page {
+    margin: 10mm;
+    size: auto;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ocultar elementos de interfaz web común */
+  header,
+  footer,
+  nav,
+  aside,
+  button,
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Si se imprime el comprobante de compra o remito, aislarlo completamente */
+  body.printing-comprobante *,
+  body:has(#printable-comprobante) * {
+    visibility: hidden;
+  }
+
+  body.printing-comprobante #printable-comprobante,
+  body.printing-comprobante #printable-comprobante *,
+  body:has(#printable-comprobante) #printable-comprobante,
+  body:has(#printable-comprobante) #printable-comprobante * {
+    visibility: visible;
+  }
+
+  #printable-comprobante {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    z-index: 999999 !important;
+  }
+
+  /* Prevenir repeticiones o distorsiones de imágenes al imprimir */
+  #printable-comprobante img {
+    max-width: 44px !important;
+    max-height: 44px !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+  }
+
+  #printable-comprobante tr,
+  #printable-comprobante table {
+    page-break-inside: avoid !important;
+  }
+}

@@ -68,6 +68,7 @@ export const useCartStore = create<CartStore>()(
       wholesaleMode: false,
       customer: {
         name: '',
+        dni_cuit: '',
         phone: '',
         delivery_type: 'shipping',
         city: '',

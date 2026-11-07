@@ -28,6 +28,7 @@ export function CartDrawer() {
 
   const [errors, setErrors] = useState<{
     name?: string;
+    dni_cuit?: string;
     phone?: string;
     city?: string;
   }>({});
@@ -36,6 +37,7 @@ export function CartDrawer() {
 
   const formRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const dniInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const cityInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,10 +51,13 @@ export function CartDrawer() {
   const remainingToWholesale = Math.max(0, WHOLESALE_MIN_AMOUNT_ARS - summary.total_retail);
 
   const validateForm = () => {
-    const newErrors: { name?: string; phone?: string; city?: string } = {};
+    const newErrors: { name?: string; dni_cuit?: string; phone?: string; city?: string } = {};
 
     if (!customer.name?.trim()) {
       newErrors.name = 'Ingresa tu nombre completo o razón social';
+    }
+    if (!customer.dni_cuit?.trim()) {
+      newErrors.dni_cuit = 'Ingresa tu número de DNI o CUIT';
     }
     if (!customer.phone?.trim()) {
       newErrors.phone = 'Ingresa tu número de teléfono o WhatsApp de contacto';
@@ -85,6 +90,8 @@ export function CartDrawer() {
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         if (validationErrors.name) {
           nameInputRef.current?.focus();
+        } else if (validationErrors.dni_cuit) {
+          dniInputRef.current?.focus();
         } else if (validationErrors.phone) {
           phoneInputRef.current?.focus();
         } else if (validationErrors.city) {
@@ -158,7 +165,7 @@ export function CartDrawer() {
     }
   };
 
-  const clearFieldError = (field: 'name' | 'phone' | 'city') => {
+  const clearFieldError = (field: 'name' | 'dni_cuit' | 'phone' | 'city') => {
     if (errors[field]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -435,6 +442,7 @@ export function CartDrawer() {
                       </p>
                       <ul className='list-disc list-inside text-[11px] font-semibold space-y-1 pl-1 text-[#E63946]'>
                         {errors.name && <li>{errors.name}</li>}
+                        {errors.dni_cuit && <li>{errors.dni_cuit}</li>}
                         {errors.phone && <li>{errors.phone}</li>}
                         {errors.city && <li>{errors.city}</li>}
                       </ul>
@@ -470,7 +478,34 @@ export function CartDrawer() {
                       )}
                     </div>
 
-                    {/* Campo 2: Teléfono / WhatsApp */}
+                    {/* Campo 2: DNI o CUIT */}
+                    <div>
+                      <label className='block text-[11px] font-bold text-foreground mb-1'>
+                        DNI o CUIT del Titular <span className='text-[#E63946]'>*</span>
+                      </label>
+                      <input
+                        ref={dniInputRef}
+                        type='text'
+                        value={customer.dni_cuit || ''}
+                        onChange={(e) => {
+                          setCustomerInfo({ dni_cuit: e.target.value });
+                          clearFieldError('dni_cuit');
+                        }}
+                        placeholder='Ej. 30.123.456 o 20-30123456-7'
+                        className={`w-full px-3 py-2 rounded-xl border text-xs text-foreground bg-background transition-all outline-none ${
+                          errors.dni_cuit
+                            ? 'border-red-500 ring-2 ring-red-500/20 bg-red-500/5'
+                            : 'border-border focus:border-[#E63946] focus:ring-2 focus:ring-[#E63946]/20'
+                        }`}
+                      />
+                      {errors.dni_cuit && (
+                        <p className='text-[10px] text-red-500 font-semibold mt-1'>
+                          ⚠️ {errors.dni_cuit}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Campo 3: Teléfono / WhatsApp */}
                     <div>
                       <label className='block text-[11px] font-bold text-foreground mb-1'>
                         Teléfono / WhatsApp de Contacto <span className='text-[#E63946]'>*</span>

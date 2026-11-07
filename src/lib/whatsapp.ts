@@ -118,6 +118,7 @@ export function generateWhatsAppOrderMessage(
     `----------------------------------------`,
     `👤 *DATOS DEL CLIENTE:*`,
     `• Nombre / Razón Social: *${customer.name.trim() || 'No especificado'}*`,
+    ...(customer.dni_cuit ? [`• ${customer.invoice_type === 'A' ? 'CUIT' : 'DNI'}: *${customer.dni_cuit.trim()}*`] : []),
     `• Teléfono / WhatsApp: *${customer.phone.trim() || 'No especificado'}*`,
     `• Facturación: *${customer.invoice_type === 'A' ? 'Factura A (Responsable Inscripto)' : 'Factura B (Consumidor Final / Monotributo)'}*`,
     `• Modalidad de Entrega: *${customer.delivery_type === 'shipping' ? '🚚 Envío' : '🤝 Retiro en Persona'}*`

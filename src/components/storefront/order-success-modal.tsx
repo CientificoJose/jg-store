@@ -54,18 +54,24 @@ export function OrderSuccessModal() {
 
   const handlePrint = () => {
     if (typeof window !== 'undefined') {
+      document.body.classList.add('printing-comprobante');
       window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-comprobante');
+      }, 1200);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200 font-gotham">
-      <div
-        className="bg-card text-foreground border border-border/90 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="success-modal-title"
-      >
+    <>
+      {/* 1. Modal interactivo en pantalla (Se oculta por completo al imprimir) */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-200 font-gotham print:hidden">
+        <div
+          className="bg-card text-foreground border border-border/90 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="success-modal-title"
+        >
         {/* Encabezado con Ícono y Código */}
         <div className="p-5 sm:p-6 pb-4 sm:pb-5 border-b border-border/80 text-center relative bg-gradient-to-b from-emerald-500/10 to-transparent">
           <button
@@ -393,5 +399,203 @@ export function OrderSuccessModal() {
         </div>
       </div>
     </div>
+
+    {/* 2. Comprobante Oficial Imprimible A4 / Carta (SOLO visible al imprimir o exportar a PDF) */}
+    <div
+      id="printable-comprobante"
+      className="hidden print:block text-black bg-white p-6 font-gotham max-w-3xl mx-auto"
+    >
+      {/* Encabezado Comercial */}
+      <div className="border-b-2 border-black pb-4 mb-4 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-black uppercase">
+            {general.storeName || 'JG STORE POLIRRUBRO'}
+          </h1>
+          <p className="text-xs text-neutral-600 mt-0.5">
+            Distribución Mayorista y Minorista • Envíos a todo el país
+          </p>
+          <p className="text-[11px] text-neutral-500 mt-0.5">
+            CUIT: {bankCuit} • WhatsApp: {general.whatsappNumber || '+54 9 11 5555-0000'}
+          </p>
+          {general.address && (
+            <p className="text-[11px] text-neutral-500">
+              Depósito / Dirección: {general.address}
+            </p>
+          )}
+        </div>
+
+        <div className="text-right border border-black/30 rounded-lg p-2.5 bg-neutral-50 min-w-[200px]">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
+            COMPROBANTE DE PEDIDO
+          </span>
+          <span className="text-lg font-mono font-black text-black block">
+            #{orderNumber}
+          </span>
+          <span className="text-[11px] text-neutral-600 block mt-1">
+            Fecha: {new Date(createdAt).toLocaleDateString('es-AR')} {new Date(createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <span className="text-[10px] font-bold uppercase text-neutral-700 bg-neutral-200 px-2 py-0.5 rounded mt-1 inline-block">
+            Factura {customer.invoice_type || 'B'}
+          </span>
+        </div>
+      </div>
+
+      {/* Bloques de Datos: Cliente y Entrega */}
+      <div className="grid grid-cols-2 gap-4 mb-5 text-xs">
+        <div className="border border-neutral-300 rounded-lg p-3 bg-neutral-50/50">
+          <h3 className="font-bold text-neutral-900 uppercase text-[11px] border-b border-neutral-200 pb-1 mb-2">
+            👤 Datos del Comprador
+          </h3>
+          <p className="text-neutral-900 font-semibold text-sm mb-1">{customer.name || 'Cliente JG Store'}</p>
+          <p className="text-neutral-700">
+            <strong className="text-neutral-900">DNI / CUIT:</strong> {customer.dni_cuit || 'Consumidor Final'}
+          </p>
+          <p className="text-neutral-700">
+            <strong className="text-neutral-900">Teléfono / WhatsApp:</strong> {customer.phone || 'No especificado'}
+          </p>
+          <p className="text-neutral-700">
+            <strong className="text-neutral-900">Tipo de Comprobante:</strong> Factura {customer.invoice_type || 'B'}
+          </p>
+        </div>
+
+        <div className="border border-neutral-300 rounded-lg p-3 bg-neutral-50/50">
+          <h3 className="font-bold text-neutral-900 uppercase text-[11px] border-b border-neutral-200 pb-1 mb-2">
+            🚚 Logística y Despacho
+          </h3>
+          <p className="text-neutral-900 font-semibold mb-1">
+            {customer.delivery_type === 'pickup' ? '🤝 Retiro en Depósito Central' : '🚚 Envío a Domicilio / Expreso'}
+          </p>
+          {customer.delivery_type === 'pickup' ? (
+            <p className="text-neutral-700">
+              <strong className="text-neutral-900">Dirección de Retiro:</strong> {general.address || 'Av. Corrientes 1234, CABA'}
+            </p>
+          ) : (
+            <>
+              <p className="text-neutral-700">
+                <strong className="text-neutral-900">Dirección:</strong> {customer.address || 'A convenir por WhatsApp'}
+              </p>
+              <p className="text-neutral-700">
+                <strong className="text-neutral-900">Localidad:</strong> {customer.city || 'CABA'}{customer.postal_code ? ` (CP: ${customer.postal_code})` : ''}
+              </p>
+            </>
+          )}
+          {customer.notes && (
+            <p className="text-neutral-700 mt-1 text-[11px]">
+              <strong className="text-neutral-900">Obs / Expreso:</strong> {customer.notes}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Tabla de Artículos (Exactamente 1 sola imagen limpia por fila) */}
+      <div className="mb-5">
+        <h3 className="font-bold text-neutral-900 uppercase text-xs mb-2">
+          📦 Detalle de Artículos ({items.length} {items.length === 1 ? 'producto' : 'productos'})
+        </h3>
+        <table className="w-full text-left text-xs border border-neutral-300 border-collapse">
+          <thead>
+            <tr className="bg-neutral-100 text-neutral-800 border-b border-neutral-300 text-[11px] uppercase">
+              <th className="p-2 w-10 text-center">#</th>
+              <th className="p-2 w-14 text-center">Foto</th>
+              <th className="p-2">Producto & SKU</th>
+              <th className="p-2 text-center">Cant.</th>
+              <th className="p-2 text-right">P. Unitario</th>
+              <th className="p-2 text-right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, idx) => (
+              <tr key={item.product.id || idx} className="border-b border-neutral-200 last:border-b-0">
+                <td className="p-2 text-center text-neutral-500 font-mono text-[11px]">{idx + 1}</td>
+                <td className="p-2 text-center w-14">
+                  {item.product.image_url ? (
+                    <img
+                      src={item.product.image_url}
+                      alt={item.product.name}
+                      className="w-10 h-10 object-contain rounded border border-neutral-200 mx-auto"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded border border-neutral-200 bg-neutral-100 text-neutral-400 flex items-center justify-center text-[10px] mx-auto">
+                      S/F
+                    </div>
+                  )}
+                </td>
+                <td className="p-2">
+                  <p className="font-semibold text-neutral-900 leading-tight">{item.product.name}</p>
+                  <p className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                    SKU: {item.product.sku} {item.is_wholesale ? '• [TARIFA MAYORISTA]' : ''}
+                  </p>
+                </td>
+                <td className="p-2 text-center font-bold text-neutral-900">
+                  {item.quantity} {item.product.unit || 'u.'}
+                </td>
+                <td className="p-2 text-right text-neutral-700 font-mono">
+                  {formatPrice(item.unit_price)}
+                </td>
+                <td className="p-2 text-right font-bold text-neutral-900 font-mono">
+                  {formatPrice(item.subtotal)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Resumen Financiero y Datos Bancarios */}
+      <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
+        {/* Datos Bancarios para transferencia */}
+        <div className="border border-neutral-300 rounded-lg p-3 bg-neutral-50 text-[11px]">
+          <h4 className="font-bold text-neutral-900 uppercase mb-1.5">
+            🏦 Datos para Transferencia (10% OFF):
+          </h4>
+          <p className="text-neutral-700"><strong>Banco:</strong> {bankName}</p>
+          <p className="text-neutral-700"><strong>Titular:</strong> {bankHolder}</p>
+          <p className="text-neutral-700"><strong>CUIT:</strong> {bankCuit}</p>
+          <p className="text-neutral-900 font-mono font-bold mt-1"><strong>Alias:</strong> {bankAlias}</p>
+          <p className="text-neutral-900 font-mono text-[10px]"><strong>CBU:</strong> {bankCbu}</p>
+          <p className="text-neutral-500 text-[10px] mt-1.5 italic">
+            Al transferir, envía el comprobante por WhatsApp con el N° #{orderNumber}.
+          </p>
+        </div>
+
+        {/* Totales */}
+        <div className="border border-neutral-300 rounded-lg p-3 space-y-1.5 text-xs bg-neutral-50/50">
+          <div className="flex justify-between text-neutral-600">
+            <span>Subtotal Minorista:</span>
+            <span className="font-mono">{formatPrice(summary.total_retail)}</span>
+          </div>
+          {summary.total_savings > 0 && (
+            <div className="flex justify-between text-neutral-800 font-semibold">
+              <span>Ahorro Escala Mayorista:</span>
+              <span className="font-mono text-neutral-900">-{formatPrice(summary.total_savings)}</span>
+            </div>
+          )}
+          {transferSavings > 0 && (
+            <div className="flex justify-between text-emerald-700 font-semibold">
+              <span>Descuento Transferencia CBU (10% OFF):</span>
+              <span className="font-mono">-{formatPrice(transferSavings)}</span>
+            </div>
+          )}
+          <div className="border-t-2 border-black pt-2 mt-2 flex justify-between items-baseline">
+            <span className="font-black text-sm text-neutral-900 uppercase">Total a Pagar:</span>
+            <span className="font-black text-xl text-neutral-900 font-mono">
+              {formatPrice(transferTotal)}
+            </span>
+          </div>
+          <p className="text-[10px] text-right text-neutral-500">
+            (O {formatPrice(summary.subtotal)} por otros medios)
+          </p>
+        </div>
+      </div>
+
+      {/* Pie de Página */}
+      <div className="border-t border-neutral-300 pt-3 text-center text-[10px] text-neutral-500 space-y-0.5">
+        <p className="font-semibold text-neutral-700">
+          Documento no válido como factura fiscal definitiva. Remito interno de pedido y control de despacho.
+        </p>
+        <p>JG Store Polirrubro • {general.address || 'Buenos Aires, Argentina'} • WhatsApp: {general.whatsappNumber || '+54 9 11 5555-0000'}</p>
+      </div>
+    </div>
+  </>
   );
 }
