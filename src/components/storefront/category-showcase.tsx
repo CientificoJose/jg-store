@@ -83,7 +83,8 @@ export function CategoryShowcase({
   style = 'photos'
 }: CategoryShowcaseProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [categories, setCategories] = useState<ProductCategory[]>(PRODUCT_CATEGORIES);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -94,7 +95,11 @@ export function CategoryShowcase({
           setCategories(data);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
     return () => {
       isMounted = false;
     };
@@ -120,9 +125,13 @@ export function CategoryShowcase({
                 Explorar Departamentos
               </h2>
             </div>
-            <p className="text-xs text-[#6C757D] mt-0.5">
-              Accede directamente a las {categories.length} categorías oficiales de JG Store
-            </p>
+            {isLoading ? (
+              <div className="h-3 w-48 rounded-md bg-muted/60 animate-pulse mt-1.5" />
+            ) : (
+              <p className="text-xs text-[#6C757D] mt-0.5">
+                Accede directamente a las {categories.length} categorías oficiales de JG Store
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -145,8 +154,45 @@ export function CategoryShowcase({
           </div>
         </div>
 
-        {/* Tira Desplazable de Categorías con Fotos Miniatura (Inspiración SHOPLUXE) */}
-        {style === 'photos' ? (
+        {/* Tira Desplazable de Categorías: Skeleton Resplandeciente durante carga o Categorías Reales */}
+        {isLoading ? (
+          style === 'photos' ? (
+            <div
+              ref={scrollRef}
+              className="flex items-center gap-4 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-none"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {/* Esqueleto del botón "Todos" */}
+              <div className="shrink-0 flex flex-col items-center gap-2">
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-1 border-2 border-border/40 bg-muted/30 flex items-center justify-center animate-pulse shadow-md">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-neutral-700/40 to-neutral-800/40 flex items-center justify-center">
+                    <Icons.sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-muted-foreground/30" />
+                  </div>
+                </div>
+                <div className="w-10 h-3 rounded-md bg-muted/60 animate-pulse" />
+              </div>
+
+              {/* Sombras grises resplandecientes (Skeletons de departamentos) */}
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="shrink-0 flex flex-col items-center gap-2">
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 border-2 border-border/40 bg-muted/30 animate-pulse shadow-md overflow-hidden">
+                    <div className="w-full h-full rounded-full bg-muted/60 animate-pulse" />
+                  </div>
+                  <div className="w-14 h-3 rounded-md bg-muted/60 animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 overflow-x-auto py-2 scrollbar-none">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="h-8 w-28 rounded-xl bg-muted/60 border border-border/40 animate-pulse shrink-0"
+                />
+              ))}
+            </div>
+          )
+        ) : style === 'photos' ? (
           <div
             ref={scrollRef}
             className="flex items-center gap-4 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-none scroll-smooth"
@@ -181,7 +227,7 @@ export function CategoryShowcase({
               </span>
             </button>
 
-            {/* Categorías con miniaturas de fotos dinámicas */}
+            {/* Categorías reales con fotos miniatura */}
             {categories.map((cat: ProductCategory) => (
               <CategoryCircleItem
                 key={cat.id || cat.slug}
