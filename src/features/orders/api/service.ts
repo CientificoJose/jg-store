@@ -209,79 +209,206 @@ export async function getOrderById(id: string): Promise<Order | undefined> {
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
-  const order = mockOrders.find((o) => o.id === id || o.order_number === id);
-  if (!order) throw new Error('Pedido no encontrado');
-  order.order_status = status;
-  order.updated_at = new Date().toISOString();
-
+  const now = new Date().toISOString();
   const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
+
+  let order = mockOrders.find((o) => o.id === id || o.order_number === id);
+  if (order) {
+    order.order_status = status;
+    order.updated_at = now;
+  }
 
   if (SUPABASE_URL && SUPABASE_KEY) {
     try {
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/orders?order_number=eq.${encodeURIComponent(order.order_number)}`,
-        {
-          method: 'PATCH',
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            order_status: status,
-            updated_at: order.updated_at
-          })
+      const isUuid = id.includes('-') && id.length === 36;
+      const filter = isUuid
+        ? `id=eq.${encodeURIComponent(id)}`
+        : `order_number=eq.${encodeURIComponent(id)}`;
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?${filter}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({
+          order_status: status,
+          updated_at: now
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data[0]) {
+          const dbo = data[0];
+          const updatedOrder: Order = {
+            ...dbo,
+            order_status: dbo.order_status,
+            updated_at: dbo.updated_at,
+            items: order?.items || []
+          };
+          const idx = mockOrders.findIndex((o) => o.id === dbo.id || o.order_number === dbo.order_number);
+          if (idx !== -1) {
+            mockOrders[idx] = { ...mockOrders[idx], order_status: dbo.order_status, updated_at: dbo.updated_at };
+          } else {
+            mockOrders.unshift(updatedOrder);
+          }
+          return updatedOrder;
         }
-      );
+      }
     } catch (e) {
       console.warn('Error al actualizar estado en Supabase:', e);
     }
   }
 
-  return { ...order };
+  if (order) return { ...order };
+
+  return {
+    id,
+    order_number: id,
+    order_status: status,
+    updated_at: now
+  } as Order;
 }
 
 export async function updatePaymentStatus(id: string, status: PaymentStatus): Promise<Order> {
-  const order = mockOrders.find((o) => o.id === id || o.order_number === id);
-  if (!order) throw new Error('Pedido no encontrado');
-  order.payment_status = status;
-  order.updated_at = new Date().toISOString();
-
+  const now = new Date().toISOString();
   const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
+
+  let order = mockOrders.find((o) => o.id === id || o.order_number === id);
+  if (order) {
+    order.payment_status = status;
+    order.updated_at = now;
+  }
 
   if (SUPABASE_URL && SUPABASE_KEY) {
     try {
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/orders?order_number=eq.${encodeURIComponent(order.order_number)}`,
-        {
-          method: 'PATCH',
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            payment_status: status,
-            updated_at: order.updated_at
-          })
+      const isUuid = id.includes('-') && id.length === 36;
+      const filter = isUuid
+        ? `id=eq.${encodeURIComponent(id)}`
+        : `order_number=eq.${encodeURIComponent(id)}`;
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?${filter}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({
+          payment_status: status,
+          updated_at: now
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data[0]) {
+          const dbo = data[0];
+          const updatedOrder: Order = {
+            ...dbo,
+            payment_status: dbo.payment_status,
+            updated_at: dbo.updated_at,
+            items: order?.items || []
+          };
+          const idx = mockOrders.findIndex((o) => o.id === dbo.id || o.order_number === dbo.order_number);
+          if (idx !== -1) {
+            mockOrders[idx] = { ...mockOrders[idx], payment_status: dbo.payment_status, updated_at: dbo.updated_at };
+          } else {
+            mockOrders.unshift(updatedOrder);
+          }
+          return updatedOrder;
         }
-      );
+      }
     } catch (e) {
       console.warn('Error al actualizar pago en Supabase:', e);
     }
   }
 
-  return { ...order };
+  if (order) return { ...order };
+
+  return {
+    id,
+    order_number: id,
+    payment_status: status,
+    updated_at: now
+  } as Order;
 }
 
 export async function updateTrackingNumber(id: string, trackingNumber: string): Promise<Order> {
-  const order = mockOrders.find((o) => o.id === id || o.order_number === id);
-  if (!order) throw new Error('Pedido no encontrado');
-  order.tracking_number = trackingNumber;
-  order.shipping_status = 'shipped';
-  order.order_status = 'lista_despacho';
-  order.updated_at = new Date().toISOString();
-  return { ...order };
+  const now = new Date().toISOString();
+  const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
+
+  let order = mockOrders.find((o) => o.id === id || o.order_number === id);
+  if (order) {
+    order.tracking_number = trackingNumber;
+    order.shipping_status = 'shipped';
+    order.order_status = 'lista_despacho';
+    order.updated_at = now;
+  }
+
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      const isUuid = id.includes('-') && id.length === 36;
+      const filter = isUuid
+        ? `id=eq.${encodeURIComponent(id)}`
+        : `order_number=eq.${encodeURIComponent(id)}`;
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?${filter}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({
+          tracking_number: trackingNumber,
+          shipping_status: 'shipped',
+          order_status: 'lista_despacho',
+          updated_at: now
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data[0]) {
+          const dbo = data[0];
+          const updatedOrder: Order = {
+            ...dbo,
+            tracking_number: dbo.tracking_number,
+            shipping_status: dbo.shipping_status,
+            order_status: dbo.order_status,
+            updated_at: dbo.updated_at,
+            items: order?.items || []
+          };
+          const idx = mockOrders.findIndex((o) => o.id === dbo.id || o.order_number === dbo.order_number);
+          if (idx !== -1) {
+            mockOrders[idx] = { ...mockOrders[idx], tracking_number: dbo.tracking_number, order_status: dbo.order_status, updated_at: dbo.updated_at };
+          } else {
+            mockOrders.unshift(updatedOrder);
+          }
+          return updatedOrder;
+        }
+      }
+    } catch (e) {
+      console.warn('Error al actualizar tracking en Supabase:', e);
+    }
+  }
+
+  if (order) return { ...order };
+
+  return {
+    id,
+    order_number: id,
+    tracking_number: trackingNumber,
+    shipping_status: 'shipped',
+    order_status: 'lista_despacho',
+    updated_at: now
+  } as Order;
 }
 
 export async function createOrder(data: Partial<Order>): Promise<Order> {

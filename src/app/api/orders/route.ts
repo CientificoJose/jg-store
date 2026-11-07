@@ -1,5 +1,11 @@
 import { NextRequest } from 'next/server';
-import { createOrder, getOrders } from '@/features/orders/api/service';
+import {
+  createOrder,
+  getOrders,
+  updateOrderStatus,
+  updatePaymentStatus,
+  updateTrackingNumber
+} from '@/features/orders/api/service';
 import type { CartItem, CustomerOrderInfo } from '@/types/store';
 
 export async function GET(request: NextRequest) {
@@ -107,6 +113,41 @@ export async function POST(request: NextRequest) {
     console.error('Error al crear orden:', error);
     return Response.json(
       { error: error?.message || 'Error al registrar el pedido en el servidor.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { id, order_status, payment_status, tracking_number } = body;
+
+    if (!id) {
+      return Response.json({ error: 'ID de orden obligatorio.' }, { status: 400 });
+    }
+
+    let updatedOrder: any;
+
+    if (order_status) {
+      updatedOrder = await updateOrderStatus(id, order_status);
+    } else if (payment_status) {
+      updatedOrder = await updatePaymentStatus(id, payment_status);
+    } else if (tracking_number !== undefined) {
+      updatedOrder = await updateTrackingNumber(id, tracking_number);
+    } else {
+      return Response.json({ error: 'No se enviaron campos válidos para actualizar.' }, { status: 400 });
+    }
+
+    return Response.json({
+      success: true,
+      message: 'Pedido actualizado con éxito.',
+      order: updatedOrder
+    });
+  } catch (error: any) {
+    console.error('Error al actualizar orden:', error);
+    return Response.json(
+      { error: error?.message || 'Error al actualizar el pedido en el servidor.' },
       { status: 500 }
     );
   }
