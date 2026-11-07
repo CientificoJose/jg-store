@@ -32,17 +32,20 @@ export const fakeUsers = {
     const rawOrdersUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
     const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
-    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const SUPABASE_KEY =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SERVICE_ROLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+    if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
     try {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/orders?select=*&order=created_at.desc&limit=100`,
         {
           headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
           },
           cache: 'no-store'
         }
@@ -80,10 +83,10 @@ export const fakeUsers = {
               const last_name = names.slice(1).join(' ') || '';
 
               this.records.push({
-                id: Math.abs(parseInt(ord.id, 10)) || Date.now() + Math.floor(Math.random() * 1000),
+                id: Math.floor(100000 + Math.random() * 900000),
                 first_name,
                 last_name,
-                email: ord.customer_email || `${first_name.toLowerCase()}@cliente.com`,
+                email: ord.customer_email || `${first_name.toLowerCase().replace(/[^a-z0-9]/g, '')}@cliente.com`,
                 phone: ord.customer_phone || '',
                 status: 'Activo',
                 role: ord.order_type === 'wholesale' ? 'Mayorista B2B' : 'Cliente al Detal',

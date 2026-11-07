@@ -26,6 +26,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
   // Selector de cantidad
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [isBuyingNow, setIsBuyingNow] = useState<boolean>(false);
 
   // Galería de imágenes reales del producto
   const galleryImages =
@@ -78,13 +79,55 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
     }
   };
 
-  const handleBuyNowWhatsApp = () => {
-    if (isOutOfStock) return;
-    const directMessage = `¡Hola JG Store! Quiero comprar ahora este producto:\n\n📦 *${product.name}*\n🔢 SKU: ${product.sku}\n📊 Cantidad: ${quantity} ${product.unit}(s)\n💰 Precio unitario: ${formatPrice(activeUnitPrice)} (${qualifiesForWholesale ? 'Mayorista' : 'Detal'})\n💵 Total estimado: ${formatPrice(subtotal)}${savings > 0 ? `\n🎉 Ahorro Mayorista: ${formatPrice(savings)}` : ''}\n\n¿Tienen disponibilidad para coordinar el pago y envío?`;
+  const handleBuyNowWhatsApp = async () => {
+    if (isOutOfStock || isBuyingNow) return;
+    setIsBuyingNow(true);
+
+    let orderNumber = `JG-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: [
+            {
+              product,
+              quantity,
+              unit_price: activeUnitPrice,
+              is_wholesale: qualifiesForWholesale,
+              subtotal,
+              savings
+            }
+          ],
+          customer: {
+            name: 'Cliente Consulta Web Directa',
+            phone: '+54 9 11 (WhatsApp)',
+            delivery_type: 'shipping',
+            invoice_type: qualifiesForWholesale ? 'A' : 'B'
+          },
+          notes: `Compra directa desde detalle de producto: ${product.name} (Cant: ${quantity})`
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.order?.order_number) {
+          orderNumber = data.order.order_number;
+        }
+      }
+    } catch (err) {
+      console.warn('Error al persistir orden rápida en backend:', err);
+    } finally {
+      setIsBuyingNow(false);
+    }
+
+    const directMessage = `¡Hola JG Store! Quiero comprar ahora este producto:\n\n📋 *Pedido Oficial:* #${orderNumber}\n📦 *${product.name}*\n🔢 SKU: ${product.sku}\n📊 Cantidad: ${quantity} ${product.unit}(s)\n💰 Precio unitario: ${formatPrice(activeUnitPrice)} (${qualifiesForWholesale ? 'Mayorista' : 'Detal'})\n💵 Total estimado: ${formatPrice(subtotal)}${savings > 0 ? `\n🎉 Ahorro Mayorista: ${formatPrice(savings)}` : ''}\n\n¿Tienen disponibilidad para coordinar el pago y envío?`;
     const cleanPhone = (whatsappNumber || JG_STORE_WHATSAPP_NUMBER).replace(/[^0-9]/g, '');
     const cleanMessage = directMessage.replace(/\uFE0F/g, '');
     const url = `https://api.whatsapp.com/send/?phone=${cleanPhone}&text=${encodeURIComponent(cleanMessage)}`;
     window.open(url, '_blank');
+    toast.success(`Pedido #${orderNumber} registrado con éxito.`);
   };
 
   return (
@@ -369,11 +412,17 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                     {/* Botón Comprar por WhatsApp (Directo) */}
                     <button
                       onClick={handleBuyNowWhatsApp}
-                      disabled={isOutOfStock}
+                      disabled={isOutOfStock || isBuyingNow}
                       className='w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-muted disabled:text-[#6C757D] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer'
                     >
-                      <Icons.whatsapp className='w-5 h-5' />
-                      <span>Comprar Ahora por WhatsApp</span>
+                      {isBuyingNow ? (
+                        <Icons.spinner className='w-5 h-5 animate-spin' />
+                      ) : (
+                        <Icons.whatsapp className='w-5 h-5' />
+                      )}
+                      <span>
+                        {isBuyingNow ? 'Generando Pedido...' : 'Comprar Ahora por WhatsApp'}
+                      </span>
                     </button>
 
                     {/* Botón Agregar al Carrito */}

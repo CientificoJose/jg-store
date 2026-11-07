@@ -115,6 +115,9 @@ export function CartDrawer() {
         if (res.ok) {
           const data = await res.json();
           registeredOrderNumber = data.order?.order_number;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.error('Fallo respuesta al guardar orden:', errData);
         }
       } catch (e) {
         console.warn('Registro de orden en backend diferido:', e);

@@ -14,7 +14,8 @@ export function ordersQueryOptions(filters: OrderFilters = {}) {
   return queryOptions({
     queryKey: orderKeys.list(filters),
     queryFn: () => getOrders(filters),
-    staleTime: 1000 * 60 * 2 // 2 minutos
+    staleTime: 1000 * 10, // 10 segundos para refrescar compras recientes
+    refetchOnWindowFocus: true
   });
 }
 

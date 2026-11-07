@@ -1,48 +1,98 @@
 import { Order, OrderFilters, OrdersResponse, OrderStatus, PaymentStatus } from './types';
 
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+function getSupabaseConfig() {
+  const rawOrdersUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
+  const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
+  const SUPABASE_KEY =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    '';
+  return { SUPABASE_URL, SUPABASE_KEY };
+}
+
 // Almacén en memoria de órdenes sincronizadas desde Supabase y pedidos nuevos
 let mockOrders: Order[] = [];
 
 export async function getOrders(filters: OrderFilters = {}): Promise<OrdersResponse> {
-  // Sincronizar órdenes registradas en Supabase
-  const rawOrdersUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
-  const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
-  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/orders?select=*&order=created_at.desc&limit=100`,
+        `${SUPABASE_URL}/rest/v1/orders?select=*,order_items(*)&order=created_at.desc&limit=100`,
         {
           headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
           },
           cache: 'no-store'
         }
       );
       if (res.ok) {
         const dbOrders = await res.json();
-        if (Array.isArray(dbOrders) && dbOrders.length > 0) {
-          const existingMap = new Map(mockOrders.map((o) => [o.order_number, o]));
-          for (const dbo of dbOrders) {
-            const existing = existingMap.get(dbo.order_number);
-            if (!existing) {
-              mockOrders.unshift({
-                ...dbo,
-                items: dbo.items || []
-              });
-            } else {
-              // Mantener sincronizado el estado si cambió en base de datos
-              existing.order_status = dbo.order_status || existing.order_status;
-              existing.payment_status = dbo.payment_status || existing.payment_status;
-            }
-          }
+        if (Array.isArray(dbOrders)) {
+          mockOrders = dbOrders.map((dbo: any) => ({
+            id: dbo.id,
+            order_number: dbo.order_number,
+            created_at: dbo.created_at,
+            updated_at: dbo.updated_at,
+            order_type: dbo.order_type || 'retail',
+            customer_name: dbo.customer_name || 'Cliente JG Store',
+            customer_phone: dbo.customer_phone || '',
+            customer_email: dbo.customer_email || undefined,
+            document_type: dbo.document_type || 'DNI',
+            document_number: dbo.document_number || '0',
+            invoice_type: dbo.invoice_type || 'B',
+            province: dbo.province || 'Buenos Aires',
+            city: dbo.city || 'CABA',
+            postal_code: dbo.postal_code || '1000',
+            address: dbo.address || '',
+            shipping_method: dbo.shipping_method || 'pickup',
+            shipping_status: dbo.shipping_status || 'preparing',
+            shipping_cost: Number(dbo.shipping_cost) || 0,
+            tracking_number: dbo.tracking_number || undefined,
+            payment_method: dbo.payment_method || 'bank_transfer',
+            payment_status: dbo.payment_status || 'pending',
+            subtotal: Number(dbo.subtotal) || 0,
+            discount: Number(dbo.discount) || 0,
+            total_savings: Number(dbo.total_savings) || 0,
+            total_amount: Number(dbo.total_amount) || 0,
+            order_status: dbo.order_status || 'nueva',
+            notes: dbo.notes || undefined,
+            items: Array.isArray(dbo.order_items)
+              ? dbo.order_items.map((it: any) => ({
+                  id: it.id,
+                  order_id: it.order_id,
+                  product_id: it.product_id,
+                  sku: it.sku,
+                  name: it.name,
+                  image_url: it.image_url || '',
+                  unit: it.unit || 'unidad',
+                  quantity: Number(it.quantity) || 1,
+                  unit_price: Number(it.unit_price) || 0,
+                  cost_price_at_sale: Number(it.cost_price_at_sale) || 0,
+                  subtotal: Number(it.subtotal) || 0,
+                  is_wholesale: Boolean(it.is_wholesale)
+                }))
+              : []
+          }));
         }
       }
-    } catch {
-      // Fallback silencioso en memoria
+    } catch (e) {
+      console.warn('Error al consultar orders de Supabase:', e);
     }
   }
 
@@ -133,25 +183,22 @@ export async function getOrderById(id: string): Promise<Order | undefined> {
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
-  const order = mockOrders.find((o) => o.id === id);
+  const order = mockOrders.find((o) => o.id === id || o.order_number === id);
   if (!order) throw new Error('Pedido no encontrado');
   order.order_status = status;
   order.updated_at = new Date().toISOString();
 
-  const rawOrdersUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
-  const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
-  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       await fetch(
         `${SUPABASE_URL}/rest/v1/orders?order_number=eq.${encodeURIComponent(order.order_number)}`,
         {
           method: 'PATCH',
           headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -160,8 +207,8 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
           })
         }
       );
-    } catch {
-      // Silencioso fallback en memoria
+    } catch (e) {
+      console.warn('Error al actualizar estado en Supabase:', e);
     }
   }
 
@@ -169,25 +216,22 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
 }
 
 export async function updatePaymentStatus(id: string, status: PaymentStatus): Promise<Order> {
-  const order = mockOrders.find((o) => o.id === id);
+  const order = mockOrders.find((o) => o.id === id || o.order_number === id);
   if (!order) throw new Error('Pedido no encontrado');
   order.payment_status = status;
   order.updated_at = new Date().toISOString();
 
-  const rawOrdersUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
-  const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
-  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       await fetch(
         `${SUPABASE_URL}/rest/v1/orders?order_number=eq.${encodeURIComponent(order.order_number)}`,
         {
           method: 'PATCH',
           headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -196,8 +240,8 @@ export async function updatePaymentStatus(id: string, status: PaymentStatus): Pr
           })
         }
       );
-    } catch {
-      // Silencioso fallback en memoria
+    } catch (e) {
+      console.warn('Error al actualizar pago en Supabase:', e);
     }
   }
 
@@ -205,7 +249,7 @@ export async function updatePaymentStatus(id: string, status: PaymentStatus): Pr
 }
 
 export async function updateTrackingNumber(id: string, trackingNumber: string): Promise<Order> {
-  const order = mockOrders.find((o) => o.id === id);
+  const order = mockOrders.find((o) => o.id === id || o.order_number === id);
   if (!order) throw new Error('Pedido no encontrado');
   order.tracking_number = trackingNumber;
   order.shipping_status = 'shipped';
@@ -214,13 +258,10 @@ export async function updateTrackingNumber(id: string, trackingNumber: string): 
   return { ...order };
 }
 
-let orderSequence = 1050;
-
 export async function createOrder(data: Partial<Order>): Promise<Order> {
-  orderSequence++;
-  const id = `ord-${Date.now()}`;
-  const orderNumber = data.order_number || `JG-2026-${orderSequence}`;
+  const id = generateUUID();
   const now = new Date().toISOString();
+  const orderNumber = data.order_number || `JG-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
   const newOrder: Order = {
     id,
@@ -228,82 +269,125 @@ export async function createOrder(data: Partial<Order>): Promise<Order> {
     created_at: now,
     updated_at: now,
     order_type: data.order_type || 'retail',
-    customer_name: data.customer_name || 'Cliente JG Store',
-    customer_phone: data.customer_phone || '',
-    customer_email: data.customer_email,
+    customer_name: (data.customer_name || 'Cliente JG Store').trim(),
+    customer_phone: (data.customer_phone || '+54 9 11 0000-0000').trim(),
+    customer_email: data.customer_email?.trim() || undefined,
     document_type: data.document_type || 'DNI',
-    document_number: data.document_number || '0',
+    document_number: (data.document_number || '30000000').trim(),
     invoice_type: data.invoice_type || 'B',
-    province: data.province || 'Buenos Aires',
-    city: data.city || 'CABA',
-    postal_code: data.postal_code || '1000',
-    address: data.address || '',
-    shipping_method: data.shipping_method || 'andreani',
+    province: (data.province || 'Buenos Aires').trim(),
+    city: (data.city || 'CABA').trim(),
+    postal_code: (data.postal_code || '1000').trim(),
+    address: (data.address || 'A convenir por WhatsApp').trim(),
+    shipping_method: data.shipping_method || 'pickup',
     shipping_status: data.shipping_status || 'preparing',
-    shipping_cost: data.shipping_cost || 0,
+    shipping_cost: Number(data.shipping_cost) || 0,
     tracking_number: data.tracking_number,
     payment_method: data.payment_method || 'bank_transfer',
     payment_status: data.payment_status || 'pending',
-    subtotal: data.subtotal || 0,
-    discount: data.discount || 0,
-    total_savings: data.total_savings || 0,
-    total_amount: data.total_amount || 0,
+    subtotal: Number(data.subtotal) || 0,
+    discount: Number(data.discount) || 0,
+    total_savings: Number(data.total_savings) || 0,
+    total_amount: Number(data.total_amount) || 0,
     order_status: data.order_status || 'nueva',
-    notes: data.notes,
+    notes: data.notes || '',
     items: (data.items || []).map((it) => ({
       ...it,
+      id: it.id && it.id.includes('-') && it.id.length > 20 ? it.id : generateUUID(),
       order_id: id
     }))
   };
 
-  mockOrders.unshift(newOrder);
+  const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
 
-  const rawOrdersUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
-  const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
-  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+      // 1. Guardar cabecera de la orden
+      const orderPayload = {
+        id: newOrder.id,
+        order_number: newOrder.order_number,
+        created_at: newOrder.created_at,
+        updated_at: newOrder.updated_at,
+        order_type: newOrder.order_type,
+        customer_name: newOrder.customer_name,
+        customer_phone: newOrder.customer_phone,
+        customer_email: newOrder.customer_email || null,
+        document_type: newOrder.document_type,
+        document_number: newOrder.document_number,
+        invoice_type: newOrder.invoice_type,
+        province: newOrder.province,
+        city: newOrder.city,
+        postal_code: newOrder.postal_code,
+        address: newOrder.address,
+        shipping_method: newOrder.shipping_method,
+        shipping_status: newOrder.shipping_status,
+        shipping_cost: newOrder.shipping_cost,
+        payment_method: newOrder.payment_method,
+        payment_status: newOrder.payment_status,
+        subtotal: newOrder.subtotal,
+        discount: newOrder.discount,
+        total_savings: newOrder.total_savings,
+        total_amount: newOrder.total_amount,
+        order_status: newOrder.order_status,
+        notes: newOrder.notes || null
+      };
+
+      const resOrder = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
         method: 'POST',
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
           'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
+          Prefer: 'return=representation'
         },
-        body: JSON.stringify({
-          order_number: newOrder.order_number,
-          order_type: newOrder.order_type,
-          customer_name: newOrder.customer_name,
-          customer_phone: newOrder.customer_phone,
-          customer_email: newOrder.customer_email,
-          document_type: newOrder.document_type,
-          document_number: newOrder.document_number,
-          invoice_type: newOrder.invoice_type,
-          province: newOrder.province,
-          city: newOrder.city,
-          postal_code: newOrder.postal_code,
-          address: newOrder.address,
-          shipping_method: newOrder.shipping_method,
-          shipping_status: newOrder.shipping_status,
-          shipping_cost: newOrder.shipping_cost,
-          payment_method: newOrder.payment_method,
-          payment_status: newOrder.payment_status,
-          subtotal: newOrder.subtotal,
-          discount: newOrder.discount,
-          total_savings: newOrder.total_savings,
-          total_amount: newOrder.total_amount,
-          order_status: newOrder.order_status,
-          notes: newOrder.notes
-        })
+        body: JSON.stringify(orderPayload)
       });
-    } catch {
-      // Silencioso fallback en memoria
+
+      if (!resOrder.ok) {
+        const errText = await resOrder.text();
+        console.error('Error insertando orden en Supabase:', resOrder.status, errText);
+      } else {
+        // 2. Guardar los artículos de la orden (order_items)
+        if (newOrder.items.length > 0) {
+          const itemsPayload = newOrder.items.map((it) => ({
+            id: it.id,
+            order_id: newOrder.id,
+            product_id: String(it.product_id || it.sku || 'prod'),
+            sku: String(it.sku || 'SIN-SKU'),
+            name: String(it.name || 'Producto'),
+            image_url: it.image_url || '',
+            unit: it.unit || 'unidad',
+            quantity: Number(it.quantity) || 1,
+            unit_price: Number(it.unit_price) || 0,
+            cost_price_at_sale: Number(it.cost_price_at_sale) || 0,
+            subtotal: Number(it.subtotal) || 0,
+            is_wholesale: Boolean(it.is_wholesale),
+            created_at: newOrder.created_at
+          }));
+
+          const resItems = await fetch(`${SUPABASE_URL}/rest/v1/order_items`, {
+            method: 'POST',
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal'
+            },
+            body: JSON.stringify(itemsPayload)
+          });
+
+          if (!resItems.ok) {
+            const errItems = await resItems.text();
+            console.error('Error insertando order_items en Supabase:', resItems.status, errItems);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Excepción al conectar con Supabase en createOrder:', e);
     }
   }
 
+  mockOrders.unshift(newOrder);
   return newOrder;
 }
 

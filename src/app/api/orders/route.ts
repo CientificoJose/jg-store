@@ -59,7 +59,9 @@ export async function POST(request: NextRequest) {
       customer_phone: customer.phone,
       customer_email: customer.notes?.includes('@') ? customer.notes : undefined,
       document_type: customer.invoice_type === 'A' ? 'CUIT' : 'DNI',
-      document_number: customer.invoice_type === 'A' ? '30-XXXXXXXX-9' : 'XXXXXXXX',
+      document_number:
+        customer.dni_cuit?.trim() ||
+        (customer.invoice_type === 'A' ? '30-71234567-9' : '30123456'),
       invoice_type: customer.invoice_type || 'B',
       province: customer.province || 'Buenos Aires',
       city: customer.city || 'CABA',
