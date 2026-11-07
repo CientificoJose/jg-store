@@ -4,7 +4,8 @@ import {
   getOrders,
   updateOrderStatus,
   updatePaymentStatus,
-  updateTrackingNumber
+  updateTrackingNumber,
+  deleteOrder
 } from '@/features/orders/api/service';
 import type { CartItem, CustomerOrderInfo } from '@/types/store';
 
@@ -148,6 +149,30 @@ export async function PATCH(request: NextRequest) {
     console.error('Error al actualizar orden:', error);
     return Response.json(
       { error: error?.message || 'Error al actualizar el pedido en el servidor.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return Response.json({ error: 'ID de orden obligatorio para eliminar.' }, { status: 400 });
+    }
+
+    await deleteOrder(id);
+
+    return Response.json({
+      success: true,
+      message: 'Pedido eliminado permanentemente.'
+    });
+  } catch (error: any) {
+    console.error('Error al eliminar orden:', error);
+    return Response.json(
+      { error: error?.message || 'Error al eliminar el pedido en el servidor.' },
       { status: 500 }
     );
   }

@@ -63,6 +63,8 @@ export const fakeUsers = {
 
       if (res.ok) {
         const orders = await res.json();
+        const newRecords: User[] = [];
+
         if (Array.isArray(orders) && orders.length > 0) {
           // Extraer clientes reales únicos a partir de las órdenes registradas
           const customerMap = new Map<string, { ordersCount: number; lastOrder: any }>();
@@ -78,38 +80,30 @@ export const fakeUsers = {
 
           for (const [key, val] of customerMap.entries()) {
             const ord = val.lastOrder;
-            const exists = this.records.find(
-              (u) =>
-                (ord.customer_phone && u.phone === ord.customer_phone) ||
-                (ord.customer_email && u.email === ord.customer_email)
-            );
+            const fullName = (ord.customer_name || 'Cliente').trim();
+            const names = fullName.split(' ');
+            const first_name = names[0] || 'Cliente';
+            const last_name = names.slice(1).join(' ') || '';
 
-            if (exists) {
-              exists.pedidos_count = val.ordersCount;
-            } else {
-              const fullName = (ord.customer_name || 'Cliente').trim();
-              const names = fullName.split(' ');
-              const first_name = names[0] || 'Cliente';
-              const last_name = names.slice(1).join(' ') || '';
-
-              this.records.push({
-                id: Math.floor(100000 + Math.random() * 900000),
-                first_name,
-                last_name,
-                email: ord.customer_email || `${first_name.toLowerCase().replace(/[^a-z0-9]/g, '')}@cliente.com`,
-                phone: ord.customer_phone || '',
-                status: 'Activo',
-                role: ord.order_type === 'wholesale' ? 'Mayorista B2B' : 'Cliente al Detal',
-                empresa: ord.order_type === 'wholesale' ? fullName : 'Particular / Minorista',
-                rif_cuit: ord.document_number || 'S/D',
-                ciudad: [ord.city, ord.province].filter(Boolean).join(', ') || 'Argentina',
-                pedidos_count: val.ordersCount,
-                created_at: ord.created_at || new Date().toISOString(),
-                updated_at: ord.updated_at || new Date().toISOString()
-              });
-            }
+            newRecords.push({
+              id: Math.floor(100000 + Math.random() * 900000),
+              first_name,
+              last_name,
+              email: ord.customer_email || `${first_name.toLowerCase().replace(/[^a-z0-9]/g, '')}@cliente.com`,
+              phone: ord.customer_phone || '',
+              status: 'Activo',
+              role: ord.order_type === 'wholesale' ? 'Mayorista B2B' : 'Cliente al Detal',
+              empresa: ord.order_type === 'wholesale' ? fullName : 'Particular / Minorista',
+              rif_cuit: ord.document_number || 'S/D',
+              ciudad: [ord.city, ord.province].filter(Boolean).join(', ') || 'Argentina',
+              pedidos_count: val.ordersCount,
+              created_at: ord.created_at || new Date().toISOString(),
+              updated_at: ord.updated_at || new Date().toISOString()
+            });
           }
         }
+
+        this.records = newRecords;
       }
     } catch {
       // Fallback silencioso

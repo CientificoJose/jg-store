@@ -578,3 +578,74 @@ export async function updateOrderItemQuantity(
 export async function removeOrderItem(orderId: string, itemId: string): Promise<Order> {
   return updateOrderItemQuantity(orderId, itemId, 0);
 }
+
+export async function deleteOrder(id: string): Promise<boolean> {
+  const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
+
+  // 1. Eliminar de memoria si existe
+  const idx = mockOrders.findIndex((o) => o.id === id || o.order_number === id);
+  const foundOrder = idx !== -1 ? mockOrders[idx] : null;
+  if (idx !== -1) {
+    mockOrders.splice(idx, 1);
+  }
+
+  // 2. Eliminar de Supabase (Database)
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      let realId = id;
+      if (foundOrder?.id) {
+        realId = foundOrder.id;
+      } else {
+        const resQuery = await fetch(
+          `${SUPABASE_URL}/rest/v1/orders?select=id,order_number&or=(id.eq.${encodeURIComponent(id)},order_number.eq.${encodeURIComponent(id)})&limit=1`,
+          {
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`
+            }
+          }
+        );
+        if (resQuery.ok) {
+          const rows = await resQuery.json();
+          if (Array.isArray(rows) && rows[0]?.id) {
+            realId = rows[0].id;
+          }
+        }
+      }
+
+      // Eliminar items asociados primero
+      await fetch(`${SUPABASE_URL}/rest/v1/order_items?order_id=eq.${encodeURIComponent(realId)}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      });
+
+      // Eliminar la cabecera de la orden
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/orders?or=(id.eq.${encodeURIComponent(realId)},order_number.eq.${encodeURIComponent(id)})`,
+        {
+          method: 'DELETE',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
+    } catch (e) {
+      console.error('Error eliminando orden en Supabase:', e);
+    }
+  }
+
+  // Si estamos en el navegador, llamar también a /api/orders?id=...
+  if (typeof window !== 'undefined') {
+    try {
+      await fetch(`/api/orders?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn('DELETE /api/orders diferido:', e);
+    }
+  }
+
+  return true;
+}
