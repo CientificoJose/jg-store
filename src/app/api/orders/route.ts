@@ -1,6 +1,22 @@
 import { NextRequest } from 'next/server';
-import { createOrder } from '@/features/orders/api/service';
+import { createOrder, getOrders } from '@/features/orders/api/service';
 import type { CartItem, CustomerOrderInfo } from '@/types/store';
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const page = Number(searchParams.get('page')) || 1;
+    const limit = Number(searchParams.get('limit')) || 100;
+    const search = searchParams.get('search') || undefined;
+    const status = (searchParams.get('status') as any) || undefined;
+    const type = (searchParams.get('type') as any) || undefined;
+
+    const res = await getOrders({ page, limit, search, status, type });
+    return Response.json(res);
+  } catch (err: any) {
+    return Response.json({ error: err.message || 'Error al obtener pedidos' }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

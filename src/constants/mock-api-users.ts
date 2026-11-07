@@ -18,6 +18,12 @@ export type User = {
   updated_at: string;
 };
 
+const DEFAULT_SUPABASE_URL = 'https://jg-store-bd.press-cloud.com';
+const DEFAULT_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.MHnaK-G4RLBfaybcOR7IOVsRj6WK5of1v3xooRJAObc';
+const DEFAULT_SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A';
+
 // Almacén en memoria de clientes reales (sin registros simulados ni falsos)
 const INITIAL_JG_USERS: User[] = [];
 
@@ -30,12 +36,16 @@ export const fakeUsers = {
 
   async syncOrdersCustomers() {
     const rawOrdersUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
+      process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      process.env.SUPABASE_PUBLIC_URL ||
+      DEFAULT_SUPABASE_URL;
     const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
     const SUPABASE_KEY =
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
       process.env.SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+      DEFAULT_SUPABASE_ANON_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
 

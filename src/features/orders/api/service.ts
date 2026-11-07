@@ -11,15 +11,24 @@ function generateUUID(): string {
   });
 }
 
+const DEFAULT_SUPABASE_URL = 'https://jg-store-bd.press-cloud.com';
+const DEFAULT_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6ImFub24iLCJpc3MiOiJzdXBhYmFzZSJ9.MHnaK-G4RLBfaybcOR7IOVsRj6WK5of1v3xooRJAObc';
+const DEFAULT_SUPABASE_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNTU2NzQsImV4cCI6MTg5MzQ1NjAwMCwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlzcyI6InN1cGFiYXNlIn0.P5JT7GeyL83BMSwCLkSCqIY9TIo2VGxv86tlYwXXZ2A';
+
 function getSupabaseConfig() {
   const rawOrdersUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jg-store-bd.press-cloud.com';
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_PUBLIC_URL ||
+    DEFAULT_SUPABASE_URL;
   const SUPABASE_URL = rawOrdersUrl.replace(/^http:\/\//i, 'https://');
   const SUPABASE_KEY =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    '';
+    DEFAULT_SUPABASE_SERVICE_ROLE_KEY ||
+    DEFAULT_SUPABASE_ANON_KEY;
   return { SUPABASE_URL, SUPABASE_KEY };
 }
 
@@ -28,6 +37,7 @@ let mockOrders: Order[] = [];
 
 export async function getOrders(filters: OrderFilters = {}): Promise<OrdersResponse> {
   const { SUPABASE_URL, SUPABASE_KEY } = getSupabaseConfig();
+  let fetchedFromDb = false;
 
   if (SUPABASE_URL && SUPABASE_KEY) {
     try {
@@ -89,10 +99,26 @@ export async function getOrders(filters: OrderFilters = {}): Promise<OrdersRespo
                 }))
               : []
           }));
+          fetchedFromDb = true;
         }
       }
     } catch (e) {
       console.warn('Error al consultar orders de Supabase:', e);
+    }
+  }
+
+  // Si falló el fetch directo a Supabase y estamos en el navegador, consultar la API local
+  if (!fetchedFromDb && typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/orders?limit=100');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.orders)) {
+          mockOrders = data.orders;
+        }
+      }
+    } catch (e) {
+      console.warn('Fallback /api/orders diferido:', e);
     }
   }
 

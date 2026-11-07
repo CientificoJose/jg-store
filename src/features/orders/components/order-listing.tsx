@@ -4,7 +4,7 @@ import { searchParamsCache } from '@/lib/searchparams';
 import { ordersQueryOptions } from '../api/queries';
 import { OrdersTable } from './orders-table';
 
-export default function OrderListingPage() {
+export default async function OrderListingPage() {
   const page = searchParamsCache.get('page');
   const search = searchParamsCache.get('order_number') || searchParamsCache.get('name');
   const pageLimit = searchParamsCache.get('perPage');
@@ -25,7 +25,7 @@ export default function OrderListingPage() {
 
   const queryClient = getQueryClient();
 
-  void queryClient.prefetchQuery(ordersQueryOptions(filters));
+  await queryClient.prefetchQuery(ordersQueryOptions(filters));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
