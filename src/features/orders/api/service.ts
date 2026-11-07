@@ -84,19 +84,19 @@ export async function getOrders(filters: OrderFilters = {}): Promise<OrdersRespo
             notes: dbo.notes || undefined,
             items: Array.isArray(dbo.order_items)
               ? dbo.order_items.map((it: any) => ({
-                  id: it.id,
-                  order_id: it.order_id,
-                  product_id: it.product_id,
-                  sku: it.sku,
-                  name: it.name,
-                  image_url: it.image_url || '',
-                  unit: it.unit || 'unidad',
-                  quantity: Number(it.quantity) || 1,
-                  unit_price: Number(it.unit_price) || 0,
-                  cost_price_at_sale: Number(it.cost_price_at_sale) || 0,
-                  subtotal: Number(it.subtotal) || 0,
-                  is_wholesale: Boolean(it.is_wholesale)
-                }))
+                id: it.id,
+                order_id: it.order_id,
+                product_id: it.product_id,
+                sku: it.sku,
+                name: it.name,
+                image_url: it.image_url || '',
+                unit: it.unit || 'unidad',
+                quantity: Number(it.quantity) || 1,
+                unit_price: Number(it.unit_price) || 0,
+                cost_price_at_sale: Number(it.cost_price_at_sale) || 0,
+                subtotal: Number(it.subtotal) || 0,
+                is_wholesale: Boolean(it.is_wholesale)
+              }))
               : []
           }));
           fetchedFromDb = true;
