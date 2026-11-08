@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { CategoryFormModal, CategoryFormData } from './category-form-modal';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { notifyCategoriesChanged } from '@/hooks/use-categories';
 
 export function CategoriesView() {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
@@ -71,6 +72,7 @@ export function CategoriesView() {
       if (res.ok) {
         toast.success(`Departamento "${cat.name}" eliminado correctamente`);
         loadCategories();
+        notifyCategoriesChanged();
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || 'No se pudo eliminar el departamento');

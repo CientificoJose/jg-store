@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { StoreProduct } from '@/types/store';
 import { Icons } from '@/components/icons';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
+import { useCategories } from '@/hooks/use-categories';
 
 export interface SearchSidebarFilterProps {
   searchQuery: string;
@@ -74,9 +75,15 @@ export function SearchSidebarFilter({
     setLocalMax(maxPrice !== null && maxPrice !== undefined ? String(maxPrice) : '');
   }, [maxPrice]);
 
+  const { categories: dynamicCategories } = useCategories();
+  const availableCategories =
+    dynamicCategories && dynamicCategories.length > 0
+      ? dynamicCategories
+      : PRODUCT_CATEGORIES;
+
   const currentCategoryObj = React.useMemo(() => {
-    return PRODUCT_CATEGORIES.find((c) => c.slug === selectedCategory);
-  }, [selectedCategory]);
+    return availableCategories.find((c) => c.slug === selectedCategory);
+  }, [availableCategories, selectedCategory]);
 
   const displayHeading =
     searchQuery.trim() || categoryTitle || currentCategoryObj?.name || 'Catálogo de Productos';

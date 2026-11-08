@@ -10,6 +10,7 @@ import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { formatPrice } from '@/lib/whatsapp';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { useCategories } from '@/hooks/use-categories';
 
 interface StoreHeaderProps {
   searchQuery: string;
@@ -41,31 +42,40 @@ export function StoreHeader({
   const { theme, setTheme, resolvedTheme } = useTheme();
   const summary = getSummary();
 
-  const activeCategory = PRODUCT_CATEGORIES.find((c) => c.slug === selectedCategory);
+  const { categories: dynamicCategories } = useCategories();
+  const availableCategories =
+    dynamicCategories && dynamicCategories.length > 0
+      ? dynamicCategories
+      : PRODUCT_CATEGORIES;
+
+  const activeCategory = availableCategories.find((c) => c.slug === selectedCategory);
   const activeSubcategory = activeCategory?.subcategories?.find(
     (s) => s.slug === selectedSubcategory
   );
 
-  const [hoveredCategorySlug, setHoveredCategorySlug] = useState<string>(
-    selectedCategory && selectedCategory !== 'all' ? selectedCategory : 'libreria'
-  );
+  const sortedCategories = React.useMemo(() => {
+    const lib = availableCategories.find((c) => c.slug === 'libreria');
+    const rest = availableCategories.filter((c) => c.slug !== 'libreria');
+    return lib ? [lib, ...rest] : availableCategories;
+  }, [availableCategories]);
+
+  const [hoveredCategorySlug, setHoveredCategorySlug] = useState<string>(() => {
+    if (selectedCategory && selectedCategory !== 'all') return selectedCategory;
+    return 'libreria';
+  });
 
   useEffect(() => {
     if (selectedCategory && selectedCategory !== 'all') {
       setHoveredCategorySlug(selectedCategory);
-    } else {
-      setHoveredCategorySlug('libreria');
+    } else if (sortedCategories.length > 0) {
+      if (!sortedCategories.some((c) => c.slug === hoveredCategorySlug)) {
+        setHoveredCategorySlug(sortedCategories[0].slug);
+      }
     }
-  }, [selectedCategory]);
-
-  const sortedCategories = React.useMemo(() => {
-    const lib = PRODUCT_CATEGORIES.find((c) => c.slug === 'libreria');
-    const rest = PRODUCT_CATEGORIES.filter((c) => c.slug !== 'libreria');
-    return lib ? [lib, ...rest] : PRODUCT_CATEGORIES;
-  }, []);
+  }, [selectedCategory, sortedCategories, hoveredCategorySlug]);
 
   const hoveredCategory =
-    PRODUCT_CATEGORIES.find((c) => c.slug === hoveredCategorySlug) ||
+    availableCategories.find((c) => c.slug === hoveredCategorySlug) ||
     sortedCategories[0];
 
   const isFilterActive = Boolean(

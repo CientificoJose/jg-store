@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { notifyCategoriesChanged } from '@/hooks/use-categories';
 
 export interface CategoryFormData {
   id?: string;
@@ -173,6 +174,7 @@ export function CategoryFormModal({
 
       if (res.ok) {
         toast.success(`¡Departamento "${name}" guardado exitosamente!`);
+        notifyCategoriesChanged();
         onClose();
         if (onSuccess) onSuccess();
       } else {

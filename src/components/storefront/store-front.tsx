@@ -6,6 +6,7 @@ import { fetchStoreProductsWithMeta } from '@/lib/store-service';
 import { SearchMatchMetadata } from '@/lib/search-engine';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { useCategories } from '@/hooks/use-categories';
 import { CATEGORY_MAP } from '@/constants/categories';
 import { StoreHeader } from './store-header';
 import { CategoryBar } from './category-bar';
@@ -87,6 +88,8 @@ export function StoreFront() {
     return products;
   }, [products, showOnlyFavorites, favoriteIds, selectedCategory, selectedSubcategory, searchQuery, landing.catalogMaxProducts]);
 
+  const { categories: dynamicCategories } = useCategories();
+
   // Título dinámico de la sección
   const categoryTitle = useMemo(() => {
     if (showOnlyFavorites) {
@@ -98,7 +101,9 @@ export function StoreFront() {
     if (selectedCategory === 'all' && selectedSubcategory === 'all') {
       return landing.catalogSectionTitle || 'Catálogo de Productos';
     }
-    const cat = CATEGORY_MAP.get(selectedCategory);
+    const cat =
+      dynamicCategories.find((c) => c.slug === selectedCategory) ||
+      CATEGORY_MAP.get(selectedCategory);
     if (selectedSubcategory && selectedSubcategory !== 'all') {
       const sub = cat?.subcategories?.find((s) => s.slug === selectedSubcategory);
       if (sub) {
@@ -106,7 +111,15 @@ export function StoreFront() {
       }
     }
     return cat ? cat.name : 'Productos';
-  }, [showOnlyFavorites, displayedProducts.length, searchQuery, selectedCategory, selectedSubcategory, landing.catalogSectionTitle]);
+  }, [
+    showOnlyFavorites,
+    displayedProducts.length,
+    searchQuery,
+    selectedCategory,
+    selectedSubcategory,
+    landing.catalogSectionTitle,
+    dynamicCategories
+  ]);
 
   const handleResetFilters = () => {
     setSelectedCategory('all');

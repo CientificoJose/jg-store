@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ProductCategory } from '@/constants/categories';
+import React from 'react';
 import { Icons } from '@/components/icons';
+import { useCategories } from '@/hooks/use-categories';
 
 interface CategoryBarProps {
   selectedCategory: string;
@@ -10,27 +10,7 @@ interface CategoryBarProps {
 }
 
 export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarProps) {
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetch('/api/categories')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setCategories(data);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { categories, isLoading } = useCategories();
 
   return (
     <div className="w-full bg-background/85 backdrop-blur-md border-b border-border/70 sticky top-16 z-30 transition-all font-gotham">

@@ -2,8 +2,9 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { PRODUCT_CATEGORIES, ProductCategory } from '@/constants/categories';
+import { ProductCategory } from '@/constants/categories';
 import { Icons } from '@/components/icons';
+import { useCategories } from '@/hooks/use-categories';
 
 interface CategoryShowcaseProps {
   selectedCategory: string;
@@ -83,27 +84,7 @@ export function CategoryShowcase({
   style = 'photos'
 }: CategoryShowcaseProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetch('/api/categories')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setCategories(data);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { categories, isLoading } = useCategories();
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {

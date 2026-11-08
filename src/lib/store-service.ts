@@ -865,14 +865,47 @@ export async function updateStoreProductMarginsMassive(
   };
 }
 
+function formatCategoryDisplayName(rawName: string): string {
+  if (!rawName) return '';
+  if (/[a-z]/.test(rawName)) return rawName.trim();
+  const lowercaseWords = new Set(['y', 'de', 'del', 'la', 'las', 'el', 'los', 'para', 'en', 'con', 'por']);
+  return rawName
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .map((word, idx) => {
+      if (idx > 0 && lowercaseWords.has(word)) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
+}
+
+function getCategoryIconName(slug: string, rawIcon?: string): string {
+  if (rawIcon && rawIcon !== 'package' && rawIcon !== 'tag') return rawIcon;
+  const iconMap: Record<string, string> = {
+    libreria: 'edit',
+    'articulos-para-viaje': 'plane',
+    indumentaria: 'sparkles',
+    'bazar-cocina': 'coffee',
+    'belleza-accesorios': 'sparkles',
+    cotillon: 'gift',
+    electro: 'laptop',
+    jugueteria: 'star',
+    embalajes: 'package',
+    ferreteria: 'wrench',
+    navidad: 'sparkles'
+  };
+  return iconMap[slug] || rawIcon || 'product';
+}
+
 export async function fetchStoreCategories(): Promise<ProductCategory[]> {
   const categoriesMap = new Map<string, ProductCategory>();
   let connectedToSupabase = false;
 
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
-      // 0. Obtener departamentos/categorías base de Supabase
-      const resCats = await fetch(`${SUPABASE_URL}/rest/v1/categories?select=*`, {
+      // 0. Obtener departamentos/categorías base de Supabase ordenados por display_order
+      const resCats = await fetch(`${SUPABASE_URL}/rest/v1/categories?select=*&order=display_order.asc,name.asc`, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`
@@ -888,9 +921,9 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
             categoriesMap.set(c.slug, {
               id: c.id,
               slug: c.slug,
-              name: c.name,
-              description: c.description || '',
-              icon: c.icon || 'package',
+              name: formatCategoryDisplayName(c.name),
+              description: c.description || `Catálogo oficial de ${formatCategoryDisplayName(c.name)}`,
+              icon: getCategoryIconName(c.slug, c.icon),
               imageUrl:
                 c.image_url ||
                 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80',
@@ -900,8 +933,8 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
         }
       }
 
-      // 1. Obtener subcategorías dinámicas de Supabase
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/subcategories?select=*`, {
+      // 1. Obtener subcategorías dinámicas de Supabase ordenadas por display_order
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/subcategories?select=*&order=display_order.asc,name.asc`, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`
@@ -925,8 +958,8 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
                 category_id: categorySlug,
                 category_slug: categorySlug,
                 slug: sub.slug,
-                name: sub.name,
-                description: sub.description || sub.name,
+                name: formatCategoryDisplayName(sub.name),
+                description: sub.description || '',
                 icon: sub.icon || cat.icon || 'tag',
                 display_order: sub.display_order ?? (cat.subcategories.length || 0) + 1,
                 sub_subcategories: []
@@ -937,7 +970,7 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
       }
 
       // 2. Obtener sub_subcategorías dinámicas de Supabase
-      const resLines = await fetch(`${SUPABASE_URL}/rest/v1/sub_subcategories?select=*`, {
+      const resLines = await fetch(`${SUPABASE_URL}/rest/v1/sub_subcategories?select=*&order=display_order.asc,name.asc`, {
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`
@@ -964,8 +997,8 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
                   subcategory_slug: sub.slug,
                   category_slug: cat.slug,
                   slug: line.slug,
-                  name: line.name,
-                  description: line.description || line.name,
+                  name: formatCategoryDisplayName(line.name),
+                  description: line.description || '',
                   display_order: line.display_order ?? (sub.sub_subcategories.length || 0) + 1
                 });
               }
