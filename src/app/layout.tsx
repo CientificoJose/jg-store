@@ -20,18 +20,18 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://jg-stores.com';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'JG Store 🛍️ Distribuidora Mayorista y Detal | Precios Directos',
+    default: 'JG Store 🛍️ Distribuidora Mayorista y Detal | Precios Directos de Fábrica',
     template: '%s | JG Store'
   },
   description:
-    '¡Comprá al mejor precio directo de fábrica e importador! 24 departamentos en librería, bazar, juguetería, tecnología y más. Descuentos por volumen y envíos a todo el país.',
+    '¡Comprá al mejor precio directo de fábrica e importador! Venta mayorista y minorista en librería, indumentaria y polirrubro. Descuentos por volumen y envíos a todo el país.',
   keywords: [
     'JG Store',
     'distribuidora mayorista',
     'compras por mayor',
     'polirrubro mayorista',
-    'bazar por mayor',
-    'libreria por mayor',
+    'libreria mayorista',
+    'indumentaria mayorista',
     'precios de fabrica',
     'pancho recargas'
   ],
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico'
   },
   openGraph: {
-    title: 'JG Store 🛍️ Distribuidora Mayorista y Detal | Precios Directos',
+    title: 'JG Store 🛍️ Distribuidora Mayorista y Detal | Precios Directos de Fábrica',
     description:
-      '¡Comprá al mejor precio directo de fábrica e importador! 24 departamentos comerciales, descuentos por volumen y envíos a todo el país.',
+      '¡Comprá al mejor precio directo de fábrica e importador! Venta mayorista y minorista con descuentos por volumen y envíos a todo el país.',
     url: SITE_URL,
     siteName: 'JG Store Polirrubro',
     images: [
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'JG Store 🛍️ Distribuidora Mayorista y Detal',
     description:
-      '¡Precios imbatibles en 24 departamentos! Compra al detal o al mayor con descuentos automáticos por volumen.',
+      '¡Precios directos de fábrica! Compra al detal o al mayor con descuentos automáticos por volumen.',
     images: ['/icon.png']
   },
   robots: {
