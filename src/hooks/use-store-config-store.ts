@@ -84,6 +84,7 @@ interface StoreConfigState {
   removeProductRow: (rowId: string) => void;
   reorderProductRows: (newRows: ProductRowConfig[]) => void;
   resetToDefaults: () => void;
+  syncWithServer: () => Promise<void>;
 }
 
 const DEFAULT_ROWS: ProductRowConfig[] = [
@@ -122,7 +123,7 @@ const DEFAULT_CONFIG: {
   theme: ThemeStoreConfig;
 } = {
   general: {
-    whatsappNumber: '5491155550000',
+    whatsappNumber: '04124779112',
     storeName: 'JG Store Polirrubro',
     storeTagline: 'Distribuidora Mayorista & Venta al Detal',
     footerDescription:
@@ -216,69 +217,162 @@ const DEFAULT_CONFIG: {
 
 export const useStoreConfigStore = create<StoreConfigState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       general: DEFAULT_CONFIG.general,
       landing: DEFAULT_CONFIG.landing,
       theme: DEFAULT_CONFIG.theme,
 
-      updateGeneral: (data) =>
+      updateGeneral: (data) => {
         set((state) => ({
           general: { ...state.general, ...data }
-        })),
+        }));
+        // Sincronizar persistentemente con la base de datos Supabase
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ general: data })
+          }).catch((err) => console.error('Error al guardar configuración general en servidor:', err));
+        }
+      },
 
-      updateLanding: (data) =>
+      updateLanding: (data) => {
         set((state) => ({
           landing: { ...state.landing, ...data }
-        })),
+        }));
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ landing: data })
+          }).catch((err) => console.error('Error al guardar configuración de landing en servidor:', err));
+        }
+      },
 
-      updateTheme: (data) =>
+      updateTheme: (data) => {
         set((state) => ({
           theme: { ...state.theme, ...data }
-        })),
+        }));
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: data })
+          }).catch((err) => console.error('Error al guardar configuración de tema en servidor:', err));
+        }
+      },
 
-      toggleProductRow: (rowId) =>
-        set((state) => ({
-          landing: {
-            ...state.landing,
-            productRows: state.landing.productRows.map((r) =>
-              r.id === rowId ? { ...r, enabled: !r.enabled } : r
-            )
-          }
-        })),
+      toggleProductRow: (rowId) => {
+        const nextLanding = {
+          ...get().landing,
+          productRows: get().landing.productRows.map((r) =>
+            r.id === rowId ? { ...r, enabled: !r.enabled } : r
+          )
+        };
+        set({ landing: nextLanding });
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ landing: nextLanding })
+          }).catch(console.error);
+        }
+      },
 
-      addProductRow: (row) =>
-        set((state) => ({
-          landing: {
-            ...state.landing,
-            productRows: [...state.landing.productRows, row]
-          }
-        })),
+      addProductRow: (row) => {
+        const nextLanding = {
+          ...get().landing,
+          productRows: [...get().landing.productRows, row]
+        };
+        set({ landing: nextLanding });
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ landing: nextLanding })
+          }).catch(console.error);
+        }
+      },
 
-      removeProductRow: (rowId) =>
-        set((state) => ({
-          landing: {
-            ...state.landing,
-            productRows: state.landing.productRows.filter((r) => r.id !== rowId)
-          }
-        })),
+      removeProductRow: (rowId) => {
+        const nextLanding = {
+          ...get().landing,
+          productRows: get().landing.productRows.filter((r) => r.id !== rowId)
+        };
+        set({ landing: nextLanding });
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ landing: nextLanding })
+          }).catch(console.error);
+        }
+      },
 
-      reorderProductRows: (newRows) =>
-        set((state) => ({
-          landing: {
-            ...state.landing,
-            productRows: newRows
-          }
-        })),
+      reorderProductRows: (newRows) => {
+        const nextLanding = {
+          ...get().landing,
+          productRows: newRows
+        };
+        set({ landing: nextLanding });
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ landing: nextLanding })
+          }).catch(console.error);
+        }
+      },
 
-      resetToDefaults: () =>
+      resetToDefaults: () => {
         set({
           general: DEFAULT_CONFIG.general,
           landing: DEFAULT_CONFIG.landing,
           theme: DEFAULT_CONFIG.theme
-        })
+        });
+        if (typeof window !== 'undefined') {
+          fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(DEFAULT_CONFIG)
+          }).catch(console.error);
+        }
+      },
+
+      syncWithServer: async () => {
+        if (typeof window === 'undefined') return;
+        try {
+          const res = await fetch('/api/config', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.config) {
+              set((state) => ({
+                general: { ...state.general, ...(data.config.general || {}) },
+                landing: { ...state.landing, ...(data.config.landing || {}) },
+                theme: { ...state.theme, ...(data.config.theme || {}) }
+              }));
+            }
+          }
+        } catch (err) {
+          console.warn('Error al sincronizar store_config desde el servidor:', err);
+        }
+      }
     }),
     {
-      name: 'jg-store-config-v1'
+      name: 'jg-store-config-v1',
+      onRehydrateStorage: () => (state) => {
+        // Al rehidratar el store en el cliente, sincronizar automáticamente con el servidor
+        if (state) {
+          state.syncWithServer();
+        }
+      }
     }
   )
 );
+
+// Disparador inicial en entorno de cliente para asegurar que todos los visitantes carguen la config real
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    useStoreConfigStore.getState().syncWithServer();
+  }, 100);
+}

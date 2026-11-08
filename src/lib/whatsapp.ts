@@ -1,7 +1,7 @@
 import { CartItem, CartSummary, CustomerOrderInfo } from '@/types/store';
 
-// Número de WhatsApp oficial de JG Store para recepción de pedidos/cotizaciones (Argentina +54 9)
-export const JG_STORE_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '5491155550000';
+// Número de WhatsApp oficial de JG Store para recepción de pedidos/cotizaciones
+export const JG_STORE_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '04124779112';
 
 // Monto mínimo de compra en pesos argentinos para activar tarifa mayorista en todo el pedido
 export const WHOLESALE_MIN_AMOUNT_ARS = 50000;

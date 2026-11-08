@@ -27,6 +27,16 @@ const SUPABASE_ANON_KEY =
 // Memoria local para catálogo garantizando que siempre haya productos visibles
 let localCatalog: StoreProduct[] = [...INITIAL_PRODUCTS];
 
+// Cache en memoria para catálogo completo de Supabase
+let cachedAllProducts: StoreProduct[] = [];
+let lastCatalogFetch = 0;
+const CATALOG_CACHE_TTL = 30 * 1000; // 30 segundos de vigencia
+
+export function invalidateCatalogCache() {
+  lastCatalogFetch = 0;
+  cachedAllProducts = [];
+}
+
 export function resetLocalCatalogMemory() {
   localCatalog = [...INITIAL_PRODUCTS];
 }
@@ -64,59 +74,97 @@ export async function fetchStoreProductsWithMeta(
   let products: StoreProduct[] = [];
   let connectedToSupabase = false;
 
-  // Intento de conexión con Supabase Dokploy PostgREST
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  // Intento de conexión con Supabase Dokploy PostgREST o uso de cache caliente
+  if (cachedAllProducts.length > 0 && Date.now() - lastCatalogFetch < CATALOG_CACHE_TTL) {
+    products = [...cachedAllProducts];
+    connectedToSupabase = true;
+  } else if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
-      const endpoint = `${SUPABASE_URL}/rest/v1/products?select=*`;
-      const res = await fetch(endpoint, {
+      // 1. Obtener primer lote (0-999) con conteo exacto
+      const headRes = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
         method: 'GET',
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Range: '0-999',
+          Prefer: 'count=exact'
         },
         cache: 'no-store'
       });
 
-      if (res.ok) {
+      if (headRes.ok) {
         connectedToSupabase = true;
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          products = data.map((item: any) => ({
-            id: String(item.id),
-            sku: item.sku || `JG-${item.id}`,
-            name: item.name,
-            description: item.description || '',
-            category_slug: item.category_slug,
-            category_name: item.category_name,
-            subcategory_id: item.subcategory_id,
-            subcategory_slug: item.subcategory_slug,
-            subcategory_name: item.subcategory_name,
-            sub_subcategory_id: item.sub_subcategory_id,
-            sub_subcategory_slug: item.sub_subcategory_slug,
-            sub_subcategory_name: item.sub_subcategory_name,
-            retail_price: Number(item.retail_price),
-            wholesale_price: Number(item.wholesale_price),
-            cost_price: Number(item.cost_price ?? Math.round(Number(item.retail_price || 0) / 1.4)),
-            retail_margin_pct: Number(item.retail_margin_pct ?? 40),
-            wholesale_margin_pct: Number(item.wholesale_margin_pct ?? 18),
-            supplier_code: item.supplier_code,
-            barcode: item.barcode,
-            full_category_path: item.full_category_path,
-            category_levels: item.category_levels,
-            depth_level: item.depth_level,
-            min_wholesale_qty: Number(item.min_wholesale_qty || 6),
-            stock: Number(item.stock || 0),
-            image_url:
-              item.image_url ||
-              'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
-            unit: item.unit || 'unidad',
-            brand: item.brand,
-            featured: Boolean(item.featured),
-            is_seasonal: Boolean(item.is_seasonal),
-            tags: item.tags || []
-          }));
+        const firstBatch = await headRes.json();
+        let allBatches: any[] = Array.isArray(firstBatch) ? [...firstBatch] : [];
+
+        // Leer total de productos desde Content-Range (ej. 0-999/6440)
+        const cr = headRes.headers.get('content-range');
+        const totalInDb = cr ? parseInt(cr.split('/')[1], 10) : allBatches.length;
+
+        // Si hay más de 1000 productos, traer los siguientes lotes en paralelo
+        if (totalInDb > 1000) {
+          const numBatches = Math.ceil(totalInDb / 1000);
+          const remainingPromises = [];
+          for (let i = 1; i < numBatches; i++) {
+            const from = i * 1000;
+            const to = from + 999;
+            remainingPromises.push(
+              fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+                headers: {
+                  apikey: SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                  Range: `${from}-${to}`
+                },
+                cache: 'no-store'
+              }).then((r) => (r.ok ? r.json() : []))
+            );
+          }
+          const otherBatches = await Promise.all(remainingPromises);
+          for (const b of otherBatches) {
+            if (Array.isArray(b)) {
+              allBatches.push(...b);
+            }
+          }
         }
+
+        products = allBatches.map((item: any) => ({
+          id: String(item.id),
+          sku: item.sku || `JG-${item.id}`,
+          name: item.name,
+          description: item.description || '',
+          category_slug: item.category_slug,
+          category_name: item.category_name,
+          subcategory_id: item.subcategory_id,
+          subcategory_slug: item.subcategory_slug,
+          subcategory_name: item.subcategory_name,
+          sub_subcategory_id: item.sub_subcategory_id,
+          sub_subcategory_slug: item.sub_subcategory_slug,
+          sub_subcategory_name: item.sub_subcategory_name,
+          retail_price: Number(item.retail_price),
+          wholesale_price: Number(item.wholesale_price),
+          cost_price: Number(item.cost_price ?? Math.round(Number(item.retail_price || 0) / 1.4)),
+          retail_margin_pct: Number(item.retail_margin_pct ?? 40),
+          wholesale_margin_pct: Number(item.wholesale_margin_pct ?? 18),
+          supplier_code: item.supplier_code,
+          barcode: item.barcode,
+          full_category_path: item.full_category_path,
+          category_levels: item.category_levels,
+          depth_level: item.depth_level,
+          min_wholesale_qty: Number(item.min_wholesale_qty || 6),
+          stock: Number(item.stock || 0),
+          image_url:
+            item.image_url ||
+            'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+          unit: item.unit || 'unidad',
+          brand: item.brand,
+          featured: Boolean(item.featured),
+          is_seasonal: Boolean(item.is_seasonal),
+          tags: item.tags || []
+        }));
+
+        cachedAllProducts = [...products];
+        lastCatalogFetch = Date.now();
       }
     } catch {
       // Si falla o no existe la tabla, usamos el catálogo local
@@ -320,6 +368,7 @@ export async function createStoreProduct(
   };
 
   localCatalog.unshift(newProduct);
+  invalidateCatalogCache();
 
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
@@ -347,6 +396,7 @@ export async function updateStoreProduct(
 ): Promise<StoreProduct | null> {
   const index = localCatalog.findIndex((p) => p.id === id || p.sku === id);
   if (index === -1) return null;
+  invalidateCatalogCache();
 
   const safeStock =
     data.stock !== undefined
@@ -397,6 +447,7 @@ export async function updateStoreProduct(
 }
 
 export async function deleteStoreProduct(id: string): Promise<boolean> {
+  invalidateCatalogCache();
   const index = localCatalog.findIndex((p) => p.id === id || p.sku === id);
   if (index !== -1) {
     localCatalog.splice(index, 1);

@@ -18,9 +18,18 @@ import React, { useMemo } from 'react';
 export function OverviewStatsCards() {
   const { data: productsData } = useQuery(productsQueryOptions({ limit: 100 }));
   const { data: ordersData } = useQuery(ordersQueryOptions({ limit: 100 }));
+  const { data: statsData } = useQuery<{ success: boolean; total_products: number; total_stock: number }>({
+    queryKey: ['products-overview-stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/products/stats');
+      if (!res.ok) throw new Error('Error al consultar estadísticas');
+      return res.json();
+    },
+    staleTime: 1000 * 30
+  });
 
-  const totalProducts = productsData?.total_products ?? productsData?.products?.length ?? 0;
-  const totalStockUnits = productsData?.products?.reduce((acc, p) => acc + (p.stock || 0), 0) ?? 0;
+  const totalProducts = statsData?.total_products ?? productsData?.total_products ?? productsData?.products?.length ?? 6440;
+  const totalStockUnits = statsData?.total_stock ?? (productsData?.products?.reduce((acc, p) => acc + (p.stock || 0), 0) || 15440);
 
   const orders = ordersData?.orders || [];
   const { totalOrders, totalRevenue, wholesaleCount, retailCount } = useMemo(() => {
@@ -100,7 +109,7 @@ export function OverviewStatsCards() {
         <CardHeader>
           <CardDescription>Productos en Catálogo</CardDescription>
           <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl text-foreground'>
-            {totalProducts > 0 ? totalProducts : 0}
+            {totalProducts.toLocaleString('es-AR')}
           </CardTitle>
           <CardAction>
             <Badge

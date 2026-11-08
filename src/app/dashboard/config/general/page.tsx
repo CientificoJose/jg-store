@@ -10,6 +10,7 @@ export default function GeneralConfigPage() {
 
   const [formData, setFormData] = useState(general);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setFormData(general);
@@ -23,13 +24,28 @@ export default function GeneralConfigPage() {
     });
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateGeneral(formData);
-    setHasChanges(false);
-    toast.success('¡Configuración guardada con éxito!', {
-      description: 'El nuevo número de WhatsApp y los datos del footer ya están activos en toda la tienda.'
-    });
+    setIsSaving(true);
+    try {
+      updateGeneral(formData);
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ general: formData })
+      });
+      if (!res.ok) throw new Error('Error al guardar en la base de datos');
+      setHasChanges(false);
+      toast.success('¡Configuración guardada con éxito!', {
+        description: 'El nuevo número de WhatsApp y los datos del footer ya están activos para todos los visitantes.'
+      });
+    } catch (err: any) {
+      toast.error('Error al guardar en el servidor', {
+        description: err.message || 'Verifica la conexión con la base de datos.'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -67,15 +83,19 @@ export default function GeneralConfigPage() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={!hasChanges}
+            disabled={!hasChanges || isSaving}
             className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-sm ${
-              hasChanges
+              hasChanges && !isSaving
                 ? 'bg-[#E63946] hover:bg-[#d62839] text-white shadow-[#E63946]/30'
                 : 'bg-muted text-[#6C757D] cursor-not-allowed opacity-60'
             }`}
           >
-            <Icons.check className="w-4 h-4" />
-            <span>{hasChanges ? 'Guardar Cambios' : 'Sin cambios'}</span>
+            {isSaving ? (
+              <Icons.spinner className="w-4 h-4 animate-spin" />
+            ) : (
+              <Icons.check className="w-4 h-4" />
+            )}
+            <span>{isSaving ? 'Guardando...' : hasChanges ? 'Guardar Cambios' : 'Sin cambios'}</span>
           </button>
         </div>
       </div>
@@ -395,15 +415,19 @@ export default function GeneralConfigPage() {
 
           <button
             type="submit"
-            disabled={!hasChanges}
+            disabled={!hasChanges || isSaving}
             className={`px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-md ${
-              hasChanges
+              hasChanges && !isSaving
                 ? 'bg-[#E63946] hover:bg-[#d62839] text-white shadow-[#E63946]/30'
                 : 'bg-muted text-[#6C757D] cursor-not-allowed opacity-60'
             }`}
           >
-            <Icons.check className="w-4 h-4" />
-            <span>Guardar Configuración General</span>
+            {isSaving ? (
+              <Icons.spinner className="w-4 h-4 animate-spin" />
+            ) : (
+              <Icons.check className="w-4 h-4" />
+            )}
+            <span>{isSaving ? 'Guardando en Servidor...' : 'Guardar Configuración General'}</span>
           </button>
         </div>
       </form>
