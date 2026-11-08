@@ -44,55 +44,111 @@ export async function ensureProductsBucketExists(): Promise<boolean> {
 
 /**
  * Descarga una imagen desde una URL externa (como imgcoronel) o archivo local
- * y la sube al bucket de Supabase Storage.
- * Retorna la URL pública permanente de Supabase o la URL original como fallback.
+ * y la sube al bucket de Supabase Storage de manera blindada contra cortes de red,
+ * puertos no estándar (ej: dyndns.org:70) y nombres con caracteres especiales.
+ * Retorna la URL pública permanente en HTTPS de Supabase.
  */
 export async function uploadImageToSupabaseStorage(
   sourceUrl: string,
   fileName: string
 ): Promise<string> {
-  if (!sourceUrl) return '';
+  if (!sourceUrl || typeof sourceUrl !== 'string') return '';
 
-  // Si ya es una URL de Supabase Storage, no hace falta volver a subirla
+  // Si ya es una URL de Supabase Storage en HTTPS, no hace falta volver a subirla
   if (sourceUrl.includes('/storage/v1/object/public/products/')) {
-    return sourceUrl;
+    return sourceUrl.replace(/^http:\/\//i, 'https://');
   }
 
+  const SCRAPER_SERVICE_URL =
+    process.env.SCRAPER_SERVICE_URL || 'https://coronel.press-cloud.com';
+  const SCRAPER_AUTH_TOKEN =
+    process.env.SCRAPER_AUTH_TOKEN || 'jgstore_scraper_secure_token_2026';
+
   try {
-    // Normalizar URL (remplazar backslashes de Windows \ por / y espacios)
-    const normalizedUrl = sourceUrl.replace(/\\/g, '/').trim();
+    // 1. Normalizar URL (remplazar contrabarras de Windows y espacios)
+    let normalizedUrl = sourceUrl.replace(/\\/g, '/').trim();
+
+    // 2. Si es una ruta relativa (ej: /api/scraper/image?file=... o img-scraping/...),
+    // resolverla como URL absoluta contra el servicio del scraper
+    if (normalizedUrl.startsWith('/api/scraper/image')) {
+      const parsed = new URL(normalizedUrl, 'http://localhost');
+      const fileParam = parsed.searchParams.get('file') || '';
+      normalizedUrl = `${SCRAPER_SERVICE_URL}/api/image?file=${encodeURIComponent(fileParam)}&token=${SCRAPER_AUTH_TOKEN}`;
+    } else if (normalizedUrl.startsWith('img-scraping/') || !normalizedUrl.startsWith('http')) {
+      normalizedUrl = `${SCRAPER_SERVICE_URL}/api/image?file=${encodeURIComponent(normalizedUrl)}&token=${SCRAPER_AUTH_TOKEN}`;
+    }
+
+    // 3. Si apunta a imgcoronel en el puerto 70, forzar HTTPS con agente permisivo
+    if (normalizedUrl.includes('imgcoronel.dyndns.org:70') && normalizedUrl.startsWith('http://')) {
+      normalizedUrl = normalizedUrl.replace('http://', 'https://');
+    }
 
     const fetchOptions: any = {
       tls: { rejectUnauthorized: false },
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
       }
     };
-    const response = await fetch(normalizedUrl, fetchOptions);
 
-    if (!response.ok) {
+    // 4. Reintentos automáticos con pausas (hasta 3 intentos) ante microcortes o lentitud
+    let response: Response | null = null;
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
+        response = await fetch(normalizedUrl, {
+          ...fetchOptions,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (response && response.ok) {
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+      }
+
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+
+    if (!response || !response.ok) {
       console.warn(
-        `[storage] No se pudo descargar la imagen de ${normalizedUrl}: HTTP ${response.status}`
+        `[storage] No se pudo descargar imagen de ${normalizedUrl} tras 3 intentos (Status: ${response?.status || 'Error'})`
       );
-      return sourceUrl;
+      return '';
     }
 
     const contentType = response.headers.get('content-type') || 'image/jpeg';
     const buffer = await response.arrayBuffer();
 
-    if (buffer.byteLength < 50) {
-      return sourceUrl;
+    // Si el archivo es demasiado pequeño (< 200 bytes) o es un SVG/HTML de error, descartar
+    if (buffer.byteLength < 200 || contentType.includes('html') || contentType.includes('svg')) {
+      return '';
     }
 
-    // Sanitizar nombre de archivo
-    let cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
+    // 5. Sanitizar nombre de archivo (forzar minúsculas y caracteres seguros)
+    let cleanFileName = fileName
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]/g, '_')
+      .replace(/_+/g, '_');
 
     if (
-      !cleanFileName.toLowerCase().endsWith('.jpg') &&
-      !cleanFileName.toLowerCase().endsWith('.png')
+      !cleanFileName.endsWith('.jpg') &&
+      !cleanFileName.endsWith('.png') &&
+      !cleanFileName.endsWith('.webp')
     ) {
       cleanFileName += '.jpg';
     }
+
+    // 6. Subir al bucket de Supabase Storage asegurando HTTPS
+    await ensureProductsBucketExists();
 
     const uploadRes = await fetch(
       `${SUPABASE_URL}/storage/v1/object/${PRODUCTS_BUCKET}/${cleanFileName}`,
@@ -114,11 +170,11 @@ export async function uploadImageToSupabaseStorage(
     } else {
       const err = await uploadRes.text();
       console.warn(`[storage] Error subiendo imagen a Supabase para ${cleanFileName}:`, err);
-      return sourceUrl;
+      return '';
     }
   } catch (error: any) {
     console.warn(`[storage] Excepción subiendo imagen a Supabase (${fileName}):`, error?.message);
-    return sourceUrl;
+    return '';
   }
 }
 
