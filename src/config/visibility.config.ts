@@ -29,3 +29,4 @@ export const STORE_VISIBILITY = {
    */
   showExactStockNumbers: false,
 };
+
