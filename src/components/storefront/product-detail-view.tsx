@@ -39,7 +39,6 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
 
   // Cálculos de precios (B2B vs B2C)
   const isOutOfStock = product.stock <= 0;
-  const isLowStock = product.stock > 0 && product.stock <= 10;
   const qualifiesForWholesale = quantity >= product.min_wholesale_qty;
   const activeUnitPrice = qualifiesForWholesale ? product.wholesale_price : product.retail_price;
   const subtotal = Number((activeUnitPrice * quantity).toFixed(2));

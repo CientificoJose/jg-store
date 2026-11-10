@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 import { Icons } from '@/components/icons';
@@ -327,9 +328,11 @@ export function OrderSuccessModal() {
                     >
                       <div className="flex items-center gap-2 truncate pr-2">
                         {item.product.image_url ? (
-                          <img
+                          <Image
                             src={item.product.image_url}
                             alt={item.product.name}
+                            width={32}
+                            height={32}
                             className="w-8 h-8 rounded-lg object-cover border border-border shrink-0"
                           />
                         ) : (
@@ -509,9 +512,11 @@ export function OrderSuccessModal() {
                 <td className="p-2 text-center text-neutral-500 font-mono text-[11px]">{idx + 1}</td>
                 <td className="p-2 text-center w-14">
                   {item.product.image_url ? (
-                    <img
+                    <Image
                       src={item.product.image_url}
                       alt={item.product.name}
+                      width={40}
+                      height={40}
                       className="w-10 h-10 object-contain rounded border border-neutral-200 mx-auto"
                     />
                   ) : (

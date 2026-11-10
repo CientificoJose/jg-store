@@ -131,7 +131,8 @@ export function CartDrawer() {
       }
 
       // 2. Armar URL de WhatsApp incorporando el número de orden oficial
-      const finalOrderNumber = registeredOrderNumber || `JG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const finalOrderNumber =
+        registeredOrderNumber || `JG-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
       const whatsappUrl = buildWhatsAppUrl(items, customer, whatsappNumber, finalOrderNumber);
 
       // 3. Guardar orden completada para desplegar la pantalla de éxito con datos bancarios

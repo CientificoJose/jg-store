@@ -20,6 +20,13 @@ import { ProductQuickView } from './product-quick-view';
 import { StoreFooter } from './store-footer';
 import { INITIAL_PRODUCTS } from '@/constants/initial-catalog';
 
+const handleExploreCatalog = () => {
+  const gridEl = document.getElementById('catalogo-productos');
+  if (gridEl) {
+    gridEl.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+
 export function StoreFront() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
@@ -128,13 +135,6 @@ export function StoreFront() {
     setSortOption('popular');
     setOnlyInStock(false);
     setShowOnlyFavorites(false);
-  };
-
-  const handleExploreCatalog = () => {
-    const gridEl = document.getElementById('catalogo-productos');
-    if (gridEl) {
-      gridEl.scrollIntoView({ behavior: 'smooth' });
-    }
   };
 
   // Productos recomendados para búsquedas sin resultados

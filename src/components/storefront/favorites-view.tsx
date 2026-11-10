@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { StoreProduct } from '@/types/store';
 import { fetchStoreProducts } from '@/lib/store-service';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';

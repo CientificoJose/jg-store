@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 import { Icons } from '@/components/icons';
 
@@ -196,14 +197,14 @@ export function InstitutionalSection() {
               Ubicación física y stock preparado para atención presencial y despachos a todo el país.
             </p>
             <div className="pt-1">
-              <a
+              <Link
                 href="/dashboard/config/landing#fotos-local"
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-card border border-border/80 hover:border-[#D4A017] text-[#6C757D] hover:text-[#D4A017] transition-all cursor-pointer shadow-xs"
                 title="Subir o cambiar fotos del local desde el panel de control"
               >
                 <Icons.settings className="w-3.5 h-3.5 text-[#D4A017]" />
                 <span>Gestionar / Cambiar Fotos</span>
-              </a>
+              </Link>
             </div>
           </div>
 

@@ -71,3 +71,4 @@ export function notifyCategoriesChanged() {
     window.dispatchEvent(new CustomEvent('categories-updated'));
   }
 }
+

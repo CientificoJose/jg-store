@@ -22,12 +22,9 @@ function CategoryCircleItem({
   onSelect: () => void;
 }) {
   const fallbackImage = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80';
-  const [imgSrc, setImgSrc] = useState(cat.imageUrl || fallbackImage);
+  const [hasError, setHasError] = useState(false);
+  const imgSrc = hasError || !cat.imageUrl ? fallbackImage : cat.imageUrl;
   const itemRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    setImgSrc(cat.imageUrl || fallbackImage);
-  }, [cat.imageUrl]);
 
   useEffect(() => {
     if (isSelected && itemRef.current) {
@@ -58,7 +55,7 @@ function CategoryCircleItem({
             sizes="(max-width: 640px) 64px, 80px"
             className="object-cover group-hover:scale-110 transition-transform duration-300"
             onError={() => {
-              setImgSrc('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80');
+              setHasError(true);
             }}
           />
         </div>

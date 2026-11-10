@@ -39,7 +39,9 @@ export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarP
             ))
           ) : (
             categories.map((cat) => {
-              const IconComponent = (Icons as any)[cat.icon] || Icons.product;
+              const IconComponent =
+                (Icons as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon] ||
+                Icons.product;
               const isSelected = selectedCategory === cat.slug;
 
               return (

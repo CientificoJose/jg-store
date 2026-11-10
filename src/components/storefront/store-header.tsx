@@ -33,9 +33,7 @@ export function StoreHeader({
   const showWholesaleHeaderToggle = useStoreConfigStore(
     (s) => s.landing?.showWholesaleHeaderToggle ?? false
   );
-  const paymentPromoText = useStoreConfigStore((s) => s.landing?.paymentPromoText) || 'Cualquier tipo de pago • 3 cuotas sin interés con tarjeta • 10% OFF por transferencia';
-  const showPaymentPromo = useStoreConfigStore((s) => s.landing?.showPaymentPromo) ?? true;
-  const { favoriteIds, showOnlyFavorites, toggleShowOnlyFavorites } = useFavoritesStore();
+  const { favoriteIds } = useFavoritesStore();
   const favoriteCount = favoriteIds.length;
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -210,7 +208,9 @@ export function StoreHeader({
                       {sortedCategories.map((cat) => {
                         const isHovered = hoveredCategorySlug === cat.slug;
                         const isSelected = selectedCategory === cat.slug;
-                        const IconComponent = (Icons as any)[cat.icon] || Icons.product;
+                        const IconComponent =
+                          (Icons as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon] ||
+                          Icons.product;
 
                         return (
                           <button

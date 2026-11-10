@@ -65,7 +65,6 @@ export function SearchSidebarFilter({
   const [localMax, setLocalMax] = useState<string>(maxPrice ? String(maxPrice) : '');
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllBrands, setShowAllBrands] = useState(false);
-  const [showOtherCategories, setShowOtherCategories] = useState(false);
 
   React.useEffect(() => {
     setLocalMin(minPrice !== null && minPrice !== undefined ? String(minPrice) : '');
