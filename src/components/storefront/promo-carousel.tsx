@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Icons } from '@/components/icons';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 
 export { type CarouselSlide } from '@/types/banner';
 import { type CarouselSlide } from '@/types/banner';
@@ -192,26 +193,28 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
                 <span>{slide.primaryActionLabel}</span>
               </button>
 
-              <button
-                onClick={() => handleAction(slide.secondaryActionType, slide.categorySlug)}
-                className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-xs sm:text-sm backdrop-blur-md border transition-all cursor-pointer transform hover:-translate-y-0.5 ${
-                  slide.secondaryActionType === 'wholesale' && wholesaleMode
-                    ? 'bg-[#D4A017] border-[#D4A017] text-black font-bold shadow-lg shadow-[#D4A017]/30'
-                    : 'bg-white/15 hover:bg-white/25 border-white/30 text-white'
-                }`}
-              >
-                {slide.secondaryActionType === 'wholesale' ? (
-                  <>
-                    <Icons.tags className="w-4 h-4" />
-                    <span>{wholesaleMode ? '✓ Tarifa Mayorista Activa' : slide.secondaryActionLabel}</span>
-                  </>
-                ) : (
-                  <>
-                    <Icons.whatsapp className="w-4 h-4 text-[#25D366] fill-current" />
-                    <span>{slide.secondaryActionLabel}</span>
-                  </>
-                )}
-              </button>
+              {(!slide.secondaryActionType || slide.secondaryActionType !== 'wholesale' || STORE_VISIBILITY.showWholesalePrices) && (
+                <button
+                  onClick={() => handleAction(slide.secondaryActionType, slide.categorySlug)}
+                  className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-xs sm:text-sm backdrop-blur-md border transition-all cursor-pointer transform hover:-translate-y-0.5 ${
+                    slide.secondaryActionType === 'wholesale' && wholesaleMode
+                      ? 'bg-[#D4A017] border-[#D4A017] text-black font-bold shadow-lg shadow-[#D4A017]/30'
+                      : 'bg-white/15 hover:bg-white/25 border-white/30 text-white'
+                  }`}
+                >
+                  {slide.secondaryActionType === 'wholesale' ? (
+                    <>
+                      <Icons.tags className="w-4 h-4" />
+                      <span>{wholesaleMode ? '✓ Tarifa Mayorista Activa' : slide.secondaryActionLabel}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icons.whatsapp className="w-4 h-4 text-[#25D366] fill-current" />
+                      <span>{slide.secondaryActionLabel}</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

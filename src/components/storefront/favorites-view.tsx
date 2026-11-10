@@ -8,6 +8,7 @@ import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { formatPrice, JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { ProductCard } from './product-card';
@@ -64,7 +65,9 @@ export function FavoritesView() {
 
     if (addedCount > 0) {
       toast.success(`Se agregaron ${addedCount} productos al carrito`, {
-        description: `Modalidad: ${wholesaleMode ? 'Tarifa Mayorista' : 'Tarifa Detal'}`
+        description: STORE_VISIBILITY.showWholesalePrices
+          ? `Modalidad: ${wholesaleMode ? 'Tarifa Mayorista' : 'Tarifa Detal'}`
+          : `${addedCount} artículos listos para comprar`
       });
       setOpen(true);
     } else {
@@ -77,16 +80,25 @@ export function FavoritesView() {
 
     let msg = `¡Hola JG Store! 👋 Quiero consultar y cotizar mi lista de *Productos Favoritos*:\n\n`;
     favoriteProducts.forEach((p, idx) => {
+      const wholesaleLine = STORE_VISIBILITY.showWholesalePrices
+        ? ` | Mayor (${p.min_wholesale_qty}+ ${p.unit}s): ${formatPrice(p.wholesale_price)}`
+        : '';
+      const stockLine = STORE_VISIBILITY.showExactStockNumbers
+        ? `${p.stock} en depósito`
+        : 'Disponible';
+
       msg += `🔹 *${idx + 1}. ${p.name}*\n`;
       msg += `   Código SKU: ${p.sku} | Rubro: ${p.category_name}\n`;
-      msg += `   PVP Detal: ${formatPrice(p.retail_price)} | Mayor (${p.min_wholesale_qty}+ ${p.unit}s): ${formatPrice(p.wholesale_price)}\n`;
-      msg += `   Disponibilidad: ${p.stock > 0 ? `${p.stock} en depósito` : 'Agotado'}\n\n`;
+      msg += `   Precio: ${formatPrice(p.retail_price)}${wholesaleLine}\n`;
+      msg += `   Disponibilidad: ${p.stock > 0 ? stockLine : 'Agotado'}\n\n`;
     });
 
-    msg += `📊 *Total Referencial Detal:* ${formatPrice(totalRetail)}\n`;
-    msg += `⭐ *Total Referencial Mayorista:* ${formatPrice(totalWholesale)}\n`;
-    if (totalPotentialSavings > 0) {
-      msg += `🎉 *Ahorro Estimado al Mayor:* ${formatPrice(totalPotentialSavings)}\n`;
+    msg += `📊 *Total Estimado:* ${formatPrice(totalRetail)}\n`;
+    if (STORE_VISIBILITY.showWholesalePrices) {
+      msg += `⭐ *Total Referencial Mayorista:* ${formatPrice(totalWholesale)}\n`;
+      if (totalPotentialSavings > 0) {
+        msg += `🎉 *Ahorro Estimado al Mayor:* ${formatPrice(totalPotentialSavings)}\n`;
+      }
     }
     msg += `\n¿Me confirman disponibilidad y tiempos de entrega? ¡Gracias!`;
 
@@ -172,44 +184,58 @@ export function FavoritesView() {
           )}
         </div>
 
-        {/* Resumen de Tarifas si hay favoritos */}
+        {/* Resumen si hay favoritos */}
         {favoriteProducts.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs">
-              <span className="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider block">
-                Total Estimado al Detal
-              </span>
-              <span className="text-2xl font-bold text-foreground font-gotham mt-1 block">
-                {formatPrice(totalRetail)}
-              </span>
-              <span className="text-[11px] text-[#6C757D]">Comprando 1 unidad de cada favorito</span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#D4A017]/10 border border-[#D4A017]/30 text-[#D4A017] shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider block">
-                  Total Estimado al Mayor
+          STORE_VISIBILITY.showWholesalePrices ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs">
+                <span className="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider block">
+                  Total Estimado al Detal
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-[#D4A017] text-white">
-                  VIP B2B
+                <span className="text-2xl font-bold text-foreground font-gotham mt-1 block">
+                  {formatPrice(totalRetail)}
                 </span>
+                <span className="text-[11px] text-[#6C757D]">Comprando 1 unidad de cada favorito</span>
               </div>
-              <span className="text-2xl font-bold text-foreground font-bebas tracking-wide mt-1 block">
-                {formatPrice(totalWholesale)}
-              </span>
-              <span className="text-[11px] text-[#6C757D]">Aplicando tarifa con mínimos mayoristas</span>
-            </div>
 
-            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 shadow-xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider block">
-                Ahorro Potencial Mayorista
-              </span>
-              <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-gotham mt-1 block">
-                {formatPrice(totalPotentialSavings)}
-              </span>
-              <span className="text-[11px] text-[#6C757D]">Ahorras comprando por bulto comercial</span>
+              <div className="p-4 rounded-2xl bg-[#D4A017]/10 border border-[#D4A017]/30 text-[#D4A017] shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider block">
+                    Total Estimado al Mayor
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-[#D4A017] text-white">
+                    VIP B2B
+                  </span>
+                </div>
+                <span className="text-2xl font-bold text-foreground font-bebas tracking-wide mt-1 block">
+                  {formatPrice(totalWholesale)}
+                </span>
+                <span className="text-[11px] text-[#6C757D]">Aplicando tarifa con mínimos mayoristas</span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 shadow-xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider block">
+                  Ahorro Potencial Mayorista
+                </span>
+                <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-gotham mt-1 block">
+                  {formatPrice(totalPotentialSavings)}
+                </span>
+                <span className="text-[11px] text-[#6C757D]">Ahorras comprando por bulto comercial</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="mb-8">
+              <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs max-w-sm">
+                <span className="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider block">
+                  Total Estimado
+                </span>
+                <span className="text-2xl font-bold text-foreground font-gotham mt-1 block">
+                  {formatPrice(totalRetail)}
+                </span>
+                <span className="text-[11px] text-[#6C757D]">Comprando 1 unidad de cada favorito</span>
+              </div>
+            </div>
+          )
         )}
 
         {/* ESTADO DE CARGA */}

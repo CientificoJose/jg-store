@@ -7,6 +7,7 @@ import { StoreProduct } from '@/types/store';
 import { formatPrice } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 
@@ -25,7 +26,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 10;
-  const qualifiesForWholesale = quantity >= product.min_wholesale_qty;
+  const qualifiesForWholesale = STORE_VISIBILITY.showWholesalePrices && quantity >= product.min_wholesale_qty;
   const discountPercent = Math.round(
     ((product.retail_price - product.wholesale_price) / product.retail_price) * 100
   );
@@ -54,7 +55,9 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
     const res = addItem(product, quantity);
     if (res.success) {
       toast.success(`Agregado al carrito`, {
-        description: `${quantity}x ${product.name} (${qualifiesForWholesale ? 'Precio Mayorista' : 'Precio Detal'})`
+        description: STORE_VISIBILITY.showWholesalePrices
+          ? `${quantity}x ${product.name} (${qualifiesForWholesale ? 'Precio Mayorista' : 'Precio Detal'})`
+          : `${quantity}x ${product.name}`
       });
     } else {
       toast.error(res.message || 'No se pudo agregar al carrito');
@@ -85,17 +88,17 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             <span className="px-2.5 py-1 rounded-md bg-[#6C757D]/95 text-white text-[11px] font-bold tracking-wide shadow-sm font-gotham">
               Agotado
             </span>
-          ) : isLowStock ? (
+          ) : isLowStock && STORE_VISIBILITY.showLowStockAlerts ? (
             <span className="px-2.5 py-1 rounded-md bg-[#E63946] text-white text-[11px] font-bold tracking-wide shadow-sm font-gotham">
               Últimas {product.stock} unid.
             </span>
           ) : (
             <span className="px-2.5 py-1 rounded-md bg-emerald-600/90 text-white text-[11px] font-semibold tracking-wide shadow-sm font-gotham">
-              {product.stock} en stock
+              {STORE_VISIBILITY.showExactStockNumbers ? `${product.stock} en stock` : 'En stock'}
             </span>
           )}
 
-          {discountPercent > 0 && (
+          {STORE_VISIBILITY.showWholesalePrices && discountPercent > 0 && (
             <span className="px-2 py-0.5 rounded-md bg-[#D4A017] text-white text-[10px] font-black tracking-wider shadow-sm font-gotham uppercase">
               -{discountPercent}% Mayor
             </span>
@@ -163,49 +166,64 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           </p>
         </div>
 
-        {/* Bloque de Precios Detal vs Mayor */}
+        {/* Bloque de Precios */}
         <div className="mt-4 pt-3 border-t border-border/60">
-          <div className="flex items-baseline justify-between gap-2">
-            <div>
-              <span className="text-[10px] font-semibold text-[#6C757D] uppercase tracking-wider block">
-                Precio Detal
-              </span>
-              <span className="text-lg font-bold text-foreground font-gotham">
-                {formatPrice(product.retail_price)}
-              </span>
-            </div>
+          {STORE_VISIBILITY.showWholesalePrices ? (
+            <>
+              <div className="flex items-baseline justify-between gap-2">
+                <div>
+                  <span className="text-[10px] font-semibold text-[#6C757D] uppercase tracking-wider block">
+                    Precio Detal
+                  </span>
+                  <span className="text-lg font-bold text-foreground font-gotham">
+                    {formatPrice(product.retail_price)}
+                  </span>
+                </div>
 
-            <div className="text-right">
-              <span className="text-[10px] font-bold text-[#D4A017] uppercase tracking-wider block font-gotham">
-                Mayor (desde {product.min_wholesale_qty} unid.)
-              </span>
-              <span className="text-xl font-bold text-[#D4A017] font-bebas tracking-wide">
-                {formatPrice(product.wholesale_price)}
-              </span>
-            </div>
-          </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-[#D4A017] uppercase tracking-wider block font-gotham">
+                    Mayor (desde {product.min_wholesale_qty} unid.)
+                  </span>
+                  <span className="text-xl font-bold text-[#D4A017] font-bebas tracking-wide">
+                    {formatPrice(product.wholesale_price)}
+                  </span>
+                </div>
+              </div>
 
-          {/* Banner de Estado de Tarifa según la cantidad seleccionada */}
-          <div className="mt-2.5">
-            {qualifiesForWholesale ? (
-              <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-[#D4A017]/10 border border-[#D4A017]/25 text-[#D4A017] text-[11px] font-semibold">
-                <Icons.tags className="w-3.5 h-3.5 shrink-0" />
-                <span>
-                  ¡Tarifa Mayorista aplicada! Ahorras{' '}
-                  {formatPrice((product.retail_price - product.wholesale_price) * quantity)}
+              {/* Banner de Estado de Tarifa según la cantidad seleccionada */}
+              <div className="mt-2.5">
+                {qualifiesForWholesale ? (
+                  <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-[#D4A017]/10 border border-[#D4A017]/25 text-[#D4A017] text-[11px] font-semibold">
+                    <Icons.tags className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      ¡Tarifa Mayorista aplicada! Ahorras{' '}
+                      {formatPrice((product.retail_price - product.wholesale_price) * quantity)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-[11px] text-[#6C757D] bg-muted/40 p-1.5 rounded-lg">
+                    <span>
+                      Lleva <strong className="text-[#E63946]">{product.min_wholesale_qty - quantity} más</strong> para precio mayor
+                    </span>
+                    <span className="text-[#D4A017] font-bold font-bebas text-sm">
+                      {formatPrice(product.wholesale_price)} c/u
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-baseline justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-semibold text-[#6C757D] uppercase tracking-wider block">
+                  Precio
+                </span>
+                <span className="text-xl font-bold text-foreground font-gotham">
+                  {formatPrice(product.retail_price)}
                 </span>
               </div>
-            ) : (
-              <div className="flex items-center justify-between text-[11px] text-[#6C757D] bg-muted/40 p-1.5 rounded-lg">
-                <span>
-                  Lleva <strong className="text-[#E63946]">{product.min_wholesale_qty - quantity} más</strong> para precio mayor
-                </span>
-                <span className="text-[#D4A017] font-bold font-bebas text-sm">
-                  {formatPrice(product.wholesale_price)} c/u
-                </span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

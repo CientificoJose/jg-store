@@ -19,11 +19,10 @@ export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarP
           {/* Opción "Todos" */}
           <button
             onClick={() => onSelectCategory('all')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${
-              selectedCategory === 'all'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 border cursor-pointer ${selectedCategory === 'all'
                 ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm shadow-[#E63946]/25 ring-2 ring-[#E63946]/20'
                 : 'bg-card hover:bg-muted text-[#6C757D] hover:text-foreground border-border/80'
-            }`}
+              }`}
           >
             <Icons.product className="w-4 h-4" />
             <span>Todas las Categorías</span>
@@ -48,11 +47,10 @@ export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarP
                 <button
                   key={cat.id || cat.slug}
                   onClick={() => onSelectCategory(cat.slug)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 border cursor-pointer ${
-                    isSelected
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 border cursor-pointer ${isSelected
                       ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm shadow-[#E63946]/25 ring-2 ring-[#E63946]/20 font-semibold'
                       : 'bg-card hover:bg-muted text-[#6C757D] hover:text-foreground border-border/80'
-                  }`}
+                    }`}
                 >
                   <IconComponent className="w-4 h-4 shrink-0" />
                   <span>{cat.name}</span>

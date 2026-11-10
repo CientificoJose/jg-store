@@ -7,6 +7,7 @@ import { StoreProduct } from '@/types/store';
 import { formatPrice } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 
@@ -18,14 +19,16 @@ interface ProductQuickViewProps {
 export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
   const { addItem } = useCartStore();
   const { isFavorite, toggleFavorite } = useFavoritesStore();
-  const [quantity, setQuantity] = useState<number>(product?.min_wholesale_qty || 1);
+  const [quantity, setQuantity] = useState<number>(
+    STORE_VISIBILITY.showWholesalePrices ? (product?.min_wholesale_qty || 1) : 1
+  );
 
   if (!product) return null;
 
   const isFav = isFavorite(product.id);
 
   const isOutOfStock = product.stock <= 0;
-  const qualifiesForWholesale = quantity >= product.min_wholesale_qty;
+  const qualifiesForWholesale = STORE_VISIBILITY.showWholesalePrices && quantity >= product.min_wholesale_qty;
   const unitPrice = qualifiesForWholesale
     ? product.wholesale_price
     : product.retail_price;
@@ -93,14 +96,16 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
                 className={`text-xs font-medium ${
                   isOutOfStock
                     ? 'text-[#6C757D]'
-                    : product.stock <= 10
+                    : product.stock <= 10 && STORE_VISIBILITY.showLowStockAlerts
                     ? 'text-[#E63946]'
                     : 'text-emerald-600'
                 }`}
               >
                 {isOutOfStock
                   ? 'Agotado'
-                  : `Disponibles: ${product.stock} ${product.unit}(s)`}
+                  : STORE_VISIBILITY.showExactStockNumbers
+                  ? `Disponibles: ${product.stock} ${product.unit}(s)`
+                  : 'En stock disponible'}
               </span>
             </div>
 
@@ -109,28 +114,39 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
               {product.description}
             </p>
 
-            {/* Escala de precios */}
-            <div className="mt-5 rounded-xl border border-border/80 p-3 bg-muted/20 space-y-2">
-              <div className="text-xs font-bold text-foreground">
-                Escala de Precios:
+            {/* Escala de precios o Precio único */}
+            {STORE_VISIBILITY.showWholesalePrices ? (
+              <div className="mt-5 rounded-xl border border-border/80 p-3 bg-muted/20 space-y-2">
+                <div className="text-xs font-bold text-foreground">
+                  Escala de Precios:
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#6C757D]">
+                    Al Detal (1 a {product.min_wholesale_qty - 1} unid.):
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {formatPrice(product.retail_price)} c/u
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-border/60">
+                  <span className="text-[#D4A017] font-semibold">
+                    Al Mayor ({product.min_wholesale_qty}+ unid.):
+                  </span>
+                  <span className="font-bold text-[#D4A017] font-bebas text-base">
+                    {formatPrice(product.wholesale_price)} c/u
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#6C757D]">
-                  Al Detal (1 a {product.min_wholesale_qty - 1} unid.):
+            ) : (
+              <div className="mt-5 rounded-xl border border-border/80 p-3.5 bg-muted/20 flex items-baseline justify-between">
+                <span className="text-xs font-bold text-[#6C757D] uppercase tracking-wider">
+                  Precio Unitario
                 </span>
-                <span className="font-bold text-foreground">
-                  {formatPrice(product.retail_price)} c/u
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/60">
-                <span className="text-[#D4A017] font-semibold">
-                  Al Mayor ({product.min_wholesale_qty}+ unid.):
-                </span>
-                <span className="font-bold text-[#D4A017] font-bebas text-base">
-                  {formatPrice(product.wholesale_price)} c/u
+                <span className="text-2xl font-bold font-gotham text-foreground">
+                  {formatPrice(product.retail_price)}
                 </span>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Controles de Compra */}
@@ -167,7 +183,7 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
                   {formatPrice(subtotal)}
                 </span>
               </div>
-              {qualifiesForWholesale && (
+              {qualifiesForWholesale && STORE_VISIBILITY.showWholesalePrices && (
                 <span className="text-xs text-[#D4A017] font-semibold bg-[#D4A017]/15 px-2 py-1 rounded">
                   Ahorras {formatPrice(savings)}
                 </span>

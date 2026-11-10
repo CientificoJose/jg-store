@@ -11,6 +11,7 @@ import { formatPrice } from '@/lib/whatsapp';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
 import { useCategories } from '@/hooks/use-categories';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 
 interface StoreHeaderProps {
   searchQuery: string;
@@ -402,7 +403,7 @@ export function StoreHeader({
             </button>
 
             {/* Toggle Modo Mayorista */}
-            {showWholesaleHeaderToggle && (
+            {STORE_VISIBILITY.showWholesalePrices && showWholesaleHeaderToggle && (
               <button
                 onClick={toggleWholesaleMode}
                 title="Alternar vista de precios al mayor"

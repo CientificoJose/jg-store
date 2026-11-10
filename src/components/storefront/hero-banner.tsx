@@ -4,6 +4,7 @@ import React from 'react';
 import { Icons } from '@/components/icons';
 import { PromoCarousel } from './promo-carousel';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 
 interface HeroBannerProps {
   onExploreCatalog: () => void;
@@ -31,15 +32,19 @@ export function HeroBanner({ onExploreCatalog, onSelectCategory }: HeroBannerPro
         {/* 2. Los 4 Pilares de Confianza JG Store Argentina (Configurables) */}
         {showTrustBadges && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-left font-gotham animate-in fade-in duration-200">
-          {/* Pilar 1: Mayorista */}
+          {/* Pilar 1: Precios / Mayorista */}
           <div className="p-3.5 rounded-xl bg-card border border-border/70 flex items-start gap-3 shadow-xs hover:border-[#D4A017]/40 transition-colors">
             <div className="w-8 h-8 rounded-lg bg-[#D4A017]/15 text-[#D4A017] flex items-center justify-center shrink-0">
               <Icons.tags className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-foreground">Tarifa Mayorista</h4>
+              <h4 className="text-xs font-bold text-foreground">
+                {STORE_VISIBILITY.showWholesalePrices ? 'Tarifa Mayorista' : 'Precios Directos'}
+              </h4>
               <p className="text-[11px] text-[#6C757D] mt-0.5 leading-snug">
-                Desbloqueo a partir de $ 50.000 o por bulto cerrado.
+                {STORE_VISIBILITY.showWholesalePrices
+                  ? 'Desbloqueo a partir de $ 50.000 o por bulto cerrado.'
+                  : 'Los mejores precios garantizados en cada categoría.'}
               </p>
             </div>
           </div>

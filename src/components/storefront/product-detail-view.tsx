@@ -8,6 +8,7 @@ import { formatPrice, JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { ProductCard } from './product-card';
@@ -39,7 +40,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
 
   // Cálculos de precios (B2B vs B2C)
   const isOutOfStock = product.stock <= 0;
-  const qualifiesForWholesale = quantity >= product.min_wholesale_qty;
+  const qualifiesForWholesale = STORE_VISIBILITY.showWholesalePrices && quantity >= product.min_wholesale_qty;
   const activeUnitPrice = qualifiesForWholesale ? product.wholesale_price : product.retail_price;
   const subtotal = Number((activeUnitPrice * quantity).toFixed(2));
   const retailSubtotal = Number((product.retail_price * quantity).toFixed(2));
@@ -59,7 +60,11 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
   const handleQuantityChange = (newQty: number) => {
     if (newQty < 1) return;
     if (newQty > product.stock) {
-      toast.error(`Solo quedan ${product.stock} unidades en stock.`);
+      toast.error(
+        STORE_VISIBILITY.showLowStockAlerts
+          ? `Solo quedan ${product.stock} unidades en stock.`
+          : 'Stock máximo disponible alcanzado.'
+      );
       return;
     }
     setQuantity(newQty);
@@ -121,7 +126,9 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
       setIsBuyingNow(false);
     }
 
-    const directMessage = `¡Hola JG Store! Quiero comprar ahora este producto:\n\n📋 *Pedido Oficial:* #${orderNumber}\n📦 *${product.name}*\n🔢 SKU: ${product.sku}\n📊 Cantidad: ${quantity} ${product.unit}(s)\n💰 Precio unitario: ${formatPrice(activeUnitPrice)} (${qualifiesForWholesale ? 'Mayorista' : 'Detal'})\n💵 Total estimado: ${formatPrice(subtotal)}${savings > 0 ? `\n🎉 Ahorro Mayorista: ${formatPrice(savings)}` : ''}\n\n¿Tienen disponibilidad para coordinar el pago y envío?`;
+    const pricingTag = STORE_VISIBILITY.showWholesalePrices ? ` (${qualifiesForWholesale ? 'Mayorista' : 'Detal'})` : '';
+    const savingsTag = STORE_VISIBILITY.showWholesalePrices && savings > 0 ? `\n🎉 Ahorro Mayorista: ${formatPrice(savings)}` : '';
+    const directMessage = `¡Hola JG Store! Quiero comprar ahora este producto:\n\n📋 *Pedido Oficial:* #${orderNumber}\n📦 *${product.name}*\n🔢 SKU: ${product.sku}\n📊 Cantidad: ${quantity} ${product.unit}(s)\n💰 Precio unitario: ${formatPrice(activeUnitPrice)}${pricingTag}\n💵 Total estimado: ${formatPrice(subtotal)}${savingsTag}\n\n¿Tienen disponibilidad para coordinar el pago y envío?`;
     const cleanPhone = (whatsappNumber || JG_STORE_WHATSAPP_NUMBER).replace(/[^0-9]/g, '');
     const cleanMessage = directMessage.replace(/\uFE0F/g, '');
     const url = `https://api.whatsapp.com/send/?phone=${cleanPhone}&text=${encodeURIComponent(cleanMessage)}`;
@@ -210,7 +217,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
 
                 {/* Badge de Stock o Descuento */}
                 <div className='absolute top-3 left-3 flex flex-col gap-1.5 z-10'>
-                  {wholesaleDiscountPct > 0 && (
+                  {STORE_VISIBILITY.showWholesalePrices && wholesaleDiscountPct > 0 && (
                     <span className='px-3 py-1 rounded-md bg-[#D4A017] text-white text-xs font-black tracking-wider shadow-sm uppercase font-gotham'>
                       -{wholesaleDiscountPct}% al Mayor
                     </span>
@@ -275,43 +282,47 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                   )}
                 </div>
 
-                {/* BLOQUE DE PRECIOS MERCADO LIBRE DUAL (Detal vs Mayor) */}
+                {/* BLOQUE DE PRECIOS */}
                 <div className='mt-5 p-4 rounded-2xl bg-muted/40 border border-border/80'>
                   <div className='flex items-baseline gap-3'>
                     <span className='text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight'>
                       {formatPrice(activeUnitPrice)}
                     </span>
                     <span className='text-xs text-[#6C757D] font-medium'>
-                      por {product.unit} (
-                      {qualifiesForWholesale ? 'Precio Mayorista' : 'Precio al Detal'})
+                      por {product.unit}
+                      {STORE_VISIBILITY.showWholesalePrices && (
+                        <span> ({qualifiesForWholesale ? 'Precio Mayorista' : 'Precio al Detal'})</span>
+                      )}
                     </span>
                   </div>
 
-                  {/* Comparativa Detal vs Mayor */}
-                  <div className='mt-3 pt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs'>
-                    <div className='p-2.5 rounded-xl bg-card border border-border/60'>
-                      <span className='text-[#6C757D] block text-[11px]'>
-                        Venta al Detal (1 a {product.min_wholesale_qty - 1} u.):
-                      </span>
-                      <strong className='text-base text-foreground font-bold'>
-                        {formatPrice(product.retail_price)}
-                      </strong>
-                    </div>
-
-                    <div className='p-2.5 rounded-xl bg-[#D4A017]/10 border border-[#D4A017]/30 text-[#D4A017]'>
-                      <span className='block text-[11px] font-semibold'>
-                        Venta al Mayor ({product.min_wholesale_qty}+ u.):
-                      </span>
-                      <div className='flex items-center justify-between'>
-                        <strong className='text-base font-bold text-foreground'>
-                          {formatPrice(product.wholesale_price)}
-                        </strong>
-                        <span className='px-2 py-0.5 rounded-md bg-[#D4A017] text-white text-[10px] font-black uppercase'>
-                          -{wholesaleDiscountPct}% OFF
+                  {/* Comparativa Detal vs Mayor si está habilitada */}
+                  {STORE_VISIBILITY.showWholesalePrices && (
+                    <div className='mt-3 pt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs'>
+                      <div className='p-2.5 rounded-xl bg-card border border-border/60'>
+                        <span className='text-[#6C757D] block text-[11px]'>
+                          Venta al Detal (1 a {product.min_wholesale_qty - 1} u.):
                         </span>
+                        <strong className='text-base text-foreground font-bold'>
+                          {formatPrice(product.retail_price)}
+                        </strong>
+                      </div>
+
+                      <div className='p-2.5 rounded-xl bg-[#D4A017]/10 border border-[#D4A017]/30 text-[#D4A017]'>
+                        <span className='block text-[11px] font-semibold'>
+                          Venta al Mayor ({product.min_wholesale_qty}+ u.):
+                        </span>
+                        <div className='flex items-center justify-between'>
+                          <strong className='text-base font-bold text-foreground'>
+                            {formatPrice(product.wholesale_price)}
+                          </strong>
+                          <span className='px-2 py-0.5 rounded-md bg-[#D4A017] text-white text-[10px] font-black uppercase'>
+                            -{wholesaleDiscountPct}% OFF
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Aviso de Cuotas y Medios de Pago Dinámico */}
                   {showPaymentPromo && (
@@ -336,7 +347,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                 </div>
 
 
-                {/* CAJA DE COMPRA (BUY BOX MERCADO LIBRE) */}
+                {/* CAJA DE COMPRA (BUY BOX) */}
                 <div className='mt-6 p-4 sm:p-5 rounded-2xl bg-card border-2 border-border/80 shadow-md'>
                   {/* Estado de Stock */}
                   <div className='flex items-center justify-between mb-4 pb-3 border-b border-border/60'>
@@ -345,22 +356,26 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                         className={`w-3 h-3 rounded-full ${isOutOfStock ? 'bg-[#6C757D]' : 'bg-emerald-500 animate-pulse'}`}
                       />
                       <span className='text-sm font-bold text-foreground'>
-                        {isOutOfStock ? 'Stock Agotado' : 'Stock Disponible en Depósito'}
+                        {isOutOfStock ? 'Stock Agotado' : 'Stock Disponible'}
                       </span>
                     </div>
-                    <span className='text-xs text-[#6C757D]'>({product.stock} disponibles)</span>
+                    {STORE_VISIBILITY.showExactStockNumbers && (
+                      <span className='text-xs text-[#6C757D]'>({product.stock} disponibles)</span>
+                    )}
                   </div>
 
-                  {/* Selector de Cantidad con Ayuda de Ahorro Mayorista */}
+                  {/* Selector de Cantidad */}
                   <div className='mb-5'>
                     <div className='flex items-center justify-between mb-1.5'>
                       <label className='text-xs font-bold text-foreground'>Cantidad:</label>
-                      <span className='text-xs text-[#6C757D]'>
-                        Umbral Mayorista:{' '}
-                        <strong className='text-[#D4A017]'>
-                          {product.min_wholesale_qty} unid.
-                        </strong>
-                      </span>
+                      {STORE_VISIBILITY.showWholesalePrices && (
+                        <span className='text-xs text-[#6C757D]'>
+                          Umbral Mayorista:{' '}
+                          <strong className='text-[#D4A017]'>
+                            {product.min_wholesale_qty} unid.
+                          </strong>
+                        </span>
+                      )}
                     </div>
 
                     <div className='flex items-center gap-3'>
@@ -389,20 +404,22 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                         </button>
                       </div>
 
-                      {/* Notificación de ahorro activo */}
-                      <div className='flex-1 text-xs'>
-                        {qualifiesForWholesale ? (
-                          <span className='inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20'>
-                            <Icons.badgeCheck className='w-4 h-4' />
-                            ¡Precio Mayorista Activado! Ahorras {formatPrice(savings)}
-                          </span>
-                        ) : (
-                          <span className='text-[#6C757D]'>
-                            Agrega <strong>{product.min_wholesale_qty - quantity} más</strong> para
-                            precio mayorista.
-                          </span>
-                        )}
-                      </div>
+                      {/* Notificación de ahorro activo (solo si modo mayorista está activo) */}
+                      {STORE_VISIBILITY.showWholesalePrices && (
+                        <div className='flex-1 text-xs'>
+                          {qualifiesForWholesale ? (
+                            <span className='inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20'>
+                              <Icons.badgeCheck className='w-4 h-4' />
+                              ¡Precio Mayorista Activado! Ahorras {formatPrice(savings)}
+                            </span>
+                          ) : (
+                            <span className='text-[#6C757D]'>
+                              Agrega <strong>{product.min_wholesale_qty - quantity} más</strong> para
+                              precio mayorista.
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -480,7 +497,9 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                 <h3 className='text-base font-bold text-foreground pt-2'>Ventajas Principales:</h3>
                 <ul className='list-disc pl-5 space-y-1 text-xs sm:text-sm'>
                   <li>Calidad garantizada bajo control de inventario físico.</li>
-                  <li>Doble escala de precios: compra por unidad o por bulto mayorista.</li>
+                  {STORE_VISIBILITY.showWholesalePrices && (
+                    <li>Doble escala de precios: compra por unidad o por bulto mayorista.</li>
+                  )}
                   <li>Atención comercial directa y personalizada vía WhatsApp.</li>
                   <li>Embalaje reforzado para protección durante el transporte.</li>
                 </ul>
@@ -501,16 +520,22 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                   <span className='text-[#6C757D]'>Unidad de Venta</span>
                   <span className='font-semibold text-foreground capitalize'>{product.unit}</span>
                 </div>
-                <div className='flex justify-between p-3'>
-                  <span className='text-[#6C757D]'>Mínimo Mayorista</span>
-                  <span className='font-bold text-[#D4A017]'>
-                    {product.min_wholesale_qty} unidades
-                  </span>
-                </div>
+                {STORE_VISIBILITY.showWholesalePrices && (
+                  <div className='flex justify-between p-3'>
+                    <span className='text-[#6C757D]'>Mínimo Mayorista</span>
+                    <span className='font-bold text-[#D4A017]'>
+                      {product.min_wholesale_qty} unidades
+                    </span>
+                  </div>
+                )}
                 <div className='flex justify-between p-3 bg-muted/30'>
                   <span className='text-[#6C757D]'>Disponibilidad</span>
                   <span className='font-semibold text-emerald-600'>
-                    {product.stock} en depósito
+                    {STORE_VISIBILITY.showExactStockNumbers
+                      ? `${product.stock} en depósito`
+                      : isOutOfStock
+                      ? 'Sin stock'
+                      : 'Stock disponible'}
                   </span>
                 </div>
                 <div className='flex justify-between p-3'>

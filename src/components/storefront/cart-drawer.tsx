@@ -6,6 +6,7 @@ import { useCartStore } from '@/hooks/use-cart-store';
 import { formatPrice, buildWhatsAppUrl, WHOLESALE_MIN_AMOUNT_ARS } from '@/lib/whatsapp';
 import { Icons } from '@/components/icons';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 import { toast } from 'sonner';
 
 export function CartDrawer() {
@@ -242,8 +243,9 @@ export function CartDrawer() {
                 Tu carrito está vacío
               </h3>
               <p className='text-xs sm:text-sm text-[#6C757D] mt-2 max-w-sm font-gotham leading-relaxed'>
-                Explora nuestras categorías comerciales oficiales y agrega productos con precios al
-                detal o descuentos por volumen mayorista.
+                {STORE_VISIBILITY.showWholesalePrices
+                  ? 'Explora nuestras categorías comerciales oficiales y agrega productos con precios al detal o descuentos por volumen mayorista.'
+                  : 'Explora nuestras categorías comerciales oficiales y agrega tus productos favoritos con la mejor calidad y atención directa.'}
               </p>
               <button
                 type='button'
@@ -259,46 +261,48 @@ export function CartDrawer() {
               {/* COLUMNA IZQUIERDA: Artículos del Carrito y Barra Mayorista */}
               <div className='w-full md:w-7/12 flex flex-col overflow-y-auto border-b md:border-b-0 md:border-r border-border/80 p-4 sm:p-5 lg:p-6 space-y-4'>
                 {/* 1. Barra de Progreso Mayorista Argentina ($50.000 ARS) */}
-                <div className='p-4 rounded-xl bg-card border border-[#D4A017]/35 shadow-xs space-y-2.5'>
-                  <div className='flex items-center justify-between text-xs'>
-                    <span className='font-bold text-foreground flex items-center gap-1.5'>
-                      <Icons.sparkles className='w-4 h-4 text-[#D4A017]' />
-                      <span>Monto Mínimo Mayorista</span>
-                    </span>
-                    <span className='text-xs font-bold text-[#D4A017] px-2 py-0.5 rounded-full bg-[#D4A017]/15'>
-                      {percentToWholesale >= 100
-                        ? '¡MAYORISTA DESBLOQUEADO!'
-                        : `${percentToWholesale}%`}
-                    </span>
-                  </div>
+                {STORE_VISIBILITY.showWholesalePrices && (
+                  <div className='p-4 rounded-xl bg-card border border-[#D4A017]/35 shadow-xs space-y-2.5'>
+                    <div className='flex items-center justify-between text-xs'>
+                      <span className='font-bold text-foreground flex items-center gap-1.5'>
+                        <Icons.sparkles className='w-4 h-4 text-[#D4A017]' />
+                        <span>Monto Mínimo Mayorista</span>
+                      </span>
+                      <span className='text-xs font-bold text-[#D4A017] px-2 py-0.5 rounded-full bg-[#D4A017]/15'>
+                        {percentToWholesale >= 100
+                          ? '¡MAYORISTA DESBLOQUEADO!'
+                          : `${percentToWholesale}%`}
+                      </span>
+                    </div>
 
-                  <div className='w-full h-2.5 rounded-full bg-muted overflow-hidden'>
-                    <div
-                      className='h-full bg-gradient-to-r from-[#D4A017] to-amber-400 transition-all duration-500 rounded-full'
-                      style={{ width: `${percentToWholesale}%` }}
-                    />
-                  </div>
+                    <div className='w-full h-2.5 rounded-full bg-muted overflow-hidden'>
+                      <div
+                        className='h-full bg-gradient-to-r from-[#D4A017] to-amber-400 transition-all duration-500 rounded-full'
+                        style={{ width: `${percentToWholesale}%` }}
+                      />
+                    </div>
 
-                  {percentToWholesale >= 100 ? (
-                    <p className='text-[11px] font-bold text-[#D4A017] flex items-center gap-1'>
-                      🎉 ¡Felicitaciones! Superaste los {formatPrice(WHOLESALE_MIN_AMOUNT_ARS)} y
-                      todos tus productos aplican tarifa mayorista.
-                    </p>
-                  ) : (
-                    <p className='text-[11px] text-[#6C757D]'>
-                      Agregá{' '}
-                      <strong className='text-foreground'>
-                        {formatPrice(remainingToWholesale)}
-                      </strong>{' '}
-                      más para desbloquear{' '}
-                      <strong className='text-[#D4A017]'>PRECIO MAYORISTA</strong> en todo tu
-                      pedido.
-                    </p>
-                  )}
-                </div>
+                    {percentToWholesale >= 100 ? (
+                      <p className='text-[11px] font-bold text-[#D4A017] flex items-center gap-1'>
+                        🎉 ¡Felicitaciones! Superaste los {formatPrice(WHOLESALE_MIN_AMOUNT_ARS)} y
+                        todos tus productos aplican tarifa mayorista.
+                      </p>
+                    ) : (
+                      <p className='text-[11px] text-[#6C757D]'>
+                        Agregá{' '}
+                        <strong className='text-foreground'>
+                          {formatPrice(remainingToWholesale)}
+                        </strong>{' '}
+                        más para desbloquear{' '}
+                        <strong className='text-[#D4A017]'>PRECIO MAYORISTA</strong> en todo tu
+                        pedido.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* 2. Banner de Ahorro Mayorista */}
-                {summary.total_savings > 0 && (
+                {STORE_VISIBILITY.showWholesalePrices && summary.total_savings > 0 && (
                   <div className='p-3.5 rounded-xl bg-[#D4A017]/10 border border-[#D4A017]/30 text-[#D4A017] flex items-center gap-2.5 text-xs font-semibold'>
                     <Icons.sparkles className='w-4 h-4 shrink-0 text-[#D4A017]' />
                     <span>
@@ -356,14 +360,16 @@ export function CartDrawer() {
                               <span className='font-mono text-[10px] text-[#6C757D] bg-muted px-1.5 py-0.5 rounded'>
                                 {item.product.sku}
                               </span>
-                              {isWholesale ? (
-                                <span className='text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4A017]/20 text-[#D4A017]'>
-                                  Tarifa Mayorista
-                                </span>
-                              ) : (
-                                <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-[#6C757D]'>
-                                  Tarifa Detal
-                                </span>
+                              {STORE_VISIBILITY.showWholesalePrices && (
+                                isWholesale ? (
+                                  <span className='text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4A017]/20 text-[#D4A017]'>
+                                    Tarifa Mayorista
+                                  </span>
+                                ) : (
+                                  <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-[#6C757D]'>
+                                    Tarifa Detal
+                                  </span>
+                                )
                               )}
                             </div>
                           </div>
@@ -403,7 +409,7 @@ export function CartDrawer() {
                           </div>
 
                           {/* Tip para alcanzar el umbral mayorista */}
-                          {!isWholesale && diffToWholesale > 0 && (
+                          {STORE_VISIBILITY.showWholesalePrices && !isWholesale && diffToWholesale > 0 && (
                             <p className='text-[10px] text-[#D4A017] font-medium mt-1.5'>
                               ⚡ Agrega {diffToWholesale} u. más para pagar{' '}
                               <strong>{formatPrice(item.product.wholesale_price)} c/u</strong>
@@ -714,11 +720,11 @@ export function CartDrawer() {
                   {/* Resumen de Montos */}
                   <div className='space-y-1.5 text-xs'>
                     <div className='flex items-center justify-between text-[#6C757D]'>
-                      <span>Subtotal Minorista</span>
+                      <span>{STORE_VISIBILITY.showWholesalePrices ? 'Subtotal Minorista' : 'Subtotal'}</span>
                       <span>{formatPrice(summary.total_retail)}</span>
                     </div>
 
-                    {summary.total_savings > 0 && (
+                    {STORE_VISIBILITY.showWholesalePrices && summary.total_savings > 0 && (
                       <div className='flex items-center justify-between text-[#D4A017] font-bold'>
                         <span>Ahorro Mayorista Total</span>
                         <span>-{formatPrice(summary.total_savings)}</span>

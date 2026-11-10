@@ -7,6 +7,7 @@ import { Icons } from '@/components/icons';
 import { SearchMatchMetadata } from '@/lib/search-engine';
 import { SearchSidebarFilter } from './search-sidebar-filter';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 
 interface ProductGridProps {
   products: StoreProduct[];
@@ -395,7 +396,9 @@ export function ProductGrid({
                   </span>
                 </h2>
                 <p className="text-xs text-[#6C757D] font-gotham">
-                  Precios oficiales por unidad al detal y por bulto cerrado al mayor.
+                  {STORE_VISIBILITY.showWholesalePrices
+                    ? 'Precios oficiales por unidad al detal y por bulto cerrado al mayor.'
+                    : 'Los mejores precios garantizados en cada categoría.'}
                 </p>
               </div>
 
@@ -423,9 +426,15 @@ export function ProductGrid({
                     className="h-9 px-3 pr-8 rounded-xl border border-border/80 bg-card text-xs font-medium text-foreground focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none cursor-pointer appearance-none"
                   >
                     <option value="popular">Más destacados</option>
-                    <option value="price_asc">Menor precio detal</option>
-                    <option value="price_desc">Mayor precio detal</option>
-                    <option value="wholesale_discount">Mayor ahorro mayorista</option>
+                    <option value="price_asc">
+                      {STORE_VISIBILITY.showWholesalePrices ? 'Menor precio detal' : 'Menor precio'}
+                    </option>
+                    <option value="price_desc">
+                      {STORE_VISIBILITY.showWholesalePrices ? 'Mayor precio detal' : 'Mayor precio'}
+                    </option>
+                    {STORE_VISIBILITY.showWholesalePrices && (
+                      <option value="wholesale_discount">Mayor ahorro mayorista</option>
+                    )}
                     <option value="name_asc">Nombre (A - Z)</option>
                   </select>
                   <Icons.chevronDown className="w-3.5 h-3.5 text-[#6C757D] absolute right-2.5 pointer-events-none" />
@@ -534,7 +543,9 @@ export function ProductGrid({
                 </span>
               </h2>
               <p className="text-xs text-[#6C757D] mt-0.5 font-gotham">
-                Precios con descuento mayorista automático por volumen y PVP para compras al detal.
+                {STORE_VISIBILITY.showWholesalePrices
+                  ? 'Precios con descuento mayorista automático por volumen y PVP para compras al detal.'
+                  : 'Catálogo oficial con los mejores precios directos y stock garantizado.'}
               </p>
             </div>
 
@@ -565,9 +576,15 @@ export function ProductGrid({
                   className="h-9 px-3 pr-8 rounded-xl border border-border/80 bg-card text-xs font-medium text-foreground focus:ring-2 focus:ring-[#E63946]/20 focus:border-[#E63946] outline-none cursor-pointer appearance-none"
                 >
                   <option value="popular">Más destacados</option>
-                  <option value="price_asc">Menor precio detal</option>
-                  <option value="price_desc">Mayor precio detal</option>
-                  <option value="wholesale_discount">Mayor ahorro mayorista</option>
+                  <option value="price_asc">
+                    {STORE_VISIBILITY.showWholesalePrices ? 'Menor precio detal' : 'Menor precio'}
+                  </option>
+                  <option value="price_desc">
+                    {STORE_VISIBILITY.showWholesalePrices ? 'Mayor precio detal' : 'Mayor precio'}
+                  </option>
+                  {STORE_VISIBILITY.showWholesalePrices && (
+                    <option value="wholesale_discount">Mayor ahorro mayorista</option>
+                  )}
                   <option value="name_asc">Nombre (A - Z)</option>
                 </select>
                 <Icons.chevronDown className="w-3.5 h-3.5 text-[#6C757D] absolute right-2.5 pointer-events-none" />

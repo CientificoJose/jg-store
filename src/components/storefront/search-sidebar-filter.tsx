@@ -5,6 +5,7 @@ import { StoreProduct } from '@/types/store';
 import { Icons } from '@/components/icons';
 import { PRODUCT_CATEGORIES } from '@/constants/categories';
 import { useCategories } from '@/hooks/use-categories';
+import { STORE_VISIBILITY } from '@/config/visibility.config';
 
 export interface SearchSidebarFilterProps {
   searchQuery: string;
@@ -255,7 +256,7 @@ export function SearchSidebarFilter({
               </span>
             )}
 
-            {showWholesaleFilter && wholesaleOnly && (
+            {STORE_VISIBILITY.showWholesalePrices && showWholesaleFilter && wholesaleOnly && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-[#D4A017]/15 text-[#D4A017] border border-[#D4A017]/30">
                 <span>Mayorista</span>
                 <button
@@ -339,7 +340,7 @@ export function SearchSidebarFilter({
       )}
 
       {/* Switch 2: Tarifa Mayorista VIP */}
-      {showWholesaleFilter && (
+      {STORE_VISIBILITY.showWholesalePrices && showWholesaleFilter && (
         <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between shadow-2xs">
           <div>
             <span className="text-xs font-bold text-foreground block">
