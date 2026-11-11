@@ -13,9 +13,10 @@ import { Icons } from '@/components/icons';
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ordersQueryOptions } from '@/features/orders/api/queries';
+import { PieGraphSkeleton } from './pie-graph-skeleton';
 
 export function PieGraph() {
-  const { data: ordersData } = useQuery(ordersQueryOptions({ limit: 100 }));
+  const { data: ordersData, isLoading } = useQuery(ordersQueryOptions({ limit: 100 }));
   const orders = ordersData?.orders || [];
 
   const { chartData, chartConfig, hasData, totalOrdersCount } = useMemo(() => {
@@ -112,6 +113,10 @@ export function PieGraph() {
       totalOrdersCount: total
     };
   }, [orders]);
+
+  if (isLoading) {
+    return <PieGraphSkeleton />;
+  }
 
   return (
     <Card className='flex h-full flex-col font-gotham border border-border/80 shadow-xs'>

@@ -13,6 +13,7 @@ import { Icons } from '@/components/icons';
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ordersQueryOptions } from '@/features/orders/api/queries';
+import { BarGraphSkeleton } from './bar-graph-skeleton';
 
 const MONTH_NAMES = [
   'Enero',
@@ -41,7 +42,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function BarGraph() {
-  const { data: ordersData } = useQuery(ordersQueryOptions({ limit: 100 }));
+  const { data: ordersData, isLoading } = useQuery(ordersQueryOptions({ limit: 100 }));
   const orders = ordersData?.orders || [];
 
   const { chartData, totalOps, totalWholesale, totalRetail } = useMemo(() => {
@@ -88,6 +89,10 @@ export function BarGraph() {
       totalRetail: rCount
     };
   }, [orders]);
+
+  if (isLoading) {
+    return <BarGraphSkeleton />;
+  }
 
   return (
     <Card className='font-gotham border border-border/80 shadow-xs'>

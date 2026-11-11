@@ -5,11 +5,16 @@ import { useQuery } from '@tanstack/react-query';
 import { ordersQueryOptions } from '@/features/orders/api/queries';
 import { formatPrice } from '@/lib/whatsapp';
 import { Icons } from '@/components/icons';
+import { RecentSalesSkeleton } from './recent-sales-skeleton';
 import Link from 'next/link';
 
 export function RecentSales() {
   const { data: ordersData, isLoading } = useQuery(ordersQueryOptions({ limit: 5 }));
   const orders = ordersData?.orders || [];
+
+  if (isLoading) {
+    return <RecentSalesSkeleton />;
+  }
 
   return (
     <div className='h-full flex flex-col justify-between font-gotham'>
