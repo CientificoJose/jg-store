@@ -56,7 +56,39 @@ export function StoreFooter({ onResetHome, onSelectBrand }: StoreFooterProps) {
             </div>
           </div>
 
-          {/* Columna 2: Institucional & Empresa (Enlaces directos a /nosotros con scroll a cada sección) */}
+          {/* Columna 2 (Centro): Marcas Oficiales en formato circular */}
+          <div className="md:col-span-5">
+            <h3 className="text-base font-bebas tracking-wide uppercase text-foreground mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#E63946]" />
+              <span>Marcas Oficiales</span>
+            </h3>
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+              {OFFICIAL_BRANDS.map((brand) => (
+                <button
+                  key={brand.id}
+                  type="button"
+                  onClick={() => onSelectBrand?.(brand.name)}
+                  title={`Ver productos de ${brand.name}`}
+                  className={`group relative w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-full overflow-hidden border border-border/80 shadow-xs transition-all duration-200 ${brand.bgClass} ${
+                    onSelectBrand
+                      ? 'cursor-pointer hover:border-[#E63946] hover:scale-110 hover:shadow-md'
+                      : 'cursor-default'
+                  }`}
+                >
+                  <Image
+                    src={brand.image}
+                    alt={brand.name}
+                    fill
+                    className={brand.imgClass}
+                    sizes="52px"
+                    unoptimized
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Columna 3 (Derecha): Institucional & Empresa (Enlaces directos a /nosotros con scroll a cada sección) */}
           <div className="md:col-span-3">
             <h3 className="text-base font-bebas tracking-wide uppercase text-foreground mb-3 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#E63946]" />
@@ -118,38 +150,6 @@ export function StoreFooter({ onResetHome, onSelectBrand }: StoreFooterProps) {
                 </Link>
               </li>
             </ul>
-          </div>
-
-          {/* Columna 3: Marcas Oficiales en formato circular */}
-          <div className="md:col-span-5">
-            <h3 className="text-base font-bebas tracking-wide uppercase text-foreground mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#E63946]" />
-              <span>Marcas Oficiales</span>
-            </h3>
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-              {OFFICIAL_BRANDS.map((brand) => (
-                <button
-                  key={brand.id}
-                  type="button"
-                  onClick={() => onSelectBrand?.(brand.name)}
-                  title={`Ver productos de ${brand.name}`}
-                  className={`group relative w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-full overflow-hidden border border-border/80 shadow-xs transition-all duration-200 ${brand.bgClass} ${
-                    onSelectBrand
-                      ? 'cursor-pointer hover:border-[#E63946] hover:scale-110 hover:shadow-md'
-                      : 'cursor-default'
-                  }`}
-                >
-                  <Image
-                    src={brand.image}
-                    alt={brand.name}
-                    fill
-                    className={brand.imgClass}
-                    sizes="52px"
-                    unoptimized
-                  />
-                </button>
-              ))}
-            </div>
           </div>
 
         </div>
