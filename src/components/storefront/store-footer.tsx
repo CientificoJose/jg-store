@@ -5,18 +5,21 @@ import Link from 'next/link';
 import { Logo } from '@/components/brand/logo';
 import { Icons } from '@/components/icons';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
+import { BrandsStrip } from './brands-strip';
 
 interface StoreFooterProps {
   onSelectCategory?: (slug: string) => void;
   onResetHome?: () => void;
+  onSelectBrand?: (brandName: string) => void;
 }
 
-export function StoreFooter({ onResetHome }: StoreFooterProps) {
+export function StoreFooter({ onResetHome, onSelectBrand }: StoreFooterProps) {
   const general = useStoreConfigStore((s) => s.general);
   const cleanPhone = (general.whatsappNumber || '5491155550000').replace(/[^0-9]/g, '');
 
   return (
     <footer className="w-full bg-card border-t border-border/80 mt-16 font-gotham">
+      <BrandsStrip onSelectBrand={onSelectBrand} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-16">
           

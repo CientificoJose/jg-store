@@ -193,6 +193,18 @@ export function StoreFront() {
     }
   };
 
+  const handleSelectBrand = (brandName: string) => {
+    setSelectedCategory('all');
+    setSelectedSubcategory('all');
+    setSearchQuery(brandName);
+    setTimeout(() => {
+      const gridEl = document.getElementById('catalogo-productos');
+      if (gridEl) {
+        gridEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 50);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-[#E63946] selection:text-white font-gotham transition-colors duration-200">
       {/* Header Fijo */}
@@ -306,6 +318,7 @@ export function StoreFront() {
       <StoreFooter
         onSelectCategory={handleSelectCategory}
         onResetHome={handleResetHome}
+        onSelectBrand={handleSelectBrand}
       />
     </div>
   );
