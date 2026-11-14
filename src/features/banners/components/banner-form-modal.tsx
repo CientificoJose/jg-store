@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { CarouselSlide, CarouselActionType } from '@/types/banner';
+import { CarouselSlide, CarouselActionType, BannerImageFit } from '@/types/banner';
 
 interface BannerFormModalProps {
   isOpen: boolean;
@@ -82,6 +82,11 @@ export function BannerFormModal({
   const [featureInput, setFeatureInput] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [displayOrder, setDisplayOrder] = useState<number>(1);
+  const [hideOverlay, setHideOverlay] = useState(false);
+  const [imageFit, setImageFit] = useState<BannerImageFit>('cover');
+  const [imageScale, setImageScale] = useState<number>(100);
+  const [imagePosX, setImagePosX] = useState<number>(50);
+  const [imagePosY, setImagePosY] = useState<number>(50);
 
   const [categoriesList, setCategoriesList] = useState<{ slug: string; name: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,6 +122,11 @@ export function BannerFormModal({
       setFeatures(Array.isArray(initialData.features) ? initialData.features : []);
       setIsActive(initialData.isActive !== false);
       setDisplayOrder(initialData.displayOrder ?? 1);
+      setHideOverlay(initialData.hideOverlay === true);
+      setImageFit(initialData.imageFit === 'contain' ? 'contain' : 'cover');
+      setImageScale(typeof initialData.imageScale === 'number' ? initialData.imageScale : 100);
+      setImagePosX(typeof initialData.imagePosX === 'number' ? initialData.imagePosX : 50);
+      setImagePosY(typeof initialData.imagePosY === 'number' ? initialData.imagePosY : 50);
     } else {
       // Valores por defecto para nuevo banner
       setTitle('');
@@ -133,6 +143,11 @@ export function BannerFormModal({
       setFeatures(['Stock Inmediato', 'Factura A y B AFIP', 'Despacho Nacional']);
       setIsActive(true);
       setDisplayOrder(1);
+      setHideOverlay(false);
+      setImageFit('cover');
+      setImageScale(100);
+      setImagePosX(50);
+      setImagePosY(50);
     }
   }, [initialData, isOpen]);
 
@@ -200,7 +215,7 @@ export function BannerFormModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
+    if (!hideOverlay && !title.trim()) {
       toast.error('El título principal del banner es obligatorio.');
       return;
     }
@@ -213,11 +228,12 @@ export function BannerFormModal({
     setIsSubmitting(true);
 
     try {
+      const resolvedTitle = title.trim() || 'Banner Promocional';
       const payload: CarouselSlide = {
         id: initialData?.id || `slide-${Date.now()}`,
         tag: tag.trim() || '🔥 NOVEDAD JG STORE',
         tagColor,
-        title: title.trim(),
+        title: resolvedTitle,
         titleAccent: titleAccent.trim(),
         subtitle: subtitle.trim(),
         image: imageUrl.trim(),
@@ -228,7 +244,12 @@ export function BannerFormModal({
         secondaryActionType,
         features,
         isActive,
-        displayOrder: Number(displayOrder) || 1
+        displayOrder: Number(displayOrder) || 1,
+        hideOverlay,
+        imageFit,
+        imageScale,
+        imagePosX,
+        imagePosY
       };
 
       const res = await fetch('/api/banners', {
@@ -263,7 +284,7 @@ export function BannerFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:p-8">
+      <DialogContent className="sm:max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto p-6 sm:p-8">
         <DialogHeader className="pb-3 border-b">
           <DialogTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <span className="p-2 rounded-xl bg-[#E63946]/10 text-[#E63946]">
@@ -272,27 +293,42 @@ export function BannerFormModal({
             <span>{initialData ? 'Editar Slide de Carrusel' : 'Nuevo Slide de Carrusel'}</span>
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Personalizá los textos, colores, imagen y botones de acción del banner principal.
+            Personalizá la imagen, calibrá su tamaño y encuadre, o activá el modo Solo Imagen si tu diseño ya trae textos.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           {/* Vista Previa Interactiva dentro del Modal */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Vista Previa en Vivo
-            </Label>
-            <div className="relative rounded-2xl overflow-hidden border border-border/80 shadow-md bg-neutral-900 min-h-[200px] flex items-center p-6 text-white">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Vista Previa en Vivo (Proporción Tienda)
+              </Label>
+              <span className="text-[11px] font-mono text-muted-foreground">
+                {imageFit === 'contain' ? 'Sin recorte' : 'Llenado completo'} · Zoom {imageScale}% · Pos {imagePosX}% / {imagePosY}%
+              </span>
+            </div>
+            <div className="relative rounded-2xl overflow-hidden border border-border/80 shadow-md bg-neutral-950 min-h-[240px] sm:min-h-[300px] md:min-h-[340px] flex items-center p-6 sm:p-10 text-white">
               {imageUrl ? (
                 <>
                   <Image
                     src={imageUrl}
                     alt={title || 'Vista previa'}
                     fill
-                    className="object-cover object-center"
+                    className={imageFit === 'contain' ? 'object-contain' : 'object-cover'}
+                    style={{
+                      objectPosition: `${imagePosX}% ${imagePosY}%`,
+                      transform: `scale(${imageScale / 100})`,
+                      transformOrigin: `${imagePosX}% ${imagePosY}%`
+                    }}
                     unoptimized
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/30" />
+                  {!hideOverlay && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-neutral-800 text-neutral-400 text-sm">
@@ -300,149 +336,331 @@ export function BannerFormModal({
                 </div>
               )}
 
-              <div className="relative z-10 space-y-2 max-w-lg">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-[11px] font-semibold">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tagColor }} />
-                  <span>{tag || 'TAG PROMOCIONAL'}</span>
-                </div>
-
-                <h3 className="font-bebas text-2xl sm:text-3xl tracking-wide leading-tight text-white drop-shadow-sm">
-                  {title || 'TÍTULO DEL BANNER'}{' '}
-                  {titleAccent && (
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
-                      {titleAccent}
-                    </span>
-                  )}
-                </h3>
-
-                <p className="text-xs text-white/80 line-clamp-2">
-                  {subtitle || 'Subtítulo descriptivo de la promoción o categoría.'}
-                </p>
-
-                {features.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {features.map((f, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1 text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/90 border border-white/15"
-                      >
-                        <Icons.check className="w-2.5 h-2.5 text-[#25D366]" />
-                        {f}
-                      </span>
-                    ))}
+              {!hideOverlay && (
+                <div className="relative z-10 space-y-2.5 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-[11px] font-semibold">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tagColor }} />
+                    <span>{tag || 'TAG PROMOCIONAL'}</span>
                   </div>
-                )}
 
-                <div className="flex items-center gap-2 pt-1 text-xs">
-                  <span className="px-3 py-1.5 rounded-lg bg-[#E63946] font-semibold text-white shadow-sm">
-                    {primaryActionLabel || 'Botón 1'}
-                  </span>
-                  <span className="px-3 py-1.5 rounded-lg bg-white/20 font-semibold text-white border border-white/25">
-                    {secondaryActionLabel || 'Botón 2'}
-                  </span>
+                  <h3 className="font-bebas text-3xl sm:text-4xl tracking-wide leading-tight text-white drop-shadow-sm">
+                    {title || 'TÍTULO DEL BANNER'}{' '}
+                    {titleAccent && (
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
+                        {titleAccent}
+                      </span>
+                    )}
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-white/80 line-clamp-2">
+                    {subtitle || 'Subtítulo descriptivo de la promoción o categoría.'}
+                  </p>
+
+                  {features.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {features.map((f, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/90 border border-white/15"
+                        >
+                          <Icons.check className="w-2.5 h-2.5 text-[#25D366]" />
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1 text-xs">
+                    <span className="px-3.5 py-1.5 rounded-lg bg-[#E63946] font-semibold text-white shadow-sm">
+                      {primaryActionLabel || 'Botón 1'}
+                    </span>
+                    <span className="px-3.5 py-1.5 rounded-lg bg-white/20 font-semibold text-white border border-white/25">
+                      {secondaryActionLabel || 'Botón 2'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Control Rápido: Modo Solo Imagen + Calibración de Tamaño y Encuadre */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Tarjeta: Modo Solo Imagen */}
+            <div className="lg:col-span-5 p-4 rounded-xl border border-border/80 bg-muted/25 flex flex-col justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="hide-overlay-toggle" className="text-sm font-bold cursor-pointer">
+                    Solo Imagen (Sin letras ni botones)
+                  </Label>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      id="hide-overlay-toggle"
+                      type="checkbox"
+                      checked={hideOverlay}
+                      onChange={(e) => setHideOverlay(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E63946]"></div>
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Activá esta opción si tu banner ya tiene diseño y textos propios en la imagen. Ocultará el título, subtítulo, etiquetas, botones y el fondo oscuro.
+                </p>
+              </div>
+
+              {hideOverlay && (
+                <div className="space-y-3 pt-2 border-t border-border/60">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="banner-title-internal" className="text-xs font-semibold">
+                      Nombre interno en el panel (opcional)
+                    </Label>
+                    <Input
+                      id="banner-title-internal"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Ej: Promo Transferencias 10% OFF"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="btn1-type-only" className="text-xs font-semibold">
+                      Al hacer clic en la imagen del banner
+                    </Label>
+                    <select
+                      id="btn1-type-only"
+                      value={primaryActionType}
+                      onChange={(e) => setPrimaryActionType(e.target.value as CarouselActionType)}
+                      className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="explore">Explorar Catálogo Completo</option>
+                      <option value="category">Ir a Categoría Específica</option>
+                      <option value="wholesale">Activar / Desactivar Modo Mayorista</option>
+                      <option value="whatsapp">Abrir Chat de WhatsApp</option>
+                    </select>
+                  </div>
+                  {primaryActionType === 'category' && (
+                    <select
+                      value={categorySlug}
+                      onChange={(e) => setCategorySlug(e.target.value)}
+                      className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
+                    >
+                      <option value="">-- Seleccionar categoría --</option>
+                      {categoriesList.map((c) => (
+                        <option key={c.slug} value={c.slug}>{c.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Tarjeta: Calibrar Tamaño y Posición de Imagen */}
+            <div className="lg:col-span-7 p-4 rounded-xl border border-border/80 bg-muted/25 space-y-3.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label className="text-sm font-bold flex items-center gap-2">
+                  <Icons.adjustments className="w-4 h-4 text-[#E63946]" />
+                  <span>Calibrar Tamaño y Encuadre de Imagen</span>
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setImageFit('cover');
+                    setImageScale(100);
+                    setImagePosX(50);
+                    setImagePosY(50);
+                  }}
+                  className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  Restablecer
+                </Button>
+              </div>
+
+              {/* Selector de Ajuste */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImageFit('cover')}
+                  className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all cursor-pointer text-left ${
+                    imageFit === 'cover'
+                      ? 'border-[#E63946] bg-[#E63946]/10 text-foreground font-semibold'
+                      : 'border-border bg-background/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Llenar espacio (Recortar si sobra)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageFit('contain')}
+                  className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all cursor-pointer text-left ${
+                    imageFit === 'contain'
+                      ? 'border-[#E63946] bg-[#E63946]/10 text-foreground font-semibold'
+                      : 'border-border bg-background/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Imagen completa (Sin recortar)
+                </button>
+              </div>
+
+              {/* Sliders de Zoom y Posición */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <Label htmlFor="img-scale" className="text-xs font-medium">Tamaño / Zoom</Label>
+                    <span className="font-mono font-semibold text-[#E63946]">{imageScale}%</span>
+                  </div>
+                  <input
+                    id="img-scale"
+                    type="range"
+                    min={50}
+                    max={200}
+                    step={5}
+                    value={imageScale}
+                    onChange={(e) => setImageScale(Number(e.target.value))}
+                    className="w-full accent-[#E63946] cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <Label htmlFor="img-pos-x" className="text-xs font-medium">Posición Horizontal</Label>
+                    <span className="font-mono text-muted-foreground">{imagePosX}%</span>
+                  </div>
+                  <input
+                    id="img-pos-x"
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={imagePosX}
+                    onChange={(e) => setImagePosX(Number(e.target.value))}
+                    className="w-full accent-[#E63946] cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <Label htmlFor="img-pos-y" className="text-xs font-medium">Posición Vertical</Label>
+                    <span className="font-mono text-muted-foreground">{imagePosY}%</span>
+                  </div>
+                  <input
+                    id="img-pos-y"
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={imagePosY}
+                    onChange={(e) => setImagePosY(Number(e.target.value))}
+                    className="w-full accent-[#E63946] cursor-pointer"
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Sección 1: Textos Principales */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="banner-title" className="text-sm font-semibold">
-                Título Principal <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="banner-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ej: COMPRÁ AL MAYOR"
-                className="font-medium uppercase"
-                required
-              />
-              <p className="text-[11px] text-muted-foreground">Aparece en tipografía destacada Bebas Neue.</p>
-            </div>
+          {!hideOverlay && (
+            <>
+              {/* Sección 1: Textos Principales */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="banner-title" className="text-sm font-semibold">
+                    Título Principal <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="banner-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Ej: COMPRÁ AL MAYOR"
+                    className="font-medium uppercase"
+                    required
+                  />
+                  <p className="text-[11px] text-muted-foreground">Aparece en tipografía destacada Bebas Neue.</p>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="banner-title-accent" className="text-sm font-semibold">
-                Texto con Acento / Gradiente
-              </Label>
-              <Input
-                id="banner-title-accent"
-                value={titleAccent}
-                onChange={(e) => setTitleAccent(e.target.value)}
-                placeholder="Ej: DESDE $ 50.000 ARS"
-                className="font-medium text-[#E63946]"
-              />
-              <p className="text-[11px] text-muted-foreground">Se destaca con gradiente multicolor brillante.</p>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="banner-title-accent" className="text-sm font-semibold">
+                    Texto con Acento / Gradiente
+                  </Label>
+                  <Input
+                    id="banner-title-accent"
+                    value={titleAccent}
+                    onChange={(e) => setTitleAccent(e.target.value)}
+                    placeholder="Ej: DESDE $ 50.000 ARS"
+                    className="font-medium text-[#E63946]"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Se destaca con gradiente multicolor brillante.</p>
+                </div>
+              </div>
 
-          {/* Sección 2: Tag & Color */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="banner-tag" className="text-sm font-semibold">
-                Badge / Etiqueta Superior
-              </Label>
-              <Input
-                id="banner-tag"
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-                placeholder="Ej: 🇦🇷 DISTRIBUIDORA POLIRRUBRO • BUENOS AIRES"
-              />
-            </div>
+              {/* Sección 2: Tag & Color */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="banner-tag" className="text-sm font-semibold">
+                    Badge / Etiqueta Superior
+                  </Label>
+                  <Input
+                    id="banner-tag"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
+                    placeholder="Ej: 🇦🇷 DISTRIBUIDORA POLIRRUBRO • BUENOS AIRES"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Color de la Etiqueta</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={tagColor}
-                  onChange={(e) => setTagColor(e.target.value)}
-                  className="w-9 h-9 p-0.5 rounded-lg border border-border cursor-pointer bg-transparent"
-                />
-                <Input
-                  value={tagColor}
-                  onChange={(e) => setTagColor(e.target.value)}
-                  className="w-24 text-xs font-mono"
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Color de la Etiqueta</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={tagColor}
+                      onChange={(e) => setTagColor(e.target.value)}
+                      className="w-9 h-9 p-0.5 rounded-lg border border-border cursor-pointer bg-transparent"
+                    />
+                    <Input
+                      value={tagColor}
+                      onChange={(e) => setTagColor(e.target.value)}
+                      className="w-24 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Chips de Colores Rápidos */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-muted-foreground mr-1">Colores sugeridos:</span>
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setTagColor(c.value)}
+                    className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                      tagColor.toLowerCase() === c.value.toLowerCase()
+                        ? 'border-primary bg-primary/10 font-bold'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.value }} />
+                    <span>{c.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Subtítulo */}
+              <div className="space-y-2">
+                <Label htmlFor="banner-subtitle" className="text-sm font-semibold">
+                  Subtítulo / Descripción
+                </Label>
+                <textarea
+                  id="banner-subtitle"
+                  value={subtitle}
+                  onChange={(e) => setSubtitle(e.target.value)}
+                  rows={2}
+                  placeholder="Desbloqueá tarifas mayoristas en toda tu compra al alcanzar el monto global..."
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Chips de Colores Rápidos */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs text-muted-foreground mr-1">Colores sugeridos:</span>
-            {PRESET_COLORS.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setTagColor(c.value)}
-                className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
-                  tagColor.toLowerCase() === c.value.toLowerCase()
-                    ? 'border-primary bg-primary/10 font-bold'
-                    : 'border-border hover:bg-muted'
-                }`}
-              >
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.value }} />
-                <span>{c.name}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Subtítulo */}
-          <div className="space-y-2">
-            <Label htmlFor="banner-subtitle" className="text-sm font-semibold">
-              Subtítulo / Descripción
-            </Label>
-            <textarea
-              id="banner-subtitle"
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              rows={2}
-              placeholder="Desbloqueá tarifas mayoristas en toda tu compra al alcanzar el monto global..."
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-          </div>
+            </>
+          )}
 
           {/* Sección 3: Imagen del Banner */}
           <div className="space-y-3 p-4 rounded-xl border border-border/70 bg-muted/20">
@@ -544,8 +762,10 @@ export function BannerFormModal({
             </div>
           </div>
 
-          {/* Sección 4: Botones de Acción */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-border/70 bg-muted/20">
+          {!hideOverlay && (
+            <>
+              {/* Sección 4: Botones de Acción */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-border/70 bg-muted/20">
             {/* Botón Principal */}
             <div className="space-y-3">
               <Label className="text-xs font-bold uppercase tracking-wider text-primary">
@@ -666,9 +886,11 @@ export function BannerFormModal({
                     </button>
                   </span>
                 ))}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+            </>
+          )}
 
           {/* Sección 6: Orden y Estado */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">

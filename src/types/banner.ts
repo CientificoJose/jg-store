@@ -1,4 +1,5 @@
 export type CarouselActionType = 'explore' | 'category' | 'wholesale' | 'whatsapp';
+export type BannerImageFit = 'cover' | 'contain';
 
 export interface CarouselSlide {
   id: string;
@@ -16,6 +17,11 @@ export interface CarouselSlide {
   features: string[];
   isActive?: boolean;
   displayOrder?: number;
+  hideOverlay?: boolean;
+  imageFit?: BannerImageFit;
+  imageScale?: number;
+  imagePosX?: number;
+  imagePosY?: number;
 }
 
 export interface BannerDbRow {
@@ -34,6 +40,11 @@ export interface BannerDbRow {
   features: string[] | string;
   is_active: boolean;
   display_order: number;
+  hide_overlay?: boolean;
+  image_fit?: BannerImageFit;
+  image_scale?: number;
+  image_pos_x?: number;
+  image_pos_y?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -65,7 +76,12 @@ export function mapDbRowToSlide(row: BannerDbRow): CarouselSlide {
     secondaryActionType: row.secondary_action_type || 'whatsapp',
     features: parsedFeatures,
     isActive: row.is_active !== false,
-    displayOrder: row.display_order ?? 0
+    displayOrder: row.display_order ?? 0,
+    hideOverlay: row.hide_overlay === true,
+    imageFit: row.image_fit === 'contain' ? 'contain' : 'cover',
+    imageScale: typeof row.image_scale === 'number' ? row.image_scale : 100,
+    imagePosX: typeof row.image_pos_x === 'number' ? row.image_pos_x : 50,
+    imagePosY: typeof row.image_pos_y === 'number' ? row.image_pos_y : 50
   };
 }
 
@@ -85,6 +101,11 @@ export function mapSlideToDbRow(slide: CarouselSlide): BannerDbRow {
     secondary_action_type: slide.secondaryActionType || 'whatsapp',
     features: slide.features || [],
     is_active: slide.isActive !== false,
-    display_order: slide.displayOrder ?? 0
+    display_order: slide.displayOrder ?? 0,
+    hide_overlay: slide.hideOverlay === true,
+    image_fit: slide.imageFit === 'contain' ? 'contain' : 'cover',
+    image_scale: typeof slide.imageScale === 'number' ? slide.imageScale : 100,
+    image_pos_x: typeof slide.imagePosX === 'number' ? slide.imagePosX : 50,
+    image_pos_y: typeof slide.imagePosY === 'number' ? slide.imagePosY : 50
   };
 }

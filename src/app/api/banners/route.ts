@@ -192,9 +192,9 @@ export async function POST(request: NextRequest) {
 
     // Caso 3: Guardar o actualizar un slide individual
     const rawSlide = body as CarouselSlide;
-    if (!rawSlide.title || !rawSlide.image) {
+    if (!rawSlide.image || (!rawSlide.hideOverlay && !rawSlide.title?.trim())) {
       return NextResponse.json(
-        { error: 'El título y la imagen del banner son obligatorios.' },
+        { error: rawSlide.hideOverlay ? 'La imagen del banner es obligatoria.' : 'El título y la imagen del banner son obligatorios.' },
         { status: 400 }
       );
     }
@@ -202,8 +202,14 @@ export async function POST(request: NextRequest) {
     const slideToSave: CarouselSlide = {
       ...rawSlide,
       id: rawSlide.id || `slide-${Date.now()}`,
+      title: rawSlide.title?.trim() || 'Banner Promocional',
       isActive: rawSlide.isActive !== false,
       displayOrder: Number(rawSlide.displayOrder) || 1,
+      hideOverlay: rawSlide.hideOverlay === true,
+      imageFit: rawSlide.imageFit === 'contain' ? 'contain' : 'cover',
+      imageScale: typeof rawSlide.imageScale === 'number' ? rawSlide.imageScale : 100,
+      imagePosX: typeof rawSlide.imagePosX === 'number' ? rawSlide.imagePosX : 50,
+      imagePosY: typeof rawSlide.imagePosY === 'number' ? rawSlide.imagePosY : 50,
       features: Array.isArray(rawSlide.features)
         ? rawSlide.features.filter(Boolean)
         : []

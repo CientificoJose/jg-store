@@ -123,12 +123,21 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
       onTouchEnd={handleTouchEnd}
     >
       {/* Contenedor Principal del Banner */}
-      <div className="relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center">
+      <div
+        className={`relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center bg-neutral-950 ${
+          slide.hideOverlay ? 'cursor-pointer' : ''
+        }`}
+        onClick={() => {
+          if (slide.hideOverlay) {
+            handleAction(slide.primaryActionType, slide.categorySlug);
+          }
+        }}
+      >
         {/* Imágenes de Fondo con Transición Suave */}
         {slides.map((s, idx) => (
           <div
             key={s.id}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+            className={`absolute inset-0 overflow-hidden transition-opacity duration-700 ease-in-out ${
               idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
             }`}
           >
@@ -137,17 +146,27 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
               alt={s.title}
               fill
               priority={idx === 0}
-              className="object-cover object-center"
+              className={s.imageFit === 'contain' ? 'object-contain' : 'object-cover'}
+              style={{
+                objectPosition: `${s.imagePosX ?? 50}% ${s.imagePosY ?? 50}%`,
+                transform: `scale(${(s.imageScale ?? 100) / 100})`,
+                transformOrigin: `${s.imagePosX ?? 50}% ${s.imagePosY ?? 50}%`
+              }}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1280px"
             />
-            {/* Gradientes superpuestos para legibilidad y elegancia */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 md:to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+            {/* Gradientes superpuestos para legibilidad y elegancia (solo si hay texto encima) */}
+            {!s.hideOverlay && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 md:to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+              </>
+            )}
           </div>
         ))}
 
-        {/* Contenido Textual del Slide Activo */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-10 md:py-14 text-white">
+        {/* Contenido Textual del Slide Activo (oculto en modo Solo Imagen) */}
+        {!slide.hideOverlay && (
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-10 md:py-14 text-white">
           <div className="max-w-2xl space-y-4">
             {/* Badge de la Promoción */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-semibold tracking-wide font-gotham shadow-sm">
@@ -217,11 +236,15 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
               )}
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Flecha Anterior (Left Arrow) */}
         <button
-          onClick={prevSlide}
+          onClick={(e) => {
+            e.stopPropagation();
+            prevSlide();
+          }}
           aria-label="Banner anterior"
           className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-[#E63946] backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
         >
@@ -230,7 +253,10 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
 
         {/* Flecha Siguiente (Right Arrow) */}
         <button
-          onClick={nextSlide}
+          onClick={(e) => {
+            e.stopPropagation();
+            nextSlide();
+          }}
           aria-label="Siguiente banner"
           className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-[#E63946] backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
         >
@@ -245,7 +271,10 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
         </div>
 
         {/* Barra de Indicadores / Paginación (Pills en la parte inferior) */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/15">
+        <div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/15"
+          onClick={(e) => e.stopPropagation()}
+        >
           {slides.map((_, idx) => (
             <button
               key={idx}

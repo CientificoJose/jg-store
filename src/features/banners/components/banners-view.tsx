@@ -263,54 +263,63 @@ export function BannersView() {
               src={activeSlide.image}
               alt={activeSlide.title}
               fill
-              className="object-cover object-center transition-all duration-700"
+              className={`${activeSlide.imageFit === 'contain' ? 'object-contain' : 'object-cover'} transition-all duration-700`}
+              style={{
+                objectPosition: `${activeSlide.imagePosX ?? 50}% ${activeSlide.imagePosY ?? 50}%`,
+                transform: `scale(${(activeSlide.imageScale ?? 100) / 100})`,
+                transformOrigin: `${activeSlide.imagePosX ?? 50}% ${activeSlide.imagePosY ?? 50}%`
+              }}
               unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+            {!activeSlide.hideOverlay && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
 
-            <div className="relative z-10 space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-semibold">
-                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: activeSlide.tagColor || '#E63946' }} />
-                <span>{activeSlide.tag}</span>
-              </div>
+                <div className="relative z-10 space-y-3 max-w-2xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-semibold">
+                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: activeSlide.tagColor || '#E63946' }} />
+                    <span>{activeSlide.tag}</span>
+                  </div>
 
-              <h3 className="font-bebas text-3xl sm:text-5xl lg:text-6xl tracking-wide leading-[0.98] drop-shadow-md">
-                {activeSlide.title}{' '}
-                {activeSlide.titleAccent && (
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
-                    {activeSlide.titleAccent}
-                  </span>
-                )}
-              </h3>
+                  <h3 className="font-bebas text-3xl sm:text-5xl lg:text-6xl tracking-wide leading-[0.98] drop-shadow-md">
+                    {activeSlide.title}{' '}
+                    {activeSlide.titleAccent && (
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
+                        {activeSlide.titleAccent}
+                      </span>
+                    )}
+                  </h3>
 
-              <p className="text-xs sm:text-sm text-white/85 max-w-xl line-clamp-2">
-                {activeSlide.subtitle}
-              </p>
+                  <p className="text-xs sm:text-sm text-white/85 max-w-xl line-clamp-2">
+                    {activeSlide.subtitle}
+                  </p>
 
-              {activeSlide.features && activeSlide.features.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  {activeSlide.features.map((f, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center gap-1 text-[11px] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/15 text-white/90"
-                    >
-                      <Icons.check className="w-3 h-3 text-[#25D366]" />
-                      {f}
+                  {activeSlide.features && activeSlide.features.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      {activeSlide.features.map((f, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 text-[11px] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/15 text-white/90"
+                        >
+                          <Icons.check className="w-3 h-3 text-[#25D366]" />
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2.5 pt-2">
+                    <span className="px-5 py-2.5 rounded-xl bg-[#E63946] font-semibold text-xs text-white shadow-lg shadow-[#E63946]/40">
+                      {activeSlide.primaryActionLabel}
                     </span>
-                  ))}
+                    <span className="px-4 py-2.5 rounded-xl bg-white/15 font-semibold text-xs text-white border border-white/30 backdrop-blur-md">
+                      {activeSlide.secondaryActionLabel}
+                    </span>
+                  </div>
                 </div>
-              )}
-
-              <div className="flex flex-wrap items-center gap-2.5 pt-2">
-                <span className="px-5 py-2.5 rounded-xl bg-[#E63946] font-semibold text-xs text-white shadow-lg shadow-[#E63946]/40">
-                  {activeSlide.primaryActionLabel}
-                </span>
-                <span className="px-4 py-2.5 rounded-xl bg-white/15 font-semibold text-xs text-white border border-white/30 backdrop-blur-md">
-                  {activeSlide.secondaryActionLabel}
-                </span>
-              </div>
-            </div>
+              </>
+            )}
 
             <div className="absolute top-4 right-4 hidden sm:flex items-center gap-1 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-mono">
               <span>Slide {previewSlideIdx + 1} de {activeBanners.length}</span>
