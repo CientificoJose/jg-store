@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Logo } from '@/components/brand/logo';
 import { Icons } from '@/components/icons';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
-import { BrandsStrip } from './brands-strip';
+import { OFFICIAL_BRANDS } from './brands-strip';
 
 interface StoreFooterProps {
   onSelectCategory?: (slug: string) => void;
@@ -19,12 +20,11 @@ export function StoreFooter({ onResetHome, onSelectBrand }: StoreFooterProps) {
 
   return (
     <footer className="w-full bg-card border-t border-border/80 mt-16 font-gotham">
-      <BrandsStrip onSelectBrand={onSelectBrand} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10">
           
           {/* Columna 1: JG Store / Pancho Recargas */}
-          <div className="md:col-span-7 space-y-4">
+          <div className="md:col-span-4 space-y-4">
             <Logo size="lg" onClick={onResetHome} />
             <p className="text-xs text-[#6C757D] leading-relaxed">
               {general.footerDescription ||
@@ -57,7 +57,7 @@ export function StoreFooter({ onResetHome, onSelectBrand }: StoreFooterProps) {
           </div>
 
           {/* Columna 2: Institucional & Empresa (Enlaces directos a /nosotros con scroll a cada sección) */}
-          <div className="md:col-span-5">
+          <div className="md:col-span-3">
             <h3 className="text-base font-bebas tracking-wide uppercase text-foreground mb-3 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#E63946]" />
               <span>Nuestra Empresa</span>
@@ -120,6 +120,37 @@ export function StoreFooter({ onResetHome, onSelectBrand }: StoreFooterProps) {
             </ul>
           </div>
 
+          {/* Columna 3: Marcas Oficiales en formato circular */}
+          <div className="md:col-span-5">
+            <h3 className="text-base font-bebas tracking-wide uppercase text-foreground mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#E63946]" />
+              <span>Marcas Oficiales</span>
+            </h3>
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+              {OFFICIAL_BRANDS.map((brand) => (
+                <button
+                  key={brand.id}
+                  type="button"
+                  onClick={() => onSelectBrand?.(brand.name)}
+                  title={`Ver productos de ${brand.name}`}
+                  className={`group relative w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-full overflow-hidden border border-border/80 shadow-xs transition-all duration-200 ${brand.bgClass} ${
+                    onSelectBrand
+                      ? 'cursor-pointer hover:border-[#E63946] hover:scale-110 hover:shadow-md'
+                      : 'cursor-default'
+                  }`}
+                >
+                  <Image
+                    src={brand.image}
+                    alt={brand.name}
+                    fill
+                    className={brand.imgClass}
+                    sizes="52px"
+                    unoptimized
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
 
         </div>
 
