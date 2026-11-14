@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ProductCategory } from '@/constants/categories';
+import { ProductCategory, resolveCategoryOverlay } from '@/constants/categories';
 import { Icons } from '@/components/icons';
 import { useCategories } from '@/hooks/use-categories';
 
@@ -25,6 +25,10 @@ function CategoryCircleItem({
   const [hasError, setHasError] = useState(false);
   const imgSrc = hasError || !cat.imageUrl ? fallbackImage : cat.imageUrl;
   const itemRef = useRef<HTMLButtonElement>(null);
+  const ov = resolveCategoryOverlay(cat);
+  const scale = (cat.imageScale ?? 100) / 100;
+  const posX = cat.imagePosX ?? 50;
+  const posY = cat.imagePosY ?? 50;
 
   useEffect(() => {
     if (isSelected && itemRef.current) {
@@ -36,24 +40,40 @@ function CategoryCircleItem({
     <button
       ref={itemRef}
       onClick={onSelect}
+      title={cat.name}
       className={`shrink-0 flex flex-col items-center gap-2 group cursor-pointer transition-all duration-200 ${
         isSelected ? 'scale-105' : 'hover:scale-105'
       }`}
     >
       <div
-        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 border-2 transition-all overflow-hidden shadow-md ${
-          isSelected
-            ? 'border-[#E63946] ring-4 ring-[#E63946]/25 shadow-lg shadow-[#E63946]/20'
-            : 'border-border/80 hover:border-[#E63946]/60 group-hover:shadow-lg'
+        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full transition-all overflow-hidden ${
+          ov.showRing
+            ? `p-0.5 border-2 shadow-md ${
+                isSelected
+                  ? 'border-[#E63946] ring-4 ring-[#E63946]/25 shadow-lg shadow-[#E63946]/20'
+                  : 'border-border/80 hover:border-[#E63946]/60 group-hover:shadow-lg'
+              }`
+            : ''
         }`}
       >
-        <div className="relative w-full h-full rounded-full overflow-hidden bg-muted/30 flex items-center justify-center">
+        <div
+          className={`relative w-full h-full rounded-full overflow-hidden flex items-center justify-center ${
+            cat.imageFit === 'contain' ? 'bg-white' : 'bg-muted/30'
+          }`}
+        >
           <Image
             src={imgSrc}
             alt={cat.name}
             fill
             sizes="(max-width: 640px) 64px, 80px"
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            className={`${
+              cat.imageFit === 'contain' ? 'object-contain' : 'object-cover'
+            } transition-transform duration-300`}
+            style={{
+              objectPosition: `${posX}% ${posY}%`,
+              transform: `scale(${scale})`,
+              transformOrigin: `${posX}% ${posY}%`
+            }}
             onError={() => {
               setHasError(true);
             }}
@@ -61,16 +81,18 @@ function CategoryCircleItem({
         </div>
       </div>
 
-      <span
-        className={`text-xs text-center max-w-[84px] line-clamp-2 leading-tight font-medium transition-colors ${
-          isSelected
-            ? 'font-bold text-[#E63946]'
-            : 'text-foreground group-hover:text-[#E63946]'
-        }`}
-        title={cat.name}
-      >
-        {cat.name}
-      </span>
+      {ov.showLabel && (
+        <span
+          className={`text-xs text-center max-w-[84px] line-clamp-2 leading-tight font-medium transition-colors ${
+            isSelected
+              ? 'font-bold text-[#E63946]'
+              : 'text-foreground group-hover:text-[#E63946]'
+          }`}
+          title={cat.name}
+        >
+          {cat.name}
+        </span>
+      )}
     </button>
   );
 }

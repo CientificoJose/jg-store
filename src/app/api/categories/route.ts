@@ -45,7 +45,12 @@ export async function POST(request: NextRequest) {
       description = '',
       icon = 'package',
       image_url = '',
-      display_order = 100
+      display_order = 100,
+      imageFit = 'cover',
+      imageScale = 100,
+      imagePosX = 50,
+      imagePosY = 50,
+      overlayConfig = null
     } = body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -89,9 +94,38 @@ export async function POST(request: NextRequest) {
 
     const [savedCategory] = await res.json().catch(() => [payload]);
 
+    // Guardar configuración visual/calibración circular en category_display_settings
+    const stylePayload = {
+      category_slug: slug,
+      image_fit: imageFit === 'contain' ? 'contain' : 'cover',
+      image_scale: typeof imageScale === 'number' ? imageScale : 100,
+      image_pos_x: typeof imagePosX === 'number' ? imagePosX : 50,
+      image_pos_y: typeof imagePosY === 'number' ? imagePosY : 50,
+      overlay_config: overlayConfig || null,
+      updated_at: new Date().toISOString()
+    };
+
+    await fetch(`${SUPABASE_URL}/rest/v1/category_display_settings`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(stylePayload)
+    }).catch(() => {});
+
     return NextResponse.json({
       success: true,
-      category: savedCategory || payload,
+      category: {
+        ...(savedCategory || payload),
+        imageFit: stylePayload.image_fit,
+        imageScale: stylePayload.image_scale,
+        imagePosX: stylePayload.image_pos_x,
+        imagePosY: stylePayload.image_pos_y,
+        overlayConfig: stylePayload.overlay_config
+      },
       message: `Categoría "${cleanName}" guardada exitosamente.`
     });
   } catch (error: any) {

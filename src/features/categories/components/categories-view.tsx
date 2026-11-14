@@ -48,7 +48,12 @@ export function CategoriesView() {
       slug: cat.slug,
       description: cat.description || '',
       icon: cat.icon || 'package',
-      image_url: cat.imageUrl || ''
+      image_url: cat.imageUrl || '',
+      imageFit: cat.imageFit || 'cover',
+      imageScale: cat.imageScale ?? 100,
+      imagePosX: cat.imagePosX ?? 50,
+      imagePosY: cat.imagePosY ?? 50,
+      overlayConfig: cat.overlayConfig || null
     });
     setIsModalOpen(true);
   };

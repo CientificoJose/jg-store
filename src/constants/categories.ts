@@ -1,5 +1,31 @@
 import { SubCategory, SubSubCategory } from '@/types/store';
 
+export type CategoryImageFit = 'cover' | 'contain';
+
+export interface CategoryOverlayConfig {
+  showLabel: boolean;
+  showRing: boolean;
+  showDescription: boolean;
+}
+
+export function resolveCategoryOverlay(
+  cat?: { overlayConfig?: Partial<CategoryOverlayConfig> | null } | null
+): CategoryOverlayConfig {
+  const cfg = cat?.overlayConfig;
+  if (cfg && typeof cfg === 'object') {
+    return {
+      showLabel: cfg.showLabel ?? true,
+      showRing: cfg.showRing ?? true,
+      showDescription: cfg.showDescription ?? true
+    };
+  }
+  return {
+    showLabel: true,
+    showRing: true,
+    showDescription: true
+  };
+}
+
 export interface ProductCategory {
   id: string;
   slug: string;
@@ -10,6 +36,11 @@ export interface ProductCategory {
   isSeasonal?: boolean;
   featured?: boolean;
   subcategories?: SubCategory[];
+  imageFit?: CategoryImageFit;
+  imageScale?: number;
+  imagePosX?: number;
+  imagePosY?: number;
+  overlayConfig?: Partial<CategoryOverlayConfig> | null;
 }
 
 export const PRODUCT_CATEGORIES: ProductCategory[] = [

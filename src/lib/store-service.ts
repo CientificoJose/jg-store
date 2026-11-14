@@ -916,8 +916,34 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
       if (resCats.ok) {
         connectedToSupabase = true;
         const dbCats = await resCats.json();
+        const styleMap = new Map<string, any>();
+
+        try {
+          const resStyles = await fetch(
+            `${SUPABASE_URL}/rest/v1/category_display_settings?select=*`,
+            {
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+              },
+              cache: 'no-store'
+            }
+          );
+          if (resStyles.ok) {
+            const styles = await resStyles.json();
+            if (Array.isArray(styles)) {
+              for (const s of styles) {
+                if (s.category_slug) styleMap.set(s.category_slug, s);
+              }
+            }
+          }
+        } catch {
+          // Ignorar si aún no existe o falla lectura de estilos
+        }
+
         if (Array.isArray(dbCats)) {
           for (const c of dbCats) {
+            const st = styleMap.get(c.slug);
             categoriesMap.set(c.slug, {
               id: c.id,
               slug: c.slug,
@@ -927,7 +953,12 @@ export async function fetchStoreCategories(): Promise<ProductCategory[]> {
               imageUrl:
                 c.image_url ||
                 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&auto=format&fit=crop&q=80',
-              subcategories: []
+              subcategories: [],
+              imageFit: st?.image_fit === 'contain' ? 'contain' : 'cover',
+              imageScale: typeof st?.image_scale === 'number' ? st.image_scale : 100,
+              imagePosX: typeof st?.image_pos_x === 'number' ? st.image_pos_x : 50,
+              imagePosY: typeof st?.image_pos_y === 'number' ? st.image_pos_y : 50,
+              overlayConfig: st?.overlay_config || null
             });
           }
         }

@@ -15,6 +15,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { notifyCategoriesChanged } from '@/hooks/use-categories';
+import {
+  CategoryImageFit,
+  CategoryOverlayConfig,
+  resolveCategoryOverlay
+} from '@/constants/categories';
 
 export interface CategoryFormData {
   id?: string;
@@ -24,6 +29,11 @@ export interface CategoryFormData {
   icon?: string;
   image_url?: string;
   display_order?: number;
+  imageFit?: CategoryImageFit;
+  imageScale?: number;
+  imagePosX?: number;
+  imagePosY?: number;
+  overlayConfig?: Partial<CategoryOverlayConfig> | null;
 }
 
 interface CategoryFormModalProps {
@@ -81,8 +91,32 @@ export function CategoryFormModal({
   const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [localFilePreview, setLocalFilePreview] = useState<string | null>(null);
+  const [imageFit, setImageFit] = useState<CategoryImageFit>('cover');
+  const [imageScale, setImageScale] = useState<number>(100);
+  const [imagePosX, setImagePosX] = useState<number>(50);
+  const [imagePosY, setImagePosY] = useState<number>(50);
+  const [overlayConfig, setOverlayConfig] = useState<CategoryOverlayConfig>({
+    showLabel: true,
+    showRing: true,
+    showDescription: true
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleOverlayLayer = (key: keyof CategoryOverlayConfig) => {
+    setOverlayConfig((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const setAllOverlayLayers = (visible: boolean) => {
+    setOverlayConfig({
+      showLabel: visible,
+      showRing: visible,
+      showDescription: visible
+    });
+  };
+
+  const allOverlayHidden = !Object.values(overlayConfig).some(Boolean);
+  const allOverlayVisible = Object.values(overlayConfig).every(Boolean);
 
   useEffect(() => {
     if (initialData) {
@@ -91,6 +125,11 @@ export function CategoryFormModal({
       setDescription(initialData.description || '');
       setIcon(initialData.icon || 'package');
       setImageUrl(initialData.image_url || '');
+      setImageFit(initialData.imageFit === 'contain' ? 'contain' : 'cover');
+      setImageScale(typeof initialData.imageScale === 'number' ? initialData.imageScale : 100);
+      setImagePosX(typeof initialData.imagePosX === 'number' ? initialData.imagePosX : 50);
+      setImagePosY(typeof initialData.imagePosY === 'number' ? initialData.imagePosY : 50);
+      setOverlayConfig(resolveCategoryOverlay(initialData));
       setLocalFilePreview(null);
       setSelectedFile(null);
     } else {
@@ -99,6 +138,11 @@ export function CategoryFormModal({
       setDescription('');
       setIcon('package');
       setImageUrl('');
+      setImageFit('cover');
+      setImageScale(100);
+      setImagePosX(50);
+      setImagePosY(50);
+      setAllOverlayLayers(true);
       setLocalFilePreview(null);
       setSelectedFile(null);
     }
@@ -163,7 +207,12 @@ export function CategoryFormModal({
         slug: slug || toSlug(name),
         description: description.trim(),
         icon,
-        image_url: finalImageUrl
+        image_url: finalImageUrl,
+        imageFit,
+        imageScale,
+        imagePosX,
+        imagePosY,
+        overlayConfig
       };
 
       const res = await fetch('/api/categories', {
@@ -190,7 +239,7 @@ export function CategoryFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl bg-card border-border shadow-2xl p-0 overflow-hidden font-gotham">
+      <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[92vh] overflow-y-auto bg-card border-border shadow-2xl p-0 font-gotham">
         <DialogHeader className="p-6 pb-4 border-b border-border/60 bg-muted/20">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#E63946] animate-pulse" />
@@ -255,21 +304,37 @@ export function CategoryFormModal({
             </div>
 
             {/* COLUMNA DERECHA (1/3): PREVIEW CIRCULAR EN TIEMPO REAL */}
-            <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-border/80 bg-muted/20 text-center">
+            <div className="flex flex-col items-center justify-center p-5 rounded-xl border border-border/80 bg-muted/20 text-center">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
                 Previsualización en Tienda
               </span>
 
               {/* Círculo idéntico a CategoryCircleItem de la tienda */}
-              <div className="relative w-20 h-20 rounded-full p-0.5 border-2 border-[#E63946] shadow-lg shadow-[#E63946]/20 ring-4 ring-[#E63946]/20 transition-all overflow-hidden flex items-center justify-center">
-                <div className="relative w-full h-full rounded-full overflow-hidden bg-muted/50 flex items-center justify-center">
+              <div
+                className={`relative w-24 h-24 rounded-full transition-all overflow-hidden flex items-center justify-center ${
+                  overlayConfig.showRing
+                    ? 'p-0.5 border-2 border-[#E63946] shadow-lg shadow-[#E63946]/20 ring-4 ring-[#E63946]/20'
+                    : ''
+                }`}
+              >
+                <div
+                  className={`relative w-full h-full rounded-full overflow-hidden flex items-center justify-center ${
+                    imageFit === 'contain' ? 'bg-white' : 'bg-muted/50'
+                  }`}
+                >
                   {previewSrc ? (
                     <Image
                       src={previewSrc}
                       alt={name || 'Vista previa'}
                       fill
-                      sizes="80px"
-                      className="object-cover"
+                      sizes="96px"
+                      className={imageFit === 'contain' ? 'object-contain' : 'object-cover'}
+                      style={{
+                        objectPosition: `${imagePosX}% ${imagePosY}%`,
+                        transform: `scale(${imageScale / 100})`,
+                        transformOrigin: `${imagePosX}% ${imagePosY}%`
+                      }}
+                      unoptimized
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[#E63946] to-[#D4A017] flex items-center justify-center text-white">
@@ -280,9 +345,11 @@ export function CategoryFormModal({
               </div>
 
               {/* Nombre debajo del círculo */}
-              <span className="text-xs font-bold text-foreground mt-2 max-w-[100px] line-clamp-2 leading-tight">
-                {name || 'Nombre aquí'}
-              </span>
+              {overlayConfig.showLabel && (
+                <span className="text-xs font-bold text-foreground mt-2.5 max-w-[140px] line-clamp-2 leading-tight">
+                  {name || 'Nombre aquí'}
+                </span>
+              )}
 
               {previewSrc && (
                 <button
@@ -292,15 +359,191 @@ export function CategoryFormModal({
                     setLocalFilePreview(null);
                     setSelectedFile(null);
                   }}
-                  className="mt-1.5 text-[10px] text-destructive hover:underline font-semibold cursor-pointer"
+                  className="mt-2 text-[11px] text-destructive hover:underline font-semibold cursor-pointer"
                 >
                   ✕ Quitar foto
                 </button>
               )}
 
-              <span className="text-[10px] text-muted-foreground mt-1">
-                Explorar Departamentos
+              <span className="text-[10px] text-muted-foreground mt-1.5 font-mono">
+                {imageFit === 'contain' ? 'Sin recorte' : 'Llenado'} · {imageScale}% · {imagePosX}%/{imagePosY}%
               </span>
+            </div>
+          </div>
+
+          {/* PANEL DE VISIBILIDAD + CALIBRACIÓN CIRCULAR */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Tarjeta: Visibilidad de Capas (Quitar Todo / Mostrar Todo y Uno por Uno) */}
+            <div className="lg:col-span-5 p-4 rounded-xl border border-border/80 bg-muted/20 flex flex-col justify-between gap-3">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <Label className="text-xs font-bold flex items-center gap-1.5">
+                    <Icons.adjustments className="w-4 h-4 text-[#E63946]" />
+                    <span>Elementos Visibles</span>
+                  </Label>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={allOverlayHidden ? 'default' : 'outline'}
+                      onClick={() => setAllOverlayLayers(false)}
+                      className={`h-7 px-2.5 text-[11px] cursor-pointer ${
+                        allOverlayHidden ? 'bg-[#E63946] hover:bg-[#d62839] text-white' : ''
+                      }`}
+                    >
+                      Quitar Todo
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={allOverlayVisible ? 'default' : 'outline'}
+                      onClick={() => setAllOverlayLayers(true)}
+                      className={`h-7 px-2.5 text-[11px] cursor-pointer ${
+                        allOverlayVisible ? 'bg-[#25D366] hover:bg-[#1ebe5d] text-white' : ''
+                      }`}
+                    >
+                      Mostrar Todo
+                    </Button>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Ocultá el nombre o el anillo rojo uno por uno (sin borrar datos) o usá <strong>Quitar Todo</strong> para dejar solo la imagen circular.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-1.5 pt-1">
+                  {(
+                    [
+                      { key: 'showLabel', label: 'Nombre debajo del círculo' },
+                      { key: 'showRing', label: 'Anillo / Borde resaltado rojo' },
+                      { key: 'showDescription', label: 'Descripción en vitrina' }
+                    ] as { key: keyof CategoryOverlayConfig; label: string }[]
+                  ).map((item) => {
+                    const active = overlayConfig[item.key];
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => toggleOverlayLayer(item.key)}
+                        className={`flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border text-xs transition-all cursor-pointer ${
+                          active
+                            ? 'border-[#25D366]/60 bg-[#25D366]/10 text-foreground font-medium'
+                            : 'border-border/70 bg-background/40 text-muted-foreground opacity-75 hover:opacity-100'
+                        }`}
+                      >
+                        <span className="truncate">{item.label}</span>
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            active ? 'bg-[#25D366]' : 'bg-muted-foreground/40'
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjeta: Calibrar Tamaño y Encuadre Circular */}
+            <div className="lg:col-span-7 p-4 rounded-xl border border-border/80 bg-muted/20 space-y-3.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label className="text-xs font-bold flex items-center gap-1.5">
+                  <Icons.adjustments className="w-4 h-4 text-[#E63946]" />
+                  <span>Calibrar Tamaño y Encuadre del Círculo</span>
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setImageFit('cover');
+                    setImageScale(100);
+                    setImagePosX(50);
+                    setImagePosY(50);
+                  }}
+                  className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  Restablecer
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImageFit('cover')}
+                  className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all cursor-pointer text-left ${
+                    imageFit === 'cover'
+                      ? 'border-[#E63946] bg-[#E63946]/10 text-foreground font-semibold'
+                      : 'border-border bg-background/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Llenar círculo (Recortar)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageFit('contain')}
+                  className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all cursor-pointer text-left ${
+                    imageFit === 'contain'
+                      ? 'border-[#E63946] bg-[#E63946]/10 text-foreground font-semibold'
+                      : 'border-border bg-background/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Imagen completa (Sin recortar)
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <Label htmlFor="cat-img-scale" className="text-xs font-medium">Tamaño / Zoom</Label>
+                    <span className="font-mono font-semibold text-[#E63946]">{imageScale}%</span>
+                  </div>
+                  <input
+                    id="cat-img-scale"
+                    type="range"
+                    min={50}
+                    max={200}
+                    step={5}
+                    value={imageScale}
+                    onChange={(e) => setImageScale(Number(e.target.value))}
+                    className="w-full accent-[#E63946] cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <Label htmlFor="cat-img-pos-x" className="text-xs font-medium">Posición Horiz.</Label>
+                    <span className="font-mono text-muted-foreground">{imagePosX}%</span>
+                  </div>
+                  <input
+                    id="cat-img-pos-x"
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={imagePosX}
+                    onChange={(e) => setImagePosX(Number(e.target.value))}
+                    className="w-full accent-[#E63946] cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <Label htmlFor="cat-img-pos-y" className="text-xs font-medium">Posición Vert.</Label>
+                    <span className="font-mono text-muted-foreground">{imagePosY}%</span>
+                  </div>
+                  <input
+                    id="cat-img-pos-y"
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={imagePosY}
+                    onChange={(e) => setImagePosY(Number(e.target.value))}
+                    className="w-full accent-[#E63946] cursor-pointer"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -395,7 +638,7 @@ export function CategoryFormModal({
           {/* SELECTOR DE ICONO */}
           <div>
             <Label className="text-xs font-bold mb-2 block">Icono Representativo</Label>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
               {ICON_OPTIONS.map((opt) => {
                 const IconComponent = opt.icon;
                 const isSelected = icon === opt.id;
