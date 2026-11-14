@@ -19,7 +19,8 @@ interface PromoCarouselProps {
 }
 
 export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarouselProps) {
-  const [slides, setSlides] = useState<CarouselSlide[]>(SLIDES);
+  const [slides, setSlides] = useState<CarouselSlide[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const { wholesaleMode, toggleWholesaleMode } = useCartStore();
@@ -32,10 +33,15 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           setSlides(data);
+          return;
         }
       }
+      setSlides((prev) => (prev.length > 0 ? prev : SLIDES));
     } catch {
-      // Fallback silencioso a las diapositivas locales
+      // Fallback silencioso a las diapositivas locales solo si falla la red
+      setSlides((prev) => (prev.length > 0 ? prev : SLIDES));
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -112,6 +118,56 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
     touchStartX.current = null;
   };
 
+  if (isLoading || slides.length === 0) {
+    return (
+      <div className="relative w-full overflow-hidden rounded-2xl md:rounded-3xl border border-border/60 shadow-xl bg-card/40 backdrop-blur-md">
+        <div className="relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center overflow-hidden">
+          {/* Resplandor ambiental sutil */}
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-[#E63946]/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-[#D4A017]/10 blur-3xl pointer-events-none" />
+
+          {/* Isotipo fantasma JG Store en marca de agua */}
+          <div className="absolute right-8 sm:right-14 bottom-8 w-28 h-28 sm:w-36 sm:h-36 opacity-[0.06] dark:opacity-[0.09] pointer-events-none animate-pulse">
+            <Image
+              src="/icon.png"
+              alt="JG Store"
+              width={144}
+              height={144}
+              className="w-full h-full object-contain grayscale"
+              unoptimized
+            />
+          </div>
+
+          {/* Esqueleto transparente pulsante */}
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-10 md:py-14">
+            <div className="max-w-xl space-y-4">
+              <div className="h-6 w-48 rounded-full bg-muted/50 border border-border/40 animate-pulse" />
+              <div className="space-y-2.5">
+                <div className="h-10 sm:h-14 w-3/4 rounded-xl bg-muted/50 animate-pulse" />
+                <div className="h-10 sm:h-14 w-1/2 rounded-xl bg-muted/40 animate-pulse" />
+              </div>
+              <div className="space-y-2 pt-1">
+                <div className="h-4 w-full max-w-md rounded-md bg-muted/40 animate-pulse" />
+                <div className="h-4 w-2/3 max-w-sm rounded-md bg-muted/30 animate-pulse" />
+              </div>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="h-11 w-40 rounded-xl bg-[#E63946]/25 border border-[#E63946]/20 animate-pulse" />
+                <div className="h-11 w-44 rounded-xl bg-muted/40 border border-border/40 animate-pulse" />
+              </div>
+            </div>
+          </div>
+
+          {/* Paginación fantasma inferior */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/40 border border-border/40">
+            <div className="h-2 w-8 rounded-full bg-[#E63946]/40 animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30 animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/30 animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const slide = slides[currentSlide] || slides[0] || SLIDES[0];
   const ov = resolveBannerOverlay(slide);
   const hasAnyContent =
@@ -132,7 +188,7 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
     >
       {/* Contenedor Principal del Banner */}
       <div
-        className={`relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center bg-neutral-950 ${
+        className={`relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center bg-card/30 backdrop-blur-xs ${
           !hasAnyContent ? 'cursor-pointer' : ''
         }`}
         onClick={() => {
