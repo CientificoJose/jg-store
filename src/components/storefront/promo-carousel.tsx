@@ -8,7 +8,7 @@ import { JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
 import { STORE_VISIBILITY } from '@/config/visibility.config';
 
 export { type CarouselSlide } from '@/types/banner';
-import { type CarouselSlide } from '@/types/banner';
+import { type CarouselSlide, resolveBannerOverlay } from '@/types/banner';
 import { FALLBACK_SLIDES } from '@/app/api/banners/route';
 
 export const SLIDES: CarouselSlide[] = FALLBACK_SLIDES;
@@ -113,6 +113,14 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
   };
 
   const slide = slides[currentSlide] || slides[0] || SLIDES[0];
+  const ov = resolveBannerOverlay(slide);
+  const hasAnyContent =
+    ov.showTag ||
+    ov.showTitle ||
+    ov.showSubtitle ||
+    (ov.showFeatures && slide.features.length > 0) ||
+    ov.showPrimaryBtn ||
+    ov.showSecondaryBtn;
 
   return (
     <div
@@ -125,117 +133,135 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
       {/* Contenedor Principal del Banner */}
       <div
         className={`relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center bg-neutral-950 ${
-          slide.hideOverlay ? 'cursor-pointer' : ''
+          !hasAnyContent ? 'cursor-pointer' : ''
         }`}
         onClick={() => {
-          if (slide.hideOverlay) {
+          if (!hasAnyContent) {
             handleAction(slide.primaryActionType, slide.categorySlug);
           }
         }}
       >
         {/* Imágenes de Fondo con Transición Suave */}
-        {slides.map((s, idx) => (
-          <div
-            key={s.id}
-            className={`absolute inset-0 overflow-hidden transition-opacity duration-700 ease-in-out ${
-              idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            <Image
-              src={s.image}
-              alt={s.title}
-              fill
-              priority={idx === 0}
-              className={s.imageFit === 'contain' ? 'object-contain' : 'object-cover'}
-              style={{
-                objectPosition: `${s.imagePosX ?? 50}% ${s.imagePosY ?? 50}%`,
-                transform: `scale(${(s.imageScale ?? 100) / 100})`,
-                transformOrigin: `${s.imagePosX ?? 50}% ${s.imagePosY ?? 50}%`
-              }}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1280px"
-            />
-            {/* Gradientes superpuestos para legibilidad y elegancia (solo si hay texto encima) */}
-            {!s.hideOverlay && (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 md:to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-              </>
-            )}
-          </div>
-        ))}
+        {slides.map((s, idx) => {
+          const slideOv = resolveBannerOverlay(s);
+          return (
+            <div
+              key={s.id}
+              className={`absolute inset-0 overflow-hidden transition-opacity duration-700 ease-in-out ${
+                idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <Image
+                src={s.image}
+                alt={s.title}
+                fill
+                priority={idx === 0}
+                className={s.imageFit === 'contain' ? 'object-contain' : 'object-cover'}
+                style={{
+                  objectPosition: `${s.imagePosX ?? 50}% ${s.imagePosY ?? 50}%`,
+                  transform: `scale(${(s.imageScale ?? 100) / 100})`,
+                  transformOrigin: `${s.imagePosX ?? 50}% ${s.imagePosY ?? 50}%`
+                }}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1280px"
+              />
+              {/* Gradientes superpuestos para legibilidad y elegancia */}
+              {slideOv.showShadow && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 md:to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+                </>
+              )}
+            </div>
+          );
+        })}
 
-        {/* Contenido Textual del Slide Activo (oculto en modo Solo Imagen) */}
-        {!slide.hideOverlay && (
+        {/* Contenido Textual del Slide Activo */}
+        {hasAnyContent && (
           <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-10 md:py-14 text-white">
-          <div className="max-w-2xl space-y-4">
-            {/* Badge de la Promoción */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-semibold tracking-wide font-gotham shadow-sm">
-              <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: slide.tagColor || '#E63946' }} />
-              <span className="text-white/95">{slide.tag}</span>
-            </div>
-
-            {/* Título en Bebas Neue */}
-            <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-wide leading-[0.98] drop-shadow-md">
-              {slide.title}{' '}
-              {slide.titleAccent && (
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
-                  {slide.titleAccent}
-                </span>
+            <div className="max-w-2xl space-y-4">
+              {/* Badge de la Promoción */}
+              {ov.showTag && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-semibold tracking-wide font-gotham shadow-sm">
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: slide.tagColor || '#E63946' }} />
+                  <span className="text-white/95">{slide.tag}</span>
+                </div>
               )}
-            </h2>
 
-            {/* Subtítulo */}
-            <p className="text-xs sm:text-sm md:text-base text-white/85 font-gotham leading-relaxed max-w-xl drop-shadow-xs">
-              {slide.subtitle}
-            </p>
-
-            {/* Lista de Beneficios del Slide */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 pb-2">
-              {slide.features.map((feat, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium bg-white/10 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-white/15 text-white/90"
-                >
-                  <Icons.check className="w-3 h-3 text-[#25D366]" />
-                  {feat}
-                </span>
-              ))}
-            </div>
-
-            {/* Botones de Acción Interactivos */}
-            <div className="pt-2 flex flex-wrap items-center gap-3 font-gotham">
-              <button
-                onClick={() => handleAction(slide.primaryActionType, slide.categorySlug)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs sm:text-sm shadow-lg shadow-[#E63946]/40 hover:shadow-xl hover:shadow-[#E63946]/50 transition-all cursor-pointer transform hover:-translate-y-0.5"
-              >
-                <Icons.product className="w-4 h-4" />
-                <span>{slide.primaryActionLabel}</span>
-              </button>
-
-              {(!slide.secondaryActionType || slide.secondaryActionType !== 'wholesale' || STORE_VISIBILITY.showWholesalePrices) && (
-                <button
-                  onClick={() => handleAction(slide.secondaryActionType, slide.categorySlug)}
-                  className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-xs sm:text-sm backdrop-blur-md border transition-all cursor-pointer transform hover:-translate-y-0.5 ${
-                    slide.secondaryActionType === 'wholesale' && wholesaleMode
-                      ? 'bg-[#D4A017] border-[#D4A017] text-black font-bold shadow-lg shadow-[#D4A017]/30'
-                      : 'bg-white/15 hover:bg-white/25 border-white/30 text-white'
-                  }`}
-                >
-                  {slide.secondaryActionType === 'wholesale' ? (
-                    <>
-                      <Icons.tags className="w-4 h-4" />
-                      <span>{wholesaleMode ? '✓ Tarifa Mayorista Activa' : slide.secondaryActionLabel}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Icons.whatsapp className="w-4 h-4 text-[#25D366] fill-current" />
-                      <span>{slide.secondaryActionLabel}</span>
-                    </>
+              {/* Título en Bebas Neue */}
+              {ov.showTitle && (
+                <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-wide leading-[0.98] drop-shadow-md">
+                  {slide.title}{' '}
+                  {slide.titleAccent && (
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
+                      {slide.titleAccent}
+                    </span>
                   )}
-                </button>
+                </h2>
+              )}
+
+              {/* Subtítulo */}
+              {ov.showSubtitle && (
+                <p className="text-xs sm:text-sm md:text-base text-white/85 font-gotham leading-relaxed max-w-xl drop-shadow-xs">
+                  {slide.subtitle}
+                </p>
+              )}
+
+              {/* Lista de Beneficios del Slide */}
+              {ov.showFeatures && slide.features.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 pb-2">
+                  {slide.features.map((feat, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium bg-white/10 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-white/15 text-white/90"
+                    >
+                      <Icons.check className="w-3 h-3 text-[#25D366]" />
+                      {feat}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Botones de Acción Interactivos */}
+              {(ov.showPrimaryBtn || ov.showSecondaryBtn) && (
+                <div className="pt-2 flex flex-wrap items-center gap-3 font-gotham">
+                  {ov.showPrimaryBtn && (
+                    <button
+                      onClick={() => handleAction(slide.primaryActionType, slide.categorySlug)}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs sm:text-sm shadow-lg shadow-[#E63946]/40 hover:shadow-xl hover:shadow-[#E63946]/50 transition-all cursor-pointer transform hover:-translate-y-0.5"
+                    >
+                      <Icons.product className="w-4 h-4" />
+                      <span>{slide.primaryActionLabel}</span>
+                    </button>
+                  )}
+
+                  {ov.showSecondaryBtn &&
+                    (!slide.secondaryActionType ||
+                      slide.secondaryActionType !== 'wholesale' ||
+                      STORE_VISIBILITY.showWholesalePrices) && (
+                      <button
+                        onClick={() => handleAction(slide.secondaryActionType, slide.categorySlug)}
+                        className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-xs sm:text-sm backdrop-blur-md border transition-all cursor-pointer transform hover:-translate-y-0.5 ${
+                          slide.secondaryActionType === 'wholesale' && wholesaleMode
+                            ? 'bg-[#D4A017] border-[#D4A017] text-black font-bold shadow-lg shadow-[#D4A017]/30'
+                            : 'bg-white/15 hover:bg-white/25 border-white/30 text-white'
+                        }`}
+                      >
+                        {slide.secondaryActionType === 'wholesale' ? (
+                          <>
+                            <Icons.tags className="w-4 h-4" />
+                            <span>{wholesaleMode ? '✓ Tarifa Mayorista Activa' : slide.secondaryActionLabel}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Icons.whatsapp className="w-4 h-4 text-[#25D366] fill-current" />
+                            <span>{slide.secondaryActionLabel}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                </div>
               )}
             </div>
-          </div>
           </div>
         )}
 

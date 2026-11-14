@@ -192,9 +192,11 @@ export async function POST(request: NextRequest) {
 
     // Caso 3: Guardar o actualizar un slide individual
     const rawSlide = body as CarouselSlide;
-    if (!rawSlide.image || (!rawSlide.hideOverlay && !rawSlide.title?.trim())) {
+    const titleRequired =
+      !rawSlide.hideOverlay && (rawSlide.overlayConfig?.showTitle ?? true);
+    if (!rawSlide.image || (titleRequired && !rawSlide.title?.trim())) {
       return NextResponse.json(
-        { error: rawSlide.hideOverlay ? 'La imagen del banner es obligatoria.' : 'El título y la imagen del banner son obligatorios.' },
+        { error: titleRequired ? 'El título y la imagen del banner son obligatorios.' : 'La imagen del banner es obligatoria.' },
         { status: 400 }
       );
     }
@@ -206,6 +208,7 @@ export async function POST(request: NextRequest) {
       isActive: rawSlide.isActive !== false,
       displayOrder: Number(rawSlide.displayOrder) || 1,
       hideOverlay: rawSlide.hideOverlay === true,
+      overlayConfig: rawSlide.overlayConfig || null,
       imageFit: rawSlide.imageFit === 'contain' ? 'contain' : 'cover',
       imageScale: typeof rawSlide.imageScale === 'number' ? rawSlide.imageScale : 100,
       imagePosX: typeof rawSlide.imagePosX === 'number' ? rawSlide.imagePosX : 50,

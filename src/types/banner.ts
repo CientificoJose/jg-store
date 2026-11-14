@@ -1,6 +1,44 @@
 export type CarouselActionType = 'explore' | 'category' | 'wholesale' | 'whatsapp';
 export type BannerImageFit = 'cover' | 'contain';
 
+export interface BannerOverlayConfig {
+  showShadow: boolean;
+  showTag: boolean;
+  showTitle: boolean;
+  showSubtitle: boolean;
+  showFeatures: boolean;
+  showPrimaryBtn: boolean;
+  showSecondaryBtn: boolean;
+}
+
+export function resolveBannerOverlay(
+  slide: Pick<CarouselSlide, 'hideOverlay' | 'overlayConfig'>
+): BannerOverlayConfig {
+  const allOff = slide.hideOverlay === true;
+  const cfg = slide.overlayConfig;
+  if (cfg && typeof cfg === 'object') {
+    return {
+      showShadow: cfg.showShadow ?? !allOff,
+      showTag: cfg.showTag ?? !allOff,
+      showTitle: cfg.showTitle ?? !allOff,
+      showSubtitle: cfg.showSubtitle ?? !allOff,
+      showFeatures: cfg.showFeatures ?? !allOff,
+      showPrimaryBtn: cfg.showPrimaryBtn ?? !allOff,
+      showSecondaryBtn: cfg.showSecondaryBtn ?? !allOff
+    };
+  }
+  const def = !allOff;
+  return {
+    showShadow: def,
+    showTag: def,
+    showTitle: def,
+    showSubtitle: def,
+    showFeatures: def,
+    showPrimaryBtn: def,
+    showSecondaryBtn: def
+  };
+}
+
 export interface CarouselSlide {
   id: string;
   tag: string;
@@ -18,6 +56,7 @@ export interface CarouselSlide {
   isActive?: boolean;
   displayOrder?: number;
   hideOverlay?: boolean;
+  overlayConfig?: Partial<BannerOverlayConfig> | null;
   imageFit?: BannerImageFit;
   imageScale?: number;
   imagePosX?: number;
@@ -41,6 +80,7 @@ export interface BannerDbRow {
   is_active: boolean;
   display_order: number;
   hide_overlay?: boolean;
+  overlay_config?: Partial<BannerOverlayConfig> | string | null;
   image_fit?: BannerImageFit;
   image_scale?: number;
   image_pos_x?: number;
@@ -61,6 +101,17 @@ export function mapDbRowToSlide(row: BannerDbRow): CarouselSlide {
     }
   }
 
+  let parsedOverlay: Partial<BannerOverlayConfig> | null = null;
+  if (row.overlay_config && typeof row.overlay_config === 'object') {
+    parsedOverlay = row.overlay_config;
+  } else if (typeof row.overlay_config === 'string') {
+    try {
+      parsedOverlay = JSON.parse(row.overlay_config);
+    } catch {
+      parsedOverlay = null;
+    }
+  }
+
   return {
     id: row.id,
     tag: row.tag || '',
@@ -78,6 +129,7 @@ export function mapDbRowToSlide(row: BannerDbRow): CarouselSlide {
     isActive: row.is_active !== false,
     displayOrder: row.display_order ?? 0,
     hideOverlay: row.hide_overlay === true,
+    overlayConfig: parsedOverlay,
     imageFit: row.image_fit === 'contain' ? 'contain' : 'cover',
     imageScale: typeof row.image_scale === 'number' ? row.image_scale : 100,
     imagePosX: typeof row.image_pos_x === 'number' ? row.image_pos_x : 50,
@@ -103,6 +155,7 @@ export function mapSlideToDbRow(slide: CarouselSlide): BannerDbRow {
     is_active: slide.isActive !== false,
     display_order: slide.displayOrder ?? 0,
     hide_overlay: slide.hideOverlay === true,
+    overlay_config: slide.overlayConfig || null,
     image_fit: slide.imageFit === 'contain' ? 'contain' : 'cover',
     image_scale: typeof slide.imageScale === 'number' ? slide.imageScale : 100,
     image_pos_x: typeof slide.imagePosX === 'number' ? slide.imagePosX : 50,

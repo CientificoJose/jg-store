@@ -14,7 +14,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { CarouselSlide, CarouselActionType, BannerImageFit } from '@/types/banner';
+import {
+  CarouselSlide,
+  CarouselActionType,
+  BannerImageFit,
+  BannerOverlayConfig,
+  resolveBannerOverlay
+} from '@/types/banner';
 
 interface BannerFormModalProps {
   isOpen: boolean;
@@ -82,11 +88,38 @@ export function BannerFormModal({
   const [featureInput, setFeatureInput] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [displayOrder, setDisplayOrder] = useState<number>(1);
-  const [hideOverlay, setHideOverlay] = useState(false);
+  const [overlayConfig, setOverlayConfig] = useState<BannerOverlayConfig>({
+    showShadow: true,
+    showTag: true,
+    showTitle: true,
+    showSubtitle: true,
+    showFeatures: true,
+    showPrimaryBtn: true,
+    showSecondaryBtn: true
+  });
   const [imageFit, setImageFit] = useState<BannerImageFit>('cover');
   const [imageScale, setImageScale] = useState<number>(100);
   const [imagePosX, setImagePosX] = useState<number>(50);
   const [imagePosY, setImagePosY] = useState<number>(50);
+
+  const toggleOverlayLayer = (key: keyof BannerOverlayConfig) => {
+    setOverlayConfig((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const setAllOverlayLayers = (visible: boolean) => {
+    setOverlayConfig({
+      showShadow: visible,
+      showTag: visible,
+      showTitle: visible,
+      showSubtitle: visible,
+      showFeatures: visible,
+      showPrimaryBtn: visible,
+      showSecondaryBtn: visible
+    });
+  };
+
+  const allOverlayHidden = !Object.values(overlayConfig).some(Boolean);
+  const allOverlayVisible = Object.values(overlayConfig).every(Boolean);
 
   const [categoriesList, setCategoriesList] = useState<{ slug: string; name: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,7 +155,7 @@ export function BannerFormModal({
       setFeatures(Array.isArray(initialData.features) ? initialData.features : []);
       setIsActive(initialData.isActive !== false);
       setDisplayOrder(initialData.displayOrder ?? 1);
-      setHideOverlay(initialData.hideOverlay === true);
+      setOverlayConfig(resolveBannerOverlay(initialData));
       setImageFit(initialData.imageFit === 'contain' ? 'contain' : 'cover');
       setImageScale(typeof initialData.imageScale === 'number' ? initialData.imageScale : 100);
       setImagePosX(typeof initialData.imagePosX === 'number' ? initialData.imagePosX : 50);
@@ -143,7 +176,7 @@ export function BannerFormModal({
       setFeatures(['Stock Inmediato', 'Factura A y B AFIP', 'Despacho Nacional']);
       setIsActive(true);
       setDisplayOrder(1);
-      setHideOverlay(false);
+      setAllOverlayLayers(true);
       setImageFit('cover');
       setImageScale(100);
       setImagePosX(50);
@@ -215,8 +248,8 @@ export function BannerFormModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!hideOverlay && !title.trim()) {
-      toast.error('El título principal del banner es obligatorio.');
+    if (overlayConfig.showTitle && !title.trim()) {
+      toast.error('El título principal del banner es obligatorio (o desactivá el Título en visibilidad).');
       return;
     }
 
@@ -245,7 +278,8 @@ export function BannerFormModal({
         features,
         isActive,
         displayOrder: Number(displayOrder) || 1,
-        hideOverlay,
+        hideOverlay: allOverlayHidden,
+        overlayConfig,
         imageFit,
         imageScale,
         imagePosX,
@@ -323,7 +357,7 @@ export function BannerFormModal({
                     }}
                     unoptimized
                   />
-                  {!hideOverlay && (
+                  {overlayConfig.showShadow && (
                     <>
                       <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
@@ -336,27 +370,33 @@ export function BannerFormModal({
                 </div>
               )}
 
-              {!hideOverlay && (
+              {!allOverlayHidden && (
                 <div className="relative z-10 space-y-2.5 max-w-xl">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-[11px] font-semibold">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tagColor }} />
-                    <span>{tag || 'TAG PROMOCIONAL'}</span>
-                  </div>
+                  {overlayConfig.showTag && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-[11px] font-semibold">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tagColor }} />
+                      <span>{tag || 'TAG PROMOCIONAL'}</span>
+                    </div>
+                  )}
 
-                  <h3 className="font-bebas text-3xl sm:text-4xl tracking-wide leading-tight text-white drop-shadow-sm">
-                    {title || 'TÍTULO DEL BANNER'}{' '}
-                    {titleAccent && (
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
-                        {titleAccent}
-                      </span>
-                    )}
-                  </h3>
+                  {overlayConfig.showTitle && (
+                    <h3 className="font-bebas text-3xl sm:text-4xl tracking-wide leading-tight text-white drop-shadow-sm">
+                      {title || 'TÍTULO DEL BANNER'}{' '}
+                      {titleAccent && (
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
+                          {titleAccent}
+                        </span>
+                      )}
+                    </h3>
+                  )}
 
-                  <p className="text-xs sm:text-sm text-white/80 line-clamp-2">
-                    {subtitle || 'Subtítulo descriptivo de la promoción o categoría.'}
-                  </p>
+                  {overlayConfig.showSubtitle && (
+                    <p className="text-xs sm:text-sm text-white/80 line-clamp-2">
+                      {subtitle || 'Subtítulo descriptivo de la promoción o categoría.'}
+                    </p>
+                  )}
 
-                  {features.length > 0 && (
+                  {overlayConfig.showFeatures && features.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {features.map((f, i) => (
                         <span
@@ -370,88 +410,100 @@ export function BannerFormModal({
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 pt-1 text-xs">
-                    <span className="px-3.5 py-1.5 rounded-lg bg-[#E63946] font-semibold text-white shadow-sm">
-                      {primaryActionLabel || 'Botón 1'}
-                    </span>
-                    <span className="px-3.5 py-1.5 rounded-lg bg-white/20 font-semibold text-white border border-white/25">
-                      {secondaryActionLabel || 'Botón 2'}
-                    </span>
-                  </div>
+                  {(overlayConfig.showPrimaryBtn || overlayConfig.showSecondaryBtn) && (
+                    <div className="flex items-center gap-2 pt-1 text-xs">
+                      {overlayConfig.showPrimaryBtn && (
+                        <span className="px-3.5 py-1.5 rounded-lg bg-[#E63946] font-semibold text-white shadow-sm">
+                          {primaryActionLabel || 'Botón 1'}
+                        </span>
+                      )}
+                      {overlayConfig.showSecondaryBtn && (
+                        <span className="px-3.5 py-1.5 rounded-lg bg-white/20 font-semibold text-white border border-white/25">
+                          {secondaryActionLabel || 'Botón 2'}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Control Rápido: Modo Solo Imagen + Calibración de Tamaño y Encuadre */}
+          {/* Control Rápido: Visibilidad Individual/Total + Calibración de Tamaño y Encuadre */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Tarjeta: Modo Solo Imagen */}
+            {/* Tarjeta: Visibilidad de Capas (Quitar Todo o Uno por Uno) */}
             <div className="lg:col-span-5 p-4 rounded-xl border border-border/80 bg-muted/25 flex flex-col justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-3">
-                  <Label htmlFor="hide-overlay-toggle" className="text-sm font-bold cursor-pointer">
-                    Solo Imagen (Sin letras ni botones)
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <Label className="text-sm font-bold flex items-center gap-1.5">
+                    <Icons.adjustments className="w-4 h-4 text-[#E63946]" />
+                    <span>Elementos Visibles</span>
                   </Label>
-                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                    <input
-                      id="hide-overlay-toggle"
-                      type="checkbox"
-                      checked={hideOverlay}
-                      onChange={(e) => setHideOverlay(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E63946]"></div>
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={allOverlayHidden ? 'default' : 'outline'}
+                      onClick={() => setAllOverlayLayers(false)}
+                      className={`h-7 px-2.5 text-[11px] cursor-pointer ${
+                        allOverlayHidden ? 'bg-[#E63946] hover:bg-[#d62839] text-white' : ''
+                      }`}
+                    >
+                      Quitar Todo
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={allOverlayVisible ? 'default' : 'outline'}
+                      onClick={() => setAllOverlayLayers(true)}
+                      className={`h-7 px-2.5 text-[11px] cursor-pointer ${
+                        allOverlayVisible ? 'bg-[#25D366] hover:bg-[#1ebe5d] text-white' : ''
+                      }`}
+                    >
+                      Mostrar Todo
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Activá esta opción si tu banner ya tiene diseño y textos propios en la imagen. Ocultará el título, subtítulo, etiquetas, botones y el fondo oscuro.
-                </p>
-              </div>
 
-              {hideOverlay && (
-                <div className="space-y-3 pt-2 border-t border-border/60">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="banner-title-internal" className="text-xs font-semibold">
-                      Nombre interno en el panel (opcional)
-                    </Label>
-                    <Input
-                      id="banner-title-internal"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Ej: Promo Transferencias 10% OFF"
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="btn1-type-only" className="text-xs font-semibold">
-                      Al hacer clic en la imagen del banner
-                    </Label>
-                    <select
-                      id="btn1-type-only"
-                      value={primaryActionType}
-                      onChange={(e) => setPrimaryActionType(e.target.value as CarouselActionType)}
-                      className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      <option value="explore">Explorar Catálogo Completo</option>
-                      <option value="category">Ir a Categoría Específica</option>
-                      <option value="wholesale">Activar / Desactivar Modo Mayorista</option>
-                      <option value="whatsapp">Abrir Chat de WhatsApp</option>
-                    </select>
-                  </div>
-                  {primaryActionType === 'category' && (
-                    <select
-                      value={categorySlug}
-                      onChange={(e) => setCategorySlug(e.target.value)}
-                      className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
-                    >
-                      <option value="">-- Seleccionar categoría --</option>
-                      {categoriesList.map((c) => (
-                        <option key={c.slug} value={c.slug}>{c.name}</option>
-                      ))}
-                    </select>
-                  )}
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Activá o desactivá cada elemento uno por uno (sin borrar su texto) o usá <strong>Quitar Todo</strong> para dejar solo la imagen.
+                </p>
+
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  {(
+                    [
+                      { key: 'showShadow', label: 'Sombra oscura' },
+                      { key: 'showTag', label: 'Etiqueta superior' },
+                      { key: 'showTitle', label: 'Título y acento' },
+                      { key: 'showSubtitle', label: 'Subtítulo' },
+                      { key: 'showFeatures', label: 'Pills beneficios' },
+                      { key: 'showPrimaryBtn', label: 'Botón Principal' },
+                      { key: 'showSecondaryBtn', label: 'Botón Secundario' }
+                    ] as { key: keyof BannerOverlayConfig; label: string }[]
+                  ).map((item) => {
+                    const active = overlayConfig[item.key];
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => toggleOverlayLayer(item.key)}
+                        className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition-all cursor-pointer ${
+                          active
+                            ? 'border-[#25D366]/60 bg-[#25D366]/10 text-foreground font-medium'
+                            : 'border-border/70 bg-background/40 text-muted-foreground opacity-75 hover:opacity-100'
+                        }`}
+                      >
+                        <span className="truncate">{item.label}</span>
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            active ? 'bg-[#25D366]' : 'bg-muted-foreground/40'
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Tarjeta: Calibrar Tamaño y Posición de Imagen */}
@@ -559,24 +611,22 @@ export function BannerFormModal({
             </div>
           </div>
 
-          {!hideOverlay && (
-            <>
-              {/* Sección 1: Textos Principales */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="banner-title" className="text-sm font-semibold">
-                    Título Principal <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="banner-title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ej: COMPRÁ AL MAYOR"
-                    className="font-medium uppercase"
-                    required
-                  />
-                  <p className="text-[11px] text-muted-foreground">Aparece en tipografía destacada Bebas Neue.</p>
-                </div>
+          {/* Sección 1: Textos Principales */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="banner-title" className="text-sm font-semibold">
+                Título Principal {overlayConfig.showTitle && <span className="text-destructive">*</span>}
+              </Label>
+              <Input
+                id="banner-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ej: COMPRÁ AL MAYOR"
+                className="font-medium uppercase"
+                required={overlayConfig.showTitle}
+              />
+              <p className="text-[11px] text-muted-foreground">Aparece en tipografía destacada Bebas Neue.</p>
+            </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="banner-title-accent" className="text-sm font-semibold">
@@ -659,8 +709,6 @@ export function BannerFormModal({
                   className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
-            </>
-          )}
 
           {/* Sección 3: Imagen del Banner */}
           <div className="space-y-3 p-4 rounded-xl border border-border/70 bg-muted/20">
@@ -762,10 +810,8 @@ export function BannerFormModal({
             </div>
           </div>
 
-          {!hideOverlay && (
-            <>
-              {/* Sección 4: Botones de Acción */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-border/70 bg-muted/20">
+          {/* Sección 4: Botones de Acción */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-border/70 bg-muted/20">
             {/* Botón Principal */}
             <div className="space-y-3">
               <Label className="text-xs font-bold uppercase tracking-wider text-primary">
@@ -889,8 +935,6 @@ export function BannerFormModal({
                 </div>
               )}
             </div>
-            </>
-          )}
 
           {/* Sección 6: Orden y Estado */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
