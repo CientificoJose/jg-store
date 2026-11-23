@@ -255,25 +255,38 @@ def scraping_product(driver, max_retries=MAX_RETRIES, wait_time=WAIT_TIME):
     raw_items = driver.execute_script(EXTRACTION_JS) or []
     products = []
 
+    INVALID_VARIANT_WORDS = {
+        "OFERTA", "OFERTAS", "NUEVO", "NUEVOS", "PROMO", "PROMOCION", "PROMOCIÓN",
+        "LIQUIDACION", "LIQUIDACIÓN", "DESCUENTO", "HOT SALE", "CYBER MONDAY",
+        "DESTACADO", "SIN STOCK", "REPOSICION", "REPOSICIÓN", "ENVIO GRATIS"
+    }
+
     for item in raw_items:
         raw_code = item.get('codigo', '')
         if not raw_code:
             continue
-        code = formatear_codigo(raw_code)
+        base_code = formatear_codigo(raw_code).strip()
         variant = item.get('variante', '').strip()
-        if variant:
-            v_clean = variant.upper().replace(' ', '').replace('/', '-').replace('\\', '-')
-            if not code.endswith(f"-{v_clean}"):
-                code = f"{code}-{v_clean}"
-        
         costo = limpiar_precio_float(item.get('precio', '0'))
 
+        # Registrar producto padre base
         products.append({
-            'codigo': code,
+            'codigo': base_code,
             'categoria': categoria,
             'precio_costo': costo,
             'stock': 999999
         })
+
+        # Si tiene variante válida, registrar también variant_sku para compatibilidad
+        if variant and variant.upper() not in INVALID_VARIANT_WORDS:
+            v_clean = variant.upper().replace(' ', '').replace('/', '-').replace('\\', '-')
+            variant_sku = f"{base_code}-{v_clean}"
+            products.append({
+                'codigo': variant_sku,
+                'categoria': categoria,
+                'precio_costo': costo,
+                'stock': 999999
+            })
 
     return products, categoria
 

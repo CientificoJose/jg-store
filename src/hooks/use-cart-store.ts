@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { StoreProduct, CartItem, CartSummary, CustomerOrderInfo } from '@/types/store';
+import { StoreProduct, CartItem, CartSummary, CustomerOrderInfo, ProductVariant } from '@/types/store';
 import { calculateCartSummary } from '@/lib/whatsapp';
 
 export interface CompletedOrderData {
@@ -27,9 +27,9 @@ interface CartStore {
   clearCompletedOrder: () => void;
 
   // Acciones de Carrito
-  addItem: (product: StoreProduct, qty?: number) => { success: boolean; message?: string };
-  updateQuantity: (productId: string, qty: number) => { success: boolean; message?: string };
-  removeItem: (productId: string) => void;
+  addItem: (product: StoreProduct, qty?: number, variant?: ProductVariant) => { success: boolean; message?: string };
+  updateQuantity: (productIdOrKey: string, qty: number) => { success: boolean; message?: string };
+  removeItem: (productIdOrKey: string) => void;
   clearCart: () => void;
 
   // Selectores
@@ -38,11 +38,15 @@ interface CartStore {
 
 import { WHOLESALE_MIN_AMOUNT_ARS } from '@/lib/whatsapp';
 
-function refreshCartItems(items: { product: StoreProduct; quantity: number }[]): CartItem[] {
+export function getCartItemKey(productId: string, variantSku?: string): string {
+  return variantSku ? `${productId}__${variantSku}` : productId;
+}
+
+function refreshCartItems(items: { product: StoreProduct; quantity: number; selected_variant?: ProductVariant }[]): CartItem[] {
   const totalRetail = items.reduce((sum, item) => sum + item.product.retail_price * item.quantity, 0);
   const qualifiesGlobalWholesale = totalRetail >= WHOLESALE_MIN_AMOUNT_ARS;
 
-  return items.map(({ product, quantity }) => {
+  return items.map(({ product, quantity, selected_variant }) => {
     const isWholesale = qualifiesGlobalWholesale || quantity >= product.min_wholesale_qty;
     const unitPrice = isWholesale ? product.wholesale_price : product.retail_price;
     const subtotal = Math.round(unitPrice * quantity);
@@ -51,6 +55,7 @@ function refreshCartItems(items: { product: StoreProduct; quantity: number }[]):
 
     return {
       product,
+      selected_variant,
       quantity,
       unit_price: unitPrice,
       is_wholesale: isWholesale,
@@ -93,34 +98,47 @@ export const useCartStore = create<CartStore>()(
       setCompletedOrder: (order) => set({ completedOrder: order }),
       clearCompletedOrder: () => set({ completedOrder: null }),
 
-      addItem: (product, qty = 1) => {
+      addItem: (product, qty = 1, variant) => {
         const { items } = get();
-        const existingIndex = items.findIndex((i) => i.product.id === product.id);
+        const targetKey = getCartItemKey(product.id, variant?.variant_sku);
+        const existingIndex = items.findIndex(
+          (i) => getCartItemKey(i.product.id, i.selected_variant?.variant_sku) === targetKey
+        );
         const currentQty = existingIndex >= 0 ? items[existingIndex].quantity : 0;
         const newQty = currentQty + qty;
 
         // Control estricto de Stock
-        if (product.stock <= 0) {
+        const availableStock = variant?.stock ?? product.stock;
+        if (availableStock <= 0) {
           return {
             success: false,
-            message: `El producto "${product.name}" se encuentra agotado.`
+            message: `El producto "${product.name}"${variant?.attribute_color ? ` (${variant.attribute_color})` : ''} se encuentra agotado.`
           };
         }
 
-        if (newQty > product.stock) {
+        if (newQty > availableStock) {
           return {
             success: false,
-            message: `Solo quedan ${product.stock} unidades disponibles de "${product.name}".`
+            message: `Solo quedan ${availableStock} unidades disponibles de "${product.name}"${variant?.attribute_color ? ` (${variant.attribute_color})` : ''}.`
           };
         }
 
-        let rawItems: { product: StoreProduct; quantity: number }[];
+        let rawItems: { product: StoreProduct; quantity: number; selected_variant?: ProductVariant }[];
         if (existingIndex >= 0) {
           rawItems = items.map((i, idx) =>
-            idx === existingIndex ? { product, quantity: newQty } : { product: i.product, quantity: i.quantity }
+            idx === existingIndex
+              ? { product, quantity: newQty, selected_variant: variant || i.selected_variant }
+              : { product: i.product, quantity: i.quantity, selected_variant: i.selected_variant }
           );
         } else {
-          rawItems = [...items.map(i => ({ product: i.product, quantity: i.quantity })), { product, quantity: newQty }];
+          rawItems = [
+            ...items.map((i) => ({
+              product: i.product,
+              quantity: i.quantity,
+              selected_variant: i.selected_variant
+            })),
+            { product, quantity: newQty, selected_variant: variant }
+          ];
         }
 
         const updatedItems = refreshCartItems(rawItems);
@@ -128,38 +146,51 @@ export const useCartStore = create<CartStore>()(
         return { success: true };
       },
 
-      updateQuantity: (productId, qty) => {
+      updateQuantity: (productIdOrKey, qty) => {
         const { items } = get();
-        const item = items.find((i) => i.product.id === productId);
+        const item = items.find(
+          (i) =>
+            i.product.id === productIdOrKey ||
+            getCartItemKey(i.product.id, i.selected_variant?.variant_sku) === productIdOrKey
+        );
 
         if (!item) return { success: false, message: 'Producto no encontrado en el carrito.' };
 
         if (qty <= 0) {
-          get().removeItem(productId);
+          get().removeItem(productIdOrKey);
           return { success: true };
         }
 
-        if (qty > item.product.stock) {
+        const maxStock = item.selected_variant?.stock ?? item.product.stock;
+        if (qty > maxStock) {
           return {
             success: false,
-            message: `No podés agregar más de ${item.product.stock} unidades de este producto.`
+            message: `No podés agregar más de ${maxStock} unidades de este producto.`
           };
         }
 
-        const rawItems = items.map((i) =>
-          i.product.id === productId ? { product: i.product, quantity: qty } : { product: i.product, quantity: i.quantity }
-        );
+        const rawItems = items.map((i) => {
+          const currentKey = getCartItemKey(i.product.id, i.selected_variant?.variant_sku);
+          const isTarget = i.product.id === productIdOrKey || currentKey === productIdOrKey;
+          return isTarget
+            ? { product: i.product, quantity: qty, selected_variant: i.selected_variant }
+            : { product: i.product, quantity: i.quantity, selected_variant: i.selected_variant };
+        });
 
         const updatedItems = refreshCartItems(rawItems);
         set({ items: updatedItems });
         return { success: true };
       },
 
-      removeItem: (productId) => {
+      removeItem: (productIdOrKey) => {
         const { items } = get();
         const remaining = items
-          .filter((i) => i.product.id !== productId)
-          .map((i) => ({ product: i.product, quantity: i.quantity }));
+          .filter(
+            (i) =>
+              i.product.id !== productIdOrKey &&
+              getCartItemKey(i.product.id, i.selected_variant?.variant_sku) !== productIdOrKey
+          )
+          .map((i) => ({ product: i.product, quantity: i.quantity, selected_variant: i.selected_variant }));
         set({ items: refreshCartItems(remaining) });
       },
 

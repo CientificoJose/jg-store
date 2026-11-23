@@ -81,9 +81,13 @@ export function generateWhatsAppOrderMessage(
     const unitPrice = isWholesale ? item.product.wholesale_price : item.product.retail_price;
     const itemSubtotal = unitPrice * item.quantity;
 
+    const variantInfo = item.selected_variant?.attribute_color
+      ? `   • Color / Variante: *${item.selected_variant.attribute_color}* (SKU: \`${item.selected_variant.variant_sku}\`)`
+      : `   • SKU: \`${item.product.sku}\``;
+
     lines.push(
       `\n*${index + 1}. ${item.product.name}*`,
-      `   • SKU: \`${item.product.sku}\``,
+      variantInfo,
       `   • Cantidad: *${item.quantity} ${item.product.unit}(s)*`,
       `   • Modalidad: ${isWholesale ? '🏷️ *PRECIO MAYORISTA*' : '🛒 Detal'}`,
       `   • P. Unit: ${formatPrice(unitPrice)} ${isWholesale ? `_(Detal: ${formatPrice(item.product.retail_price)})_` : ''}`,

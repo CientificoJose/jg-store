@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { StoreProduct } from '@/types/store';
+import { StoreProduct, ProductVariant } from '@/types/store';
 import { formatPrice } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
@@ -19,6 +19,10 @@ interface ProductQuickViewProps {
 export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
   const { addItem } = useCartStore();
   const { isFavorite, toggleFavorite } = useFavoritesStore();
+  const variants = product?.product_variants || [];
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
+    variants.length > 0 ? variants[0] : undefined
+  );
   const [quantity, setQuantity] = useState<number>(
     STORE_VISIBILITY.showWholesalePrices ? (product?.min_wholesale_qty || 1) : 1
   );
@@ -50,16 +54,19 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
   };
 
   const handleAddToCart = () => {
-    const res = addItem(product, quantity);
+    const res = addItem(product, quantity, selectedVariant);
     if (res.success) {
+      const variantDesc = selectedVariant?.attribute_color ? ` (Color: ${selectedVariant.attribute_color})` : '';
       toast.success('Producto agregado al carrito', {
-        description: `${quantity}x ${product.name}`
+        description: `${quantity}x ${product.name}${variantDesc}`
       });
       onClose();
     } else {
       toast.error(res.message);
     }
   };
+
+  const displayImage = selectedVariant?.image_url || product.image_url;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 font-gotham">
@@ -76,7 +83,7 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
         <div className="relative w-full md:w-1/2 aspect-square md:aspect-auto bg-white dark:bg-card p-6 flex items-center justify-center">
           <div className="relative w-full h-full min-h-[260px]">
             <Image
-              src={product.image_url}
+              src={displayImage}
               alt={product.name}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
@@ -145,6 +152,38 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
                 <span className="text-2xl font-bold font-gotham text-foreground">
                   {formatPrice(product.retail_price)}
                 </span>
+              </div>
+            )}
+
+            {/* Selector de Color/Variante */}
+            {variants.length > 0 && (
+              <div className="mt-4 p-3 rounded-xl border border-border/80 bg-muted/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E63946]" />
+                    Color: <strong className="text-[#E63946]">{selectedVariant?.attribute_color || 'Elegir'}</strong>
+                  </span>
+                  <span className="text-[10px] text-[#6C757D] font-medium">{variants.length} colores</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {variants.map((v) => {
+                    const isSelected = selectedVariant?.variant_sku === v.variant_sku;
+                    return (
+                      <button
+                        key={v.variant_sku}
+                        type="button"
+                        onClick={() => setSelectedVariant(v)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#E63946] text-white border-[#E63946] shadow-xs'
+                            : 'bg-card text-foreground hover:bg-muted border-border/80'
+                        }`}
+                      >
+                        {v.attribute_color || v.variant_sku}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

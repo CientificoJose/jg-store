@@ -112,6 +112,11 @@ export function mapDbRowToSlide(row: BannerDbRow): CarouselSlide {
     }
   }
 
+  const isOverlayHidden = Boolean(
+    row.hide_overlay ||
+    (parsedOverlay && parsedOverlay.showTitle === false && parsedOverlay.showSubtitle === false)
+  );
+
   return {
     id: row.id,
     tag: row.tag || '',
@@ -128,7 +133,7 @@ export function mapDbRowToSlide(row: BannerDbRow): CarouselSlide {
     features: parsedFeatures,
     isActive: row.is_active !== false,
     displayOrder: row.display_order ?? 0,
-    hideOverlay: row.hide_overlay === true,
+    hideOverlay: isOverlayHidden,
     overlayConfig: parsedOverlay,
     imageFit: row.image_fit === 'contain' ? 'contain' : 'cover',
     imageScale: typeof row.image_scale === 'number' ? row.image_scale : 100,

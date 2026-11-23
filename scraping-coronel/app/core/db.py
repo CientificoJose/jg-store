@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import openpyxl
+import json
 from datetime import datetime
 from contextlib import closing
 from typing import List, Dict, Optional, Any
@@ -92,6 +93,8 @@ def asegurar_tabla_productos(db_path: Optional[str] = None):
             ("alto_cm", "TEXT"),
             ("profundidad_cm", "TEXT"),
             ("imagenes_galeria", "TEXT DEFAULT '[]'"),
+            ("has_variants", "INTEGER DEFAULT 0"),
+            ("variantes", "TEXT DEFAULT '[]'"),
             ("marca", "TEXT DEFAULT ''"),
             ("updated_at", "TEXT")
         ]
@@ -266,6 +269,58 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                 foto = producto.get('imagen_local') or producto.get('imagen_url') or ""
                 ahora = datetime.now().isoformat()
 
+                # --- GESTIÓN INTELIGENTE DE VARIANTES Y GALERÍA FUSIONADA ---
+                cursor.execute("SELECT variantes, imagenes_galeria, has_variants, imagen_url FROM productos WHERE codigo = ?", (codigo,))
+                row_existente = cursor.fetchone()
+
+                existentes_variantes = []
+                existentes_galeria = []
+                if row_existente:
+                    try:
+                        existentes_variantes = json.loads(row_existente[0] or '[]')
+                    except Exception:
+                        existentes_variantes = []
+                    try:
+                        existentes_galeria = json.loads(row_existente[1] or '[]')
+                    except Exception:
+                        existentes_galeria = []
+
+                incoming_variantes = producto.get('variantes') or []
+                if isinstance(incoming_variantes, str):
+                    try:
+                        incoming_variantes = json.loads(incoming_variantes)
+                    except Exception:
+                        incoming_variantes = []
+
+                # Candado de unicidad de variante
+                merged_variantes_dict = {}
+                for ev in existentes_variantes:
+                    k = (ev.get('variant_sku') or ev.get('color') or '').upper()
+                    if k:
+                        merged_variantes_dict[k] = ev
+
+                for iv in incoming_variantes:
+                    k = (iv.get('variant_sku') or iv.get('color') or '').upper()
+                    if k:
+                        merged_variantes_dict[k] = iv
+
+                merged_variantes = list(merged_variantes_dict.values())
+
+                # Galería combinada
+                incoming_galeria = producto.get('imagenes_galeria') or []
+                if isinstance(incoming_galeria, str):
+                    try:
+                        incoming_galeria = json.loads(incoming_galeria)
+                    except Exception:
+                        incoming_galeria = []
+
+                merged_galeria_raw = existentes_galeria + incoming_galeria
+                if producto.get('imagen_url'):
+                    merged_galeria_raw.insert(0, producto.get('imagen_url'))
+                merged_galeria = list(dict.fromkeys([u for u in merged_galeria_raw if u and isinstance(u, str)]))
+
+                has_variants_flag = 1 if (len(merged_variantes) > 0 or producto.get('has_variants')) else 0
+
                 cursor.execute("""
                     UPDATE productos SET
                         codigo_barra = COALESCE(NULLIF(?, ''), codigo_barra),
@@ -282,6 +337,8 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                         imagen_local = ?,
                         foto = ?,
                         variante = ?,
+                        has_variants = ?,
+                        variantes = ?,
                         categoria = ?,
                         subcategoria = ?,
                         sub_subcategoria = ?,
@@ -291,7 +348,7 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                         sub_subcategoria_slug = ?,
                         categoria_niveles = ?,
                         nivel_profundidad = ?,
-                        imagenes_galeria = COALESCE(NULLIF(?, ''), imagenes_galeria),
+                        imagenes_galeria = ?,
                         marca = COALESCE(NULLIF(?, ''), marca),
                         stock = 1,
                         updated_at = ?
@@ -311,6 +368,8 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                     producto.get('imagen_local', ''),
                     foto,
                     producto.get('variante', ''),
+                    has_variants_flag,
+                    json.dumps(merged_variantes, ensure_ascii=False),
                     categoria,
                     subcategoria,
                     sub_subcategoria,
@@ -320,7 +379,7 @@ def consolidar_productos(todos_los_productos: List[Dict], db_path: Optional[str]
                     sub_subcategoria_slug,
                     categoria_niveles,
                     nivel_profundidad,
-                    producto.get('imagenes_galeria', '[]'),
+                    json.dumps(merged_galeria, ensure_ascii=False),
                     producto.get('marca', ''),
                     ahora,
                     codigo

@@ -21,6 +21,18 @@ export interface SubCategory {
   sub_subcategories?: SubSubCategory[];
 }
 
+export interface ProductVariant {
+  id?: string;
+  product_id?: string;
+  variant_sku: string;
+  barcode?: string;
+  attribute_color?: string;
+  attribute_size?: string;
+  stock: number;
+  price_adjustment?: number;
+  image_url?: string;
+}
+
 export interface StoreProduct {
   id: string;
   sku: string;
@@ -50,6 +62,9 @@ export interface StoreProduct {
   unit: string; // 'unidad', 'docena', 'pack', 'caja'
   brand?: string; // Marca del producto (ej. Samsung, Stanley, Acrilex)
   images?: string[]; // Arreglo de URLs de todas las imágenes de la galería en Supabase Storage
+  has_variants?: boolean;
+  product_variants?: ProductVariant[];
+  selected_variant?: ProductVariant;
   featured?: boolean;
   is_seasonal?: boolean;
   tags?: string[];
@@ -58,6 +73,7 @@ export interface StoreProduct {
 
 export interface CartItem {
   product: StoreProduct;
+  selected_variant?: ProductVariant;
   quantity: number;
   unit_price: number; // retail_price o wholesale_price según quantity >= min_wholesale_qty
   is_wholesale: boolean; // true si quantity >= min_wholesale_qty

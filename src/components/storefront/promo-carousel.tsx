@@ -174,32 +174,46 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
     ov.showTag ||
     ov.showTitle ||
     ov.showSubtitle ||
-    (ov.showFeatures && slide.features.length > 0) ||
+    (ov.showFeatures && slide.features && slide.features.length > 0) ||
     ov.showPrimaryBtn ||
     ov.showSecondaryBtn;
+  const isPureBanner = Boolean(slide.hideOverlay || !hasAnyContent);
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-2xl md:rounded-3xl border border-border/60 shadow-xl bg-card transition-all"
+      className={`relative w-full overflow-hidden rounded-2xl md:rounded-3xl border border-border/60 shadow-xl bg-neutral-950 transition-all select-none ${
+        isPureBanner ? 'cursor-pointer group' : ''
+      }`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onClick={isPureBanner ? () => handleAction(slide.primaryActionType, slide.categorySlug) : undefined}
     >
-      {/* Contenedor Principal del Banner */}
+      {/* Contenedor Principal del Banner Adaptativo para Móvil */}
       <div
-        className={`relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[490px] flex items-center bg-card/30 backdrop-blur-xs ${
-          !hasAnyContent ? 'cursor-pointer' : ''
+        className={`relative transition-all duration-300 flex ${
+          isPureBanner
+            ? 'aspect-[2.35/1] xs:aspect-[2.5/1] sm:aspect-auto sm:min-h-[380px] md:min-h-[440px] lg:min-h-[490px]'
+            : 'min-h-[280px] xs:min-h-[320px] sm:min-h-[400px] md:min-h-[460px] lg:min-h-[490px] items-end sm:items-center'
         }`}
-        onClick={() => {
-          if (!hasAnyContent) {
-            handleAction(slide.primaryActionType, slide.categorySlug);
-          }
-        }}
       >
         {/* Imágenes de Fondo con Transición Suave */}
         {slides.map((s, idx) => {
-          const slideOv = resolveBannerOverlay(s);
+          const sOv = resolveBannerOverlay(s);
+          const sHasContent =
+            sOv.showTag ||
+            sOv.showTitle ||
+            sOv.showSubtitle ||
+            (sOv.showFeatures && s.features && s.features.length > 0) ||
+            sOv.showPrimaryBtn ||
+            sOv.showSecondaryBtn;
+          const sIsPure = Boolean(s.hideOverlay || !sHasContent);
+
+          const fitClass = s.imageFit === 'contain' || sIsPure
+            ? 'object-contain sm:object-cover'
+            : 'object-cover';
+
           return (
             <div
               key={s.id}
@@ -212,7 +226,7 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
                 alt={s.title}
                 fill
                 priority={idx === 0}
-                className={s.imageFit === 'contain' ? 'object-contain' : 'object-cover'}
+                className={`transition-all duration-500 ${fitClass} object-center ${sIsPure ? 'bg-neutral-950' : ''}`}
                 style={{
                   objectPosition: `${s.imagePosX ?? 50}% ${s.imagePosY ?? 50}%`,
                   transform: `scale(${(s.imageScale ?? 100) / 100})`,
@@ -220,32 +234,32 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
                 }}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1280px"
               />
-              {/* Gradientes superpuestos para legibilidad y elegancia */}
-              {slideOv.showShadow && (
+              {/* Gradientes solo si el banner tiene superposición activa de sombras */}
+              {sOv.showShadow && !sIsPure && (
                 <>
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/30 md:to-transparent" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent sm:bg-gradient-to-r sm:from-black/90 sm:via-black/65 sm:to-black/30 md:sm:to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
                 </>
               )}
             </div>
           );
         })}
 
-        {/* Contenido Textual del Slide Activo */}
-        {hasAnyContent && (
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-10 md:py-14 text-white">
-            <div className="max-w-2xl space-y-4">
+        {/* Contenido Textual del Slide Activo (Oculto si es banner puro diseñado) */}
+        {hasAnyContent && !isPureBanner && (
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 xs:px-6 sm:px-10 lg:px-14 py-6 sm:py-10 md:py-14 text-white">
+            <div className="max-w-2xl space-y-3 sm:space-y-4">
               {/* Badge de la Promoción */}
               {ov.showTag && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-semibold tracking-wide font-gotham shadow-sm">
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: slide.tagColor || '#E63946' }} />
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-[10px] sm:text-xs font-semibold tracking-wide font-gotham shadow-sm">
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse" style={{ backgroundColor: slide.tagColor || '#E63946' }} />
                   <span className="text-white/95">{slide.tag}</span>
                 </div>
               )}
 
               {/* Título en Bebas Neue */}
               {ov.showTitle && (
-                <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-wide leading-[0.98] drop-shadow-md">
+                <h2 className="font-bebas text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-wide leading-tight sm:leading-[0.98] drop-shadow-md">
                   {slide.title}{' '}
                   {slide.titleAccent && (
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF85A2] via-[#E63946] to-[#D4A017]">
@@ -257,20 +271,20 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
 
               {/* Subtítulo */}
               {ov.showSubtitle && (
-                <p className="text-xs sm:text-sm md:text-base text-white/85 font-gotham leading-relaxed max-w-xl drop-shadow-xs">
+                <p className="text-[11px] sm:text-sm md:text-base text-white/85 font-gotham leading-relaxed max-w-xl line-clamp-2 sm:line-clamp-none drop-shadow-xs">
                   {slide.subtitle}
                 </p>
               )}
 
               {/* Lista de Beneficios del Slide */}
-              {ov.showFeatures && slide.features.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 pt-1 pb-2">
+              {ov.showFeatures && slide.features && slide.features.length > 0 && (
+                <div className="hidden xs:flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 pb-1 sm:pb-2">
                   {slide.features.map((feat, i) => (
                     <span
                       key={i}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium bg-white/10 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-white/15 text-white/90"
+                      className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium bg-white/10 backdrop-blur-xs px-2 sm:px-2.5 py-0.5 rounded-full border border-white/15 text-white/90"
                     >
-                      <Icons.check className="w-3 h-3 text-[#25D366]" />
+                      <Icons.check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#25D366]" />
                       {feat}
                     </span>
                   ))}
@@ -279,13 +293,13 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
 
               {/* Botones de Acción Interactivos */}
               {(ov.showPrimaryBtn || ov.showSecondaryBtn) && (
-                <div className="pt-2 flex flex-wrap items-center gap-3 font-gotham">
+                <div className="pt-1 sm:pt-2 flex flex-wrap items-center gap-2 sm:gap-3 font-gotham">
                   {ov.showPrimaryBtn && (
                     <button
                       onClick={() => handleAction(slide.primaryActionType, slide.categorySlug)}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs sm:text-sm shadow-lg shadow-[#E63946]/40 hover:shadow-xl hover:shadow-[#E63946]/50 transition-all cursor-pointer transform hover:-translate-y-0.5"
+                      className="inline-flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl bg-[#E63946] hover:bg-[#d62839] text-white font-semibold text-xs sm:text-sm shadow-lg shadow-[#E63946]/40 hover:shadow-xl hover:shadow-[#E63946]/50 transition-all cursor-pointer transform hover:-translate-y-0.5"
                     >
-                      <Icons.product className="w-4 h-4" />
+                      <Icons.product className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       <span>{slide.primaryActionLabel}</span>
                     </button>
                   )}
@@ -296,7 +310,7 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
                       STORE_VISIBILITY.showWholesalePrices) && (
                       <button
                         onClick={() => handleAction(slide.secondaryActionType, slide.categorySlug)}
-                        className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-xs sm:text-sm backdrop-blur-md border transition-all cursor-pointer transform hover:-translate-y-0.5 ${
+                        className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm backdrop-blur-md border transition-all cursor-pointer transform hover:-translate-y-0.5 ${
                           slide.secondaryActionType === 'wholesale' && wholesaleMode
                             ? 'bg-[#D4A017] border-[#D4A017] text-black font-bold shadow-lg shadow-[#D4A017]/30'
                             : 'bg-white/15 hover:bg-white/25 border-white/30 text-white'
@@ -304,12 +318,12 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
                       >
                         {slide.secondaryActionType === 'wholesale' ? (
                           <>
-                            <Icons.tags className="w-4 h-4" />
-                            <span>{wholesaleMode ? '✓ Tarifa Mayorista Activa' : slide.secondaryActionLabel}</span>
+                            <Icons.tags className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span>{wholesaleMode ? '✓ Mayorista' : slide.secondaryActionLabel}</span>
                           </>
                         ) : (
                           <>
-                            <Icons.whatsapp className="w-4 h-4 text-[#25D366] fill-current" />
+                            <Icons.whatsapp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#25D366] fill-current" />
                             <span>{slide.secondaryActionLabel}</span>
                           </>
                         )}
@@ -328,9 +342,9 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
             prevSlide();
           }}
           aria-label="Banner anterior"
-          className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-[#E63946] backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
+          className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-black/50 hover:bg-[#E63946] backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
         >
-          <Icons.chevronLeft className="w-5 h-5" />
+          <Icons.chevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* Flecha Siguiente (Right Arrow) */}
@@ -340,13 +354,13 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
             nextSlide();
           }}
           aria-label="Siguiente banner"
-          className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/40 hover:bg-[#E63946] backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
+          className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-black/50 hover:bg-[#E63946] backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
         >
-          <Icons.chevronRight className="w-5 h-5" />
+          <Icons.chevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* Indicador de Número de Slide (Esquina Superior Derecha) */}
-        <div className="absolute top-4 right-5 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-mono text-white/80">
+        <div className="absolute top-3 sm:top-4 right-3 sm:right-5 z-20 hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-xs font-mono text-white/80">
           <span className="font-bold text-white">0{currentSlide + 1}</span>
           <span>/</span>
           <span>0{slides.length}</span>
@@ -354,18 +368,21 @@ export function PromoCarousel({ onExploreCatalog, onSelectCategory }: PromoCarou
 
         {/* Barra de Indicadores / Paginación (Pills en la parte inferior) */}
         <div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/15"
+          className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/15"
           onClick={(e) => e.stopPropagation()}
         >
           {slides.map((_, idx) => (
             <button
               key={idx}
-              onClick={() => setCurrentSlide(idx)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlide(idx);
+              }}
               aria-label={`Ir al slide ${idx + 1}`}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+              className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 idx === currentSlide
-                  ? 'w-8 bg-[#E63946] shadow-sm shadow-[#E63946]'
-                  : 'w-2 bg-white/50 hover:bg-white/80'
+                  ? 'w-6 sm:w-8 bg-[#E63946] shadow-sm shadow-[#E63946]'
+                  : 'w-1.5 sm:w-2 bg-white/50 hover:bg-white/80'
               }`}
             />
           ))}

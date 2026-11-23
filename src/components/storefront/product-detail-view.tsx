@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { StoreProduct } from '@/types/store';
+import { StoreProduct, ProductVariant } from '@/types/store';
 import { formatPrice, JG_STORE_WHATSAPP_NUMBER } from '@/lib/whatsapp';
 import { useCartStore } from '@/hooks/use-cart-store';
 import { useFavoritesStore } from '@/hooks/use-favorites-store';
@@ -24,7 +24,11 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
   const whatsappNumber = useStoreConfigStore((s) => s.general.whatsappNumber);
   const isFav = isFavorite(product.id);
 
-  // Selector de cantidad
+  // Selector de cantidad y variantes
+  const variants = product.product_variants || [];
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
+    variants.length > 0 ? variants[0] : undefined
+  );
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [isBuyingNow, setIsBuyingNow] = useState<boolean>(false);
@@ -37,6 +41,16 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
           product.image_url ||
             'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'
         ];
+
+  const handleSelectVariant = (v: ProductVariant) => {
+    setSelectedVariant(v);
+    if (v.image_url) {
+      const idx = galleryImages.findIndex((img) => img === v.image_url);
+      if (idx >= 0) {
+        setSelectedImageIndex(idx);
+      }
+    }
+  };
 
   // Cálculos de precios (B2B vs B2C)
   const isOutOfStock = product.stock <= 0;
@@ -72,10 +86,11 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
-    const res = addItem(product, quantity);
+    const res = addItem(product, quantity, selectedVariant);
     if (res.success) {
+      const variantDesc = selectedVariant?.attribute_color ? ` (Color: ${selectedVariant.attribute_color})` : '';
       toast.success('Producto agregado al carrito', {
-        description: `${quantity}x ${product.name}`
+        description: `${quantity}x ${product.name}${variantDesc}`
       });
       setOpen(true);
     } else {
@@ -97,6 +112,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
           items: [
             {
               product,
+              selected_variant: selectedVariant,
               quantity,
               unit_price: activeUnitPrice,
               is_wholesale: qualifiesForWholesale,
@@ -110,7 +126,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
             delivery_type: 'shipping',
             invoice_type: qualifiesForWholesale ? 'A' : 'B'
           },
-          notes: `Compra directa desde detalle de producto: ${product.name} (Cant: ${quantity})`
+          notes: `Compra directa desde detalle de producto: ${product.name}${selectedVariant?.attribute_color ? ` (Color: ${selectedVariant.attribute_color})` : ''} (Cant: ${quantity})`
         })
       });
 
@@ -346,6 +362,43 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
                   )}
                 </div>
 
+
+                {/* SELECTOR DE COLOR / VARIANTE */}
+                {variants.length > 0 && (
+                  <div className='mt-5 p-4 rounded-2xl bg-muted/30 border border-border/80'>
+                    <div className='flex items-center justify-between mb-2.5'>
+                      <label className='text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2'>
+                        <span className='w-2 h-2 rounded-full bg-[#E63946]' />
+                        Color / Modelo:{' '}
+                        <strong className='text-[#E63946]'>
+                          {selectedVariant?.attribute_color || 'Seleccionar'}
+                        </strong>
+                      </label>
+                      <span className='text-[11px] text-[#6C757D] font-medium'>
+                        {variants.length} disponible{variants.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className='flex flex-wrap gap-2'>
+                      {variants.map((v) => {
+                        const isSelected = selectedVariant?.variant_sku === v.variant_sku;
+                        return (
+                          <button
+                            key={v.variant_sku}
+                            type='button'
+                            onClick={() => handleSelectVariant(v)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                              isSelected
+                                ? 'bg-[#E63946] text-white border-[#E63946] shadow-sm shadow-[#E63946]/30'
+                                : 'bg-card text-foreground hover:bg-muted/70 border-border/80'
+                            }`}
+                          >
+                            {v.attribute_color || v.variant_sku}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* CAJA DE COMPRA (BUY BOX) */}
                 <div className='mt-6 p-4 sm:p-5 rounded-2xl bg-card border-2 border-border/80 shadow-md'>

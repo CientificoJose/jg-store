@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { useCartStore } from '@/hooks/use-cart-store';
+import { useCartStore, getCartItemKey } from '@/hooks/use-cart-store';
 import { formatPrice, buildWhatsAppUrl, WHOLESALE_MIN_AMOUNT_ARS } from '@/lib/whatsapp';
 import { Icons } from '@/components/icons';
 import { useStoreConfigStore } from '@/hooks/use-store-config-store';
@@ -323,16 +323,18 @@ export function CartDrawer() {
                   {items.map((item) => {
                     const isWholesale = item.quantity >= item.product.min_wholesale_qty;
                     const diffToWholesale = item.product.min_wholesale_qty - item.quantity;
+                    const itemKey = getCartItemKey(item.product.id, item.selected_variant?.variant_sku);
+                    const displayImg = item.selected_variant?.image_url || item.product.image_url;
 
                     return (
                       <div
-                        key={item.product.id}
+                        key={itemKey}
                         className='p-3.5 rounded-xl bg-card border border-border/80 hover:border-border transition-all flex gap-3.5 shadow-xs'
                       >
                         {/* Miniatura del Producto */}
                         <div className='relative w-18 h-18 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-muted shrink-0 border border-border/60'>
                           <Image
-                            src={item.product.image_url}
+                            src={displayImg}
                             alt={item.product.name}
                             fill
                             className='object-cover'
@@ -348,8 +350,8 @@ export function CartDrawer() {
                               </h4>
                               <button
                                 type='button'
-                                onClick={() => removeItem(item.product.id)}
-                                className='text-[#6C757D] hover:text-[#E63946] transition-colors p-1 hover:bg-muted rounded-lg'
+                                onClick={() => removeItem(itemKey)}
+                                className='text-[#6C757D] hover:text-[#E63946] transition-colors p-1 hover:bg-muted rounded-lg cursor-pointer'
                                 title='Eliminar del pedido'
                               >
                                 <Icons.trash className='w-4 h-4' />
@@ -358,8 +360,13 @@ export function CartDrawer() {
 
                             <div className='flex items-center gap-2 mt-1.5 flex-wrap'>
                               <span className='font-mono text-[10px] text-[#6C757D] bg-muted px-1.5 py-0.5 rounded'>
-                                {item.product.sku}
+                                {item.selected_variant?.variant_sku || item.product.sku}
                               </span>
+                              {item.selected_variant?.attribute_color && (
+                                <span className='text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20'>
+                                  Color: {item.selected_variant.attribute_color}
+                                </span>
+                              )}
                               {STORE_VISIBILITY.showWholesalePrices && (
                                 isWholesale ? (
                                   <span className='text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4A017]/20 text-[#D4A017]'>
@@ -379,8 +386,8 @@ export function CartDrawer() {
                             <div className='flex items-center border border-border rounded-lg bg-background shadow-2xs'>
                               <button
                                 type='button'
-                                onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                className='w-7 h-7 flex items-center justify-center text-[#6C757D] hover:text-foreground hover:bg-muted rounded-l-md transition-colors'
+                                onClick={() => updateQuantity(itemKey, item.quantity - 1)}
+                                className='w-7 h-7 flex items-center justify-center text-[#6C757D] hover:text-foreground hover:bg-muted rounded-l-md transition-colors cursor-pointer'
                               >
                                 <Icons.minus className='w-3.5 h-3.5' />
                               </button>
@@ -389,9 +396,9 @@ export function CartDrawer() {
                               </span>
                               <button
                                 type='button'
-                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                disabled={item.quantity >= item.product.stock}
-                                className='w-7 h-7 flex items-center justify-center text-[#6C757D] hover:text-foreground hover:bg-muted rounded-r-md disabled:opacity-40 transition-colors'
+                                onClick={() => updateQuantity(itemKey, item.quantity + 1)}
+                                disabled={item.quantity >= (item.selected_variant?.stock ?? item.product.stock)}
+                                className='w-7 h-7 flex items-center justify-center text-[#6C757D] hover:text-foreground hover:bg-muted rounded-r-md disabled:opacity-40 transition-colors cursor-pointer'
                               >
                                 <Icons.add className='w-3.5 h-3.5' />
                               </button>

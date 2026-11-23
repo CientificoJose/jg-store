@@ -332,17 +332,127 @@ def scraping_product(driver, max_retries=3, wait_time=10):
     margen_detal = getattr(scraping_product, 'margen_minorista', 40.0)
     margen_mayor = getattr(scraping_product, 'margen_mayorista', 18.0)
 
+    # Mapa para agrupación de variantes en la misma página
+    product_map = {}
+
+    INVALID_VARIANT_WORDS = {
+        "OFERTA", "OFERTAS", "NUEVO", "NUEVOS", "PROMO", "PROMOCION", "PROMOCIÓN",
+        "LIQUIDACION", "LIQUIDACIÓN", "DESCUENTO", "HOT SALE", "CYBER MONDAY",
+        "DESTACADO", "SIN STOCK", "REPOSICION", "REPOSICIÓN", "ENVIO GRATIS"
+    }
+
     for index, raw in enumerate(raw_products):
         raw_code = raw.get('codigo', '')
         if not raw_code:
             continue
 
-        code = formatear_codigo(raw_code)
-        variant = raw.get('variante', '').strip()
-        if variant:
-            v_clean = variant.upper().replace(' ', '').replace('/', '-').replace('\\', '-')
-            if not code.endswith(f"-{v_clean}"):
-                code = f"{code}-{v_clean}"
+        base_code = formatear_codigo(raw_code).strip()
+        raw_variant = raw.get('variante', '').strip()
+        description = raw.get('descripcion', '')
+        price = raw.get('precio', '0')
+        precio_costo = limpiar_precio_float(price)
+        image_url = raw.get('imagen_url', '')
+
+        # Cálculos de precios con márgenes dinámicos
+        precio_minorista = round(precio_costo * (1.0 + margen_detal / 100.0), 2)
+        precio_mayorista = round(precio_costo * (1.0 + margen_mayor / 100.0), 2)
+
+        # Candado 3: Sanitizar nombre de variante
+        clean_variant = ""
+        variant_sku = ""
+        if raw_variant and raw_variant.upper() not in INVALID_VARIANT_WORDS:
+            clean_variant = raw_variant.upper()
+            v_slug = clean_variant.replace(' ', '').replace('/', '-').replace('\\', '-')
+            variant_sku = f"{base_code}-{v_slug}"
+
+        # --- CANDADO 1 Y 4: AGRUPACIÓN LOCAL DENTRO DEL LOTE ACTUAL ---
+        if base_code in product_map:
+            existing = product_map[base_code]
+            # Candado 1: Coincidencia de título para evitar colisiones
+            title_match = (
+                not description or
+                not existing.get('descripcion') or
+                existing.get('descripcion', '')[:15].lower() == description[:15].lower()
+            )
+            if title_match:
+                v_img_name = f"{variant_sku or base_code}.jpg".replace("/", "_").replace("\\", "_")
+                v_img_url = f"{SUPABASE_STORAGE_URL}/storage/v1/object/public/products/{v_img_name}" if image_url else ""
+                if DOWNLOAD_IMAGES and image_url:
+                    v_img_path = os.path.join(img_dir, v_img_name)
+                    _img_executor.submit(_descargar_imagen_async, image_url, v_img_path, v_img_name, scraping_product.db_path)
+
+                var_list = existing.get('variantes', [])
+                if clean_variant and not any(v.get('color') == clean_variant or v.get('variant_sku') == variant_sku for v in var_list):
+                    var_list.append({
+                        'variant_sku': variant_sku,
+                        'color': clean_variant,
+                        'imagen_url': v_img_url,
+                        'stock': 1,
+                        'precio_costo': precio_costo
+                    })
+                    existing['variantes'] = var_list
+                    existing['has_variants'] = True
+
+                if v_img_url:
+                    try:
+                        gal = json.loads(existing.get('imagenes_galeria') or '[]')
+                    except Exception:
+                        gal = []
+                    if v_img_url not in gal:
+                        gal.append(v_img_url)
+                        existing['imagenes_galeria'] = json.dumps(gal, ensure_ascii=False)
+
+                print(f"{Fore.MAGENTA}🎨 Variante agrupada en página: [{clean_variant or 'Extra'}] en {base_code} | Total variantes: {len(var_list)}{Style.RESET_ALL}")
+                continue
+
+        # --- CANDADO 2: AGRUPACIÓN GLOBAL EN SQLITE (PÁGINAS PREVIAS) ---
+        if scraping_product.db_path and os.path.exists(scraping_product.db_path):
+            try:
+                with closing(sqlite3.connect(scraping_product.db_path)) as c_conn:
+                    c_cur = c_conn.cursor()
+                    c_cur.execute("SELECT descripcion, variantes, imagenes_galeria, imagen_url FROM productos WHERE codigo = ?", (base_code,))
+                    db_row = c_cur.fetchone()
+                    if db_row and db_row[0]:
+                        db_desc, db_vars_str, db_gal_str, db_img = db_row
+                        if not description or db_desc[:15].lower() == description[:15].lower():
+                            try:
+                                db_vars = json.loads(db_vars_str or '[]')
+                            except Exception:
+                                db_vars = []
+                            try:
+                                db_gal = json.loads(db_gal_str or '[]')
+                            except Exception:
+                                db_gal = []
+
+                            if clean_variant:
+                                v_img_name = f"{variant_sku}.jpg".replace("/", "_").replace("\\", "_")
+                                v_img_url = f"{SUPABASE_STORAGE_URL}/storage/v1/object/public/products/{v_img_name}" if image_url else ""
+                                if DOWNLOAD_IMAGES and image_url:
+                                    v_img_path = os.path.join(img_dir, v_img_name)
+                                    _img_executor.submit(_descargar_imagen_async, image_url, v_img_path, v_img_name, scraping_product.db_path)
+
+                                if not any(v.get('color') == clean_variant or v.get('variant_sku') == variant_sku for v in db_vars):
+                                    db_vars.append({
+                                        'variant_sku': variant_sku,
+                                        'color': clean_variant,
+                                        'imagen_url': v_img_url,
+                                        'stock': 1,
+                                        'precio_costo': precio_costo
+                                    })
+                                if v_img_url and v_img_url not in db_gal:
+                                    db_gal.append(v_img_url)
+
+                                c_cur.execute(
+                                    "UPDATE productos SET has_variants = 1, variantes = ?, imagenes_galeria = ? WHERE codigo = ?",
+                                    (json.dumps(db_vars, ensure_ascii=False), json.dumps(db_gal, ensure_ascii=False), base_code)
+                                )
+                                c_conn.commit()
+                                print(f"{Fore.MAGENTA}🎨 Variante agrupada en SQLite global: [{clean_variant}] en {base_code}{Style.RESET_ALL}")
+                                continue
+            except Exception:
+                pass
+
+        code = base_code
 
         description = raw.get('descripcion', '')
         price = raw.get('precio', '0')
@@ -538,7 +648,15 @@ def scraping_product(driver, max_retries=3, wait_time=10):
             'imagen_url': supabase_img_url if (image_url or galeria_urls) else '',
             'imagen_local': f"img-scraping/{code}.jpg",
             'foto': f"img-scraping/{code}.jpg",
-            'variante': variant,
+            'variante': clean_variant or raw_variant,
+            'has_variants': 1 if clean_variant else 0,
+            'variantes': [{
+                'variant_sku': variant_sku,
+                'color': clean_variant,
+                'imagen_url': supabase_img_url,
+                'stock': 1,
+                'precio_costo': precio_costo
+            }] if clean_variant else [],
             'marca': prod_marca,
             'imagenes_galeria': json.dumps(supabase_galeria, ensure_ascii=False),
             'codigo_de_barras': codigo_barra,
@@ -552,6 +670,7 @@ def scraping_product(driver, max_retries=3, wait_time=10):
             'subcategoria_slug': subcat_slug,
             'sub_subcategoria_slug': sub_subcat_slug
         }
+        product_map[base_code] = product_data
         products.append(product_data)
 
         # Resumen formateado en consola

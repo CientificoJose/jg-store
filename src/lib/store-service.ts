@@ -80,8 +80,8 @@ export async function fetchStoreProductsWithMeta(
     connectedToSupabase = true;
   } else if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
-      // 1. Obtener primer lote (0-999) con conteo exacto
-      const headRes = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+      // 1. Obtener primer lote (0-999) con conteo exacto y variantes anidadas
+      const headRes = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*,product_variants(*)`, {
         method: 'GET',
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -110,7 +110,7 @@ export async function fetchStoreProductsWithMeta(
             const from = i * 1000;
             const to = from + 999;
             remainingPromises.push(
-              fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+              fetch(`${SUPABASE_URL}/rest/v1/products?select=*,product_variants(*)`, {
                 headers: {
                   apikey: SUPABASE_ANON_KEY,
                   Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -156,6 +156,9 @@ export async function fetchStoreProductsWithMeta(
           image_url:
             item.image_url ||
             'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+          images: Array.isArray(item.images) && item.images.length > 0 ? item.images : [item.image_url].filter(Boolean),
+          has_variants: Boolean(item.has_variants || (Array.isArray(item.product_variants) && item.product_variants.length > 0)),
+          product_variants: Array.isArray(item.product_variants) ? item.product_variants : [],
           unit: item.unit || 'unidad',
           brand: item.brand,
           featured: Boolean(item.featured),

@@ -530,6 +530,50 @@ export async function POST(request: NextRequest) {
           console.error(`Error insertando nuevo producto ${sku}:`, err);
         }
       }
+
+      // --- INGESTA DE VARIANTES EN PUBLIC.PRODUCT_VARIANTS ---
+      const targetId = existing?.id || (prodBySku.get(sku) as any)?.id;
+      if (targetId) {
+        let rawVariants: any[] = [];
+        if (Array.isArray(p.variantes)) {
+          rawVariants = p.variantes;
+        } else if (typeof p.variantes === 'string' && p.variantes.trim().startsWith('[')) {
+          try {
+            rawVariants = JSON.parse(p.variantes);
+          } catch {}
+        }
+
+        if (rawVariants.length > 0) {
+          for (const v of rawVariants) {
+            const vColor = v.color || null;
+            const vCleanColor = (vColor || 'VAR').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const vSku = v.variant_sku || `${sku}-${vCleanColor}`;
+            const vImg = v.imagen_url || imageUrl;
+            const vStock = Number(v.stock ?? 10);
+
+            try {
+              await fetch(`${SUPABASE_URL}/rest/v1/product_variants`, {
+                method: 'POST',
+                headers: {
+                  ...headers,
+                  Prefer: 'resolution=merge-duplicates'
+                },
+                body: JSON.stringify({
+                  product_id: targetId,
+                  variant_sku: vSku,
+                  attribute_color: vColor,
+                  image_url: vImg,
+                  stock: vStock,
+                  price_adjustment: 0,
+                  updated_at: new Date().toISOString()
+                })
+              });
+            } catch (vErr) {
+              console.warn(`Error guardando variante ${vSku}:`, vErr);
+            }
+          }
+        }
+      }
     }
 
     if (insertedProducts === 0 && updatedProducts === 0 && productsToMigrate.length > 0) {

@@ -152,7 +152,12 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             <span className="font-semibold text-[#E63946]">
               {product.category_name}
             </span>
-
+            {product.product_variants && product.product_variants.length > 1 && (
+              <span className="text-[10px] font-bold text-foreground/80 bg-muted px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E63946]" />
+                {product.product_variants.length} colores
+              </span>
+            )}
           </div>
 
           <h3 className="font-semibold text-sm sm:text-base text-foreground line-clamp-2 leading-snug group-hover:text-[#E63946] transition-colors">
