@@ -105,12 +105,16 @@ async function main() {
 
     // Si el padre tenía sufijo de color, actualizar su SKU al SKU base limpio
     if (parent.sku !== baseSku) {
-      await fetch(`${BASE_URL}/rest/v1/products?id=eq.${parent.id}`, {
+      const patchSkuRes = await fetch(`${BASE_URL}/rest/v1/products?id=eq.${parent.id}`, {
         method: 'PATCH',
         headers: HEADERS,
-        body: JSON.stringify({ sku: baseSku, has_variants: true })
+        body: JSON.stringify({ sku: baseSku })
       });
-      parent.sku = baseSku;
+      if (!patchSkuRes.ok) {
+        console.warn(`   ⚠️ Falló actualizar SKU base a ${baseSku}:`, await patchSkuRes.text());
+      } else {
+        parent.sku = baseSku;
+      }
     }
 
     // Recopilar todas las imágenes de todos los duplicados
@@ -152,19 +156,23 @@ async function main() {
       if (vRes.ok) {
         totalMergedVariants++;
         console.log(`   ✨ Variante registrada: ${variantSku} (Color: ${variantColor})`);
+      } else {
+        console.warn(`   ⚠️ Falló registrar variante ${variantSku}:`, await vRes.text());
       }
     }
 
-    // Actualizar producto padre con has_variants y la galería completa
-    await fetch(`${BASE_URL}/rest/v1/products?id=eq.${parent.id}`, {
+    // Actualizar producto padre con la galería completa
+    const patchParentRes = await fetch(`${BASE_URL}/rest/v1/products?id=eq.${parent.id}`, {
       method: 'PATCH',
       headers: HEADERS,
       body: JSON.stringify({
-        has_variants: true,
         images: uniqueGallery,
         image_url: uniqueGallery[0] || parent.image_url
       })
     });
+    if (!patchParentRes.ok) {
+      console.warn(`   ⚠️ Falló actualizar galería del padre:`, await patchParentRes.text());
+    }
 
     // Eliminar los duplicados redundantes de la tabla products
     for (const dup of duplicates) {
@@ -175,6 +183,8 @@ async function main() {
       if (delRes.ok) {
         totalDeletedDuplicates++;
         console.log(`   🗑️ Duplicado eliminado de products: ${dup.sku} (ID: ${dup.id})`);
+      } else {
+        console.warn(`   ⚠️ Falló eliminar duplicado ${dup.sku}:`, await delRes.text());
       }
     }
   }

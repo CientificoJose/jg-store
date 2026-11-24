@@ -197,8 +197,99 @@ export async function POST(request: NextRequest) {
 
     await ensureProductsBucketExists();
 
+    const COMMON_COLORS = [
+      'AZUL', 'ROJO', 'NEGRO', 'BLANCO', 'VERDE', 'AMARILLO', 'ROSA', 'GRIS',
+      'CELESTE', 'NARANJA', 'VIOLETA', 'LILA', 'BEIGE', 'MARRON', 'TURQUESA',
+      'FUCSIA', 'DORADO', 'PLATEADO', 'SURTIDO', 'SURTIDOS', 'ESTAMPADO',
+      'MULTICOLOR', 'BORDO', 'AQUA', 'CORAL', 'OCRE', 'PETROLEO', 'CAMEL'
+    ];
+
+    function extractBaseSkuAndVariant(rawSku: string, rawVariant?: string): { baseSku: string; variantColor: string | null } {
+      const sku = (rawSku || '').trim();
+      const color = (rawVariant || '').toUpperCase().trim();
+      const parts = sku.split('-');
+      if (parts.length >= 2) {
+        const lastPart = parts[parts.length - 1].toUpperCase().trim();
+        if (COMMON_COLORS.includes(lastPart)) {
+          const base = parts.slice(0, -1).join('-');
+          return { baseSku: base, variantColor: color || lastPart };
+        }
+      }
+      return { baseSku: sku, variantColor: color || null };
+    }
+
+    // Pre-procesar y consolidar productos entrantes por baseSku para evitar duplicados en products
+    const consolidatedMap = new Map<string, any>();
+
+    for (const item of productsToMigrate) {
+      const rawSku = (item.codigo || item.sku || '').trim();
+      if (!rawSku) continue;
+
+      const { baseSku, variantColor } = extractBaseSkuAndVariant(rawSku, item.variante);
+      const cleanColor = variantColor || '';
+      const variantSku = cleanColor ? `${baseSku}-${cleanColor.replace(/[^A-Z0-9]/g, '')}` : baseSku;
+      const itemImg = item.imagen_url || (item.foto ? `/api/scraper/image?file=${encodeURIComponent(item.foto)}` : '') || '';
+
+      if (!consolidatedMap.has(baseSku)) {
+        const parentItem = {
+          ...item,
+          codigo: baseSku,
+          sku: baseSku,
+          variantes: [],
+          imagenes_galeria: []
+        };
+
+        let prevVars: any[] = [];
+        if (Array.isArray(item.variantes)) {
+          prevVars = item.variantes;
+        } else if (typeof item.variantes === 'string' && item.variantes.trim().startsWith('[')) {
+          try { prevVars = JSON.parse(item.variantes); } catch {}
+        }
+
+        if (cleanColor) {
+          prevVars.push({
+            variant_sku: variantSku,
+            color: cleanColor,
+            imagen_url: itemImg,
+            stock: Number(item.stock || 1),
+            precio_costo: Number(item.precio_costo || item.precio || 0)
+          });
+        }
+        parentItem.variantes = prevVars;
+
+        let gal: string[] = [];
+        if (Array.isArray(item.imagenes_galeria)) gal = [...item.imagenes_galeria];
+        else if (Array.isArray(item.images)) gal = [...item.images];
+        if (itemImg && !gal.includes(itemImg)) gal.unshift(itemImg);
+        parentItem.imagenes_galeria = gal;
+
+        consolidatedMap.set(baseSku, parentItem);
+      } else {
+        const parent = consolidatedMap.get(baseSku);
+
+        if (cleanColor) {
+          const exists = parent.variantes.some((v: any) => v.color === cleanColor || v.variant_sku === variantSku);
+          if (!exists) {
+            parent.variantes.push({
+              variant_sku: variantSku,
+              color: cleanColor,
+              imagen_url: itemImg,
+              stock: Number(item.stock || 1),
+              precio_costo: Number(item.precio_costo || item.precio || 0)
+            });
+          }
+        }
+
+        if (itemImg && !parent.imagenes_galeria.includes(itemImg)) {
+          parent.imagenes_galeria.push(itemImg);
+        }
+      }
+    }
+
+    const normalizedProductsToMigrate = Array.from(consolidatedMap.values());
+
     // 3. Procesar cada producto migrando categorías y upserting
-    for (const p of productsToMigrate) {
+    for (const p of normalizedProductsToMigrate) {
       const sku = (p.codigo || p.sku || '').trim();
       if (!sku) continue;
 
@@ -568,6 +659,18 @@ export async function POST(request: NextRequest) {
                   updated_at: new Date().toISOString()
                 })
               });
+
+              // Si existía un producto viejo duplicado con este SKU de color, eliminarlo de products
+              if (prodBySku.has(vSku)) {
+                const oldDup = prodBySku.get(vSku);
+                if (oldDup && oldDup.id !== targetId) {
+                  await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${oldDup.id}`, {
+                    method: 'DELETE',
+                    headers
+                  });
+                  prodBySku.delete(vSku);
+                }
+              }
             } catch (vErr) {
               console.warn(`Error guardando variante ${vSku}:`, vErr);
             }

@@ -475,10 +475,11 @@ def scraping_product(driver, max_retries=3, wait_time=10):
         if DEEP_SCRAPE_PRODUCTS:
             entrado_a_detalle = False
             try:
-                # 1. Hacer click en .span-3 (el título interactivo con cursor:pointer en Angular)
+                # 1. Hacer click en la tarjeta exacta (coincidiendo código Y color/variante)
                 CLICK_JS = """
                 const targetCode = arguments[0];
-                const targetIdx = arguments[1];
+                const targetVariant = (arguments[1] || '').toUpperCase().trim();
+                const targetIdx = arguments[2];
                 const cards = Array.from(document.querySelectorAll('.col-art .card-product'));
                 
                 let targetCard = null;
@@ -486,8 +487,17 @@ def scraping_product(driver, max_retries=3, wait_time=10):
                     for (const c of cards) {
                         const codEl = c.querySelector('.span-codigo, .codigo');
                         if (codEl && codEl.textContent.toUpperCase().includes(targetCode.toUpperCase())) {
-                            targetCard = c;
-                            break;
+                            if (targetVariant) {
+                                const adEl = c.querySelector('.adicional span, .adicional');
+                                const adText = (adEl ? adEl.textContent : '').toUpperCase().trim();
+                                if (adText.includes(targetVariant)) {
+                                    targetCard = c;
+                                    break;
+                                }
+                            } else {
+                                targetCard = c;
+                                break;
+                            }
                         }
                     }
                 }
@@ -510,7 +520,7 @@ def scraping_product(driver, max_retries=3, wait_time=10):
                     return { success: false, error: e.toString() };
                 }
                 """
-                click_res = driver.execute_script(CLICK_JS, raw_code, index) or {}
+                click_res = driver.execute_script(CLICK_JS, raw_code, clean_variant, index) or {}
                 
                 # 2. Esperar específicamente a que monte el componente app-articulo y su URL cambie
                 def en_detalle_articulo(d):
@@ -557,7 +567,10 @@ def scraping_product(driver, max_retries=3, wait_time=10):
                         if len(inner_crumbs) > 3: prod_marca = inner_crumbs[3]
 
                     if inner_gallery:
-                        galeria_urls = inner_gallery
+                        if image_url and image_url not in inner_gallery:
+                            galeria_urls = [image_url] + [g for g in inner_gallery if g != image_url]
+                        else:
+                            galeria_urls = inner_gallery
 
                     if inner_crumbs or inner_gallery:
                         print(Fore.MAGENTA + f"   🔍 [Detalle {code}] Breadcrumb: {' > '.join(inner_crumbs)} | Fotos: {len(galeria_urls)}" + Style.RESET_ALL)
